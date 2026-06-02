@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 def login_view(request):
     # Si el usuario ya está logueado, lo mandamos directo al inicio
@@ -33,3 +34,7 @@ def logout_view(request):
 def index_view(request):
     # Una vista temporal para la página de inicio
     return render(request, 'seguridad/index.html') # O el template que gustes usar de base
+
+@login_required(login_url='login')  # <-- AGREGA ESTO PARA PROTEGER LA VISTA
+def index_view(request):
+    return render(request, 'seguridad/index.html')
