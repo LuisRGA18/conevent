@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConEvent - Crear Cuenta</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="login-container" style="min-height: 100vh; padding: 40px 0;">
+        <div class="login-box" style="max-width: 450px;">
+            <h2><i class="fas fa-user-plus"></i> Registrarse</h2>
+            <p style="color: var(--gris-claro); margin-bottom: 20px;">Crea tu cuenta institucional</p>
+
+            {% if form.errors or form.non_field_errors %}
+                <div class="alert-error" style="background-color: #f44336; padding: 12px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; text-align: left;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <i class="fas fa-exclamation-circle"></i> {{ error }}<br>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <i class="fas fa-exclamation-circle"></i> {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="input-group">
+                    <label><i class="fas fa-font"></i> Nombre(s)</label>
+                    {{ form.first_name }}
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-font"></i> Apellido(s)</label>
+                    {{ form.last_name }}
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-envelope"></i> Correo Electrónico</label>
+                    {{ form.email }}
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-id-card"></i> Tipo de Usuario</label>
+                    {{ form.rol }}
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-lock"></i> Contraseña</label>
+                    {{ form.password }}
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fas fa-shield-alt"></i> Confirmar Contraseña</label>
+                    {{ form.confirm_password }}
+                </div>
+
+                <button type="submit" class="btn-login" style="margin-top: 10px;">Crear Cuenta</button>
+            </form>
+
+            <div style="margin-top: 20px; font-size: 14px;">
+                <a href="{% url 'login' %}" style="color: var(--azul-tecnologico); text-decoration: none;">¿Ya tienes cuenta? Inicia Sesión</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -54,7 +54,7 @@
                 {% endif %}
 
                 {% if request.user.rol == 'alumno' %}
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-project-diagram me-2"></i> Mi Proyecto</a></li>
+                    <li><a href="{% url 'mi_proyecto' %}" class="nav-link-custom"><i class="fas fa-project-diagram me-2"></i> Mi Proyecto</a></li>
                     <li><a href="#" class="nav-link-custom"><i class="fas fa-star me-2"></i> Ver Calificaciones</a></li>
                 {% endif %}
 
