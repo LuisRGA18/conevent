@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'SIGEA.urls'
+ROOT_URLCONF = 'conevent.urls'
 
 TEMPLATES = [
     {
@@ -66,7 +66,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'SIGEA.wsgi.application'
+WSGI_APPLICATION = 'conevent.wsgi.application'
 
 
 # Database
@@ -120,3 +120,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Registrar la app de usuarios
+INSTALLED_APPS += [
+    'usuarios',
+]
+
+# Indicar a Django que use nuestro modelo personalizado de usuario
+AUTH_USER_MODEL = 'usuarios.Usuario'
