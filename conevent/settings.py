@@ -54,7 +54,7 @@ ROOT_URLCONF = 'conevent.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -128,3 +128,5 @@ INSTALLED_APPS += [
 
 # Indicar a Django que use nuestro modelo personalizado de usuario
 AUTH_USER_MODEL = 'usuarios.Usuario'
+# Ruta para que Django encuentre tus archivos de estilos, logos e imágenes
+STATICFILES_DIRS = [BASE_DIR / 'static']
