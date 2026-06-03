@@ -17,18 +17,21 @@
 
             {% if messages %}
                 {% for message in messages %}
+                    {# Solo mostrar errores aquí, los de éxito van al dashboard #}
+                    {% if message.tags == 'error' %}
                     <div class="alert-error">
                         {{ message }}
                     </div>
+                    {% endif %}
                 {% endfor %}
             {% endif %}
 
             <form method="POST">
                 {% csrf_token %}
-                
+
                 <div class="input-group">
                     <label for="username"><i class="fas fa-user"></i> Usuario</label>
-                    <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
+                    <input type="text" id="username" name="username" placeholder="Ingresa tu usuario o correo institucional" required>
                 </div>
 
                 <div class="input-group">
@@ -36,8 +39,24 @@
                     <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
                 </div>
 
+                <!-- Link olvidé contraseña -->
+                <div style="text-align: center; margin-top: -8px; margin-bottom: 16px;">
+                    <a href="{% url 'password_reset' %}" style="color: var(--azul-acento, #4f8ef7); text-decoration: none; font-weight: 600;">
+                        <i class="fas fa-key" style="margin-right: 4px;"></i>¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+
                 <button type="submit" class="btn-login">Ingresar al Sistema</button>
             </form>
+
+            <!-- Link al registro -->
+            <p style="text-align: center; margin-top: 20px; color: var(--gris-claro); font-size: 0.9rem;">
+                ¿No tienes cuenta?
+                <a href="{% url 'registro' %}" style="color: var(--azul-acento, #4f8ef7); text-decoration: none; font-weight: 600;">
+                    Regístrate aquí
+                </a>
+            </p>
+
         </div>
     </div>
 

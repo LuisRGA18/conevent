@@ -1,0 +1,119 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold text-white mb-0">Panel Administrativo</h4>
+      <small class="text-muted">Gestión de proyectos y evaluadores — CONEVENT</small>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="row g-2 mb-4">
+    <div class="col-md-5">
+      <input type="text" name="q" value="{{ q }}" class="form-control bg-dark text-white border-secondary"
+             placeholder="Buscar por título o alumno...">
+    </div>
+    <div class="col-md-3">
+      <select name="estatus" class="form-select bg-dark text-white border-secondary">
+        <option value="">Todos los estatus</option>
+        {% for val, label in estatus_choices %}
+        <option value="{{ val }}" {% if estatus_filtro == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-outline-light w-100">
+        <i class="bi bi-search me-1"></i> Filtrar
+      </button>
+    </div>
+    {% if q or estatus_filtro %}
+    <div class="col-md-2">
+      <a href="{% url 'panel_admin' %}" class="btn btn-outline-danger w-100">
+        <i class="bi bi-x-lg me-1"></i> Limpiar
+      </a>
+    </div>
+    {% endif %}
+  </form>
+
+  <!-- Tabla de proyectos -->
+  <div class="card bg-dark border-secondary">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th>Código</th>
+            <th>Proyecto</th>
+            <th>Alumno</th>
+            <th class="text-center">Integrantes</th>
+            <th>Evaluador</th>
+            <th class="text-center">Estatus</th>
+            <th class="text-center">Calificación</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in proyectos %}
+          <tr>
+            <td><span class="badge bg-secondary">{{ p.codigo }}</span></td>
+            <td>
+              <span class="fw-semibold">{{ p.titulo }}</span>
+              {% if p.carrera %}
+              <br><small class="text-muted">{{ p.carrera }} · Grp {{ p.grupo }} · {{ p.get_categoria_display }}</small>
+              {% endif %}
+            </td>
+            <td>{{ p.alumno_creador.get_full_name|default:p.alumno_creador.username }}</td>
+            <td class="text-center">
+              <span class="badge bg-info text-dark">{{ p.num_integrantes }}</span>
+            </td>
+            <td>
+              {% if p.evaluador_asignado %}
+                <span class="text-success">{{ p.evaluador_asignado.get_full_name|default:p.evaluador_asignado.username }}</span>
+              {% else %}
+                <span class="text-muted fst-italic">Sin asignar</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if p.estatus == 'revision' %}
+                <span class="badge bg-warning text-dark">En Revisión</span>
+              {% elif p.estatus == 'aprobado' %}
+                <span class="badge bg-success">Aprobado</span>
+              {% else %}
+                <span class="badge bg-danger">Rechazado</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if p.calificacion %}
+                <strong class="text-success">{{ p.calificacion }}</strong>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'asignar_evaluador' p.pk %}" class="btn btn-sm btn-outline-primary" title="Asignar evaluador">
+                <i class="bi bi-person-check"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+              No hay proyectos con esos criterios.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

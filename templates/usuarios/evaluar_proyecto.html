@@ -1,0 +1,71 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 700px;">
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <div class="mb-4">
+    <a href="{% url 'proyectos_asignados' %}" class="text-secondary text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i> Regresar
+    </a>
+    <h4 class="fw-bold text-white mt-2">Evaluar Proyecto</h4>
+  </div>
+
+  <!-- Info del proyecto -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-secondary fw-semibold">
+      <i class="bi bi-journal-text me-2"></i>Información del Proyecto
+    </div>
+    <div class="card-body">
+      <h5 class="text-white">{{ proyecto.titulo }} <span class="badge bg-secondary ms-2">{{ proyecto.codigo }}</span></h5>
+      <p class="text-muted mb-3">{{ proyecto.descripcion }}</p>
+
+      <h6 class="text-secondary">Integrantes</h6>
+      <ul class="list-unstyled">
+        {% for i in integrantes %}
+        <li class="text-white mb-1">
+          {% if i.es_lider %}<i class="bi bi-star-fill text-warning me-1"></i>{% else %}<i class="bi bi-person me-1 text-muted"></i>{% endif %}
+          {{ i.nombre_completo }} <code class="text-muted ms-1">{{ i.matricula }}</code>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Formulario de evaluación -->
+  <div class="card bg-dark border-secondary">
+    <div class="card-header text-secondary fw-semibold">
+      <i class="bi bi-clipboard-check me-2"></i>Capturar Evaluación
+    </div>
+    <div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label text-white">{{ form.calificacion.label }}</label>
+          {{ form.calificacion }}
+          {% if form.calificacion.errors %}<div class="text-danger small mt-1">{{ form.calificacion.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-white">{{ form.comentarios_evaluador.label }}</label>
+          {{ form.comentarios_evaluador }}
+        </div>
+        <div class="mb-4">
+          <label class="form-label text-white">{{ form.estatus.label }}</label>
+          {{ form.estatus }}
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'proyectos_asignados' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-lg me-1"></i> Guardar Evaluación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

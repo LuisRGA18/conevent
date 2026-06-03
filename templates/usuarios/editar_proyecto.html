@@ -1,0 +1,100 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+
+  <a href="{% url 'mi_proyecto' %}" class="text-secondary text-decoration-none">
+    <i class="bi bi-arrow-left me-1"></i> Regresar
+  </a>
+  <h4 class="fw-bold text-white mt-3 mb-4">
+    Editar Proyecto: <span class="text-primary">{{ proyecto.titulo }}</span>
+  </h4>
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header text-secondary fw-semibold">1. Información del Proyecto</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label text-white">{{ form.titulo.label }} *</label>
+            {{ form.titulo }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-white">{{ form.carrera.label }}</label>
+            {{ form.carrera }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-white">{{ form.grupo.label }}</label>
+            {{ form.grupo }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-white">{{ form.categoria.label }}</label>
+            {{ form.categoria }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-white">{{ form.descripcion.label }}</label>
+            {{ form.descripcion }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header text-secondary fw-semibold">2. Integrantes</div>
+      <div class="card-body">
+        {{ formset.management_form }}
+        {% for f in formset %}
+        <div class="border border-secondary rounded p-3 mb-3 position-relative">
+          {{ f.id }}
+          {% if formset.can_delete %}
+          <div class="position-absolute top-0 end-0 m-2 form-check">
+            {{ f.DELETE }}
+            <label class="form-check-label text-danger small" for="{{ f.DELETE.id_for_label }}">
+              <i class="bi bi-trash"></i> Quitar
+            </label>
+          </div>
+          {% endif %}
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label text-white small">Nombre Completo</label>
+              {{ f.nombre_completo }}
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-white small">Matrícula</label>
+              {{ f.matricula }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-white small">Correo</label>
+              {{ f.correo }}
+            </div>
+            <div class="col-md-1 d-flex align-items-end pb-1">
+              <div class="form-check" title="Líder">
+                {{ f.es_lider }}
+                <label class="form-check-label text-warning small" for="{{ f.es_lider.id_for_label }}">
+                  <i class="bi bi-star-fill"></i>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{% url 'mi_proyecto' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-warning text-dark fw-semibold">
+        <i class="bi bi-save me-1"></i> Guardar Cambios
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

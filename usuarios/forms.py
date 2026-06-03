@@ -1,38 +1,154 @@
 from django import forms
-from .models import Proyecto
-from .models import Usuario
+from django.forms import inlineformset_factory
+from .models import Proyecto, Usuario, Integrante
 import re
+
+# ─── Estilos reutilizables (dark theme que ya usan) ───────────────────────────
+INPUT_CLASS = 'form-control bg-dark text-white border-secondary'
+SELECT_CLASS = 'form-select bg-dark text-white border-secondary'
+TEXTAREA_CLASS = 'form-control bg-dark text-white border-secondary'
+
 
 class ProyectoForm(forms.ModelForm):
     class Meta:
         model = Proyecto
-        fields = ['titulo', 'descripcion', 'integrantes']
+        fields = ['titulo', 'descripcion', 'carrera', 'grupo', 'categoria']
         widgets = {
-            'titulo': forms.TextInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Ej. Sistema de Control de Eventos'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control bg-dark text-white border-secondary', 'rows': 4, 'placeholder': 'Describe brevemente de qué trata tu proyecto...'}),
-            'integrantes': forms.Textarea(attrs={'class': 'form-control bg-dark text-white border-secondary', 'rows': 2, 'placeholder': 'Juan Pérez, María López, Luis Ángel...'}),
+            'titulo': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej. Sistema de Control de Eventos'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': TEXTAREA_CLASS,
+                'rows': 4,
+                'placeholder': 'Describe brevemente de qué trata tu proyecto...'
+            }),
+            'carrera': forms.Select(attrs={'class': SELECT_CLASS}),
+            'grupo': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej. A, 4B'
+            }),
+            'categoria': forms.Select(attrs={'class': SELECT_CLASS}),
         }
+        labels = {
+            'titulo': 'Título del Proyecto',
+            'descripcion': 'Descripción / Resumen',
+            'carrera': 'Carrera',
+            'grupo': 'Grupo / Paralelo',
+            'categoria': 'Categoría',
+        }
+
+
+class IntegranteForm(forms.ModelForm):
+    class Meta:
+        model = Integrante
+        fields = ['nombre_completo', 'matricula', 'correo', 'es_lider']
+        widgets = {
+            'nombre_completo': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Nombre completo'
+            }),
+            'matricula': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Matrícula'
+            }),
+            'correo': forms.EmailInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'correo@uteq.edu.mx'
+            }),
+            'es_lider': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+# FormSet: permite agregar varios integrantes en el mismo formulario del proyecto
+IntegranteFormSet = inlineformset_factory(
+    Proyecto,
+    Integrante,
+    form=IntegranteForm,
+    extra=1,
+    min_num=1,
+    max_num=6,
+    validate_min=True,
+    can_delete=True,
+)
+
+
+class EvaluacionForm(forms.ModelForm):
+    """Formulario para que el evaluador califique y comente un proyecto."""
+    class Meta:
+        model = Proyecto
+        fields = ['calificacion', 'comentarios_evaluador', 'estatus']
+        widgets = {
+            'calificacion': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'step': '0.01',
+                'min': '0',
+                'max': '10',
+                'placeholder': 'Ej. 8.50'
+            }),
+            'comentarios_evaluador': forms.Textarea(attrs={
+                'class': TEXTAREA_CLASS,
+                'rows': 4,
+                'placeholder': 'Observaciones sobre el proyecto...'
+            }),
+            'estatus': forms.Select(attrs={'class': SELECT_CLASS}),
+        }
+        labels = {
+            'calificacion': 'Calificación (0 - 10)',
+            'comentarios_evaluador': 'Comentarios',
+            'estatus': 'Estatus del Proyecto',
+        }
+
+
+class AsignacionEvaluadorForm(forms.ModelForm):
+    """Formulario para que el ADMIN asigne evaluador a un proyecto."""
+    class Meta:
+        model = Proyecto
+        fields = ['evaluador_asignado']
+        widgets = {
+            'evaluador_asignado': forms.Select(attrs={'class': SELECT_CLASS}),
+        }
+        labels = {
+            'evaluador_asignado': 'Evaluador Asignado',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Solo mostrar usuarios con rol EVALUADOR
+        self.fields['evaluador_asignado'].queryset = Usuario.objects.filter(rol='EVALUADOR')
+
 
 class RegistroForm(forms.ModelForm):
     first_name = forms.CharField(
-        max_length=150, 
+        max_length=150,
         required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Ej. Luis Ángel'}),
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Ej. Luis Ángel'
+        }),
         label="Nombre(s)"
     )
     last_name = forms.CharField(
-        max_length=150, 
+        max_length=150,
         required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Ej. Pérez Gómez'}),
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Ej. Pérez Gómez'
+        }),
         label="Apellido(s)"
     )
-    
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Mínimo 8 caracteres, 1 mayúscula y 1 número'}),
+        widget=forms.PasswordInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Mínimo 8 caracteres, 1 mayúscula y 1 número'
+        }),
         label="Contraseña"
     )
     confirm_password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Repite tu contraseña'}),
+        widget=forms.PasswordInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Repite tu contraseña'
+        }),
         label="Confirmar Contraseña"
     )
 
@@ -40,43 +156,37 @@ class RegistroForm(forms.ModelForm):
         model = Usuario
         fields = ['email', 'rol']
         widgets = {
-            'email': forms.EmailInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'tu_correo@uteq.edu.mx'}),
-            'rol': forms.Select(attrs={'class': 'form-select bg-dark text-white border-secondary'}),
+            'email': forms.EmailInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'tu_correo@uteq.edu.mx'
+            }),
+            'rol': forms.Select(attrs={'class': SELECT_CLASS}),
         }
 
-    # FILTRO DE CORREO INSTITUCIONAL @uteq.edu.mx
     def clean_email(self):
-        email = self.cleaned_data.get('email').lower() # Lo pasamos a minúsculas por seguridad
-        
+        email = self.cleaned_data.get('email').lower()
         if not email.endswith('@uteq.edu.mx'):
-            raise forms.ValidationError("Acceso denegado. Solo se permiten correos institucionales de la UTEQ (@uteq.edu.mx).")
-            
-        # Validar si el correo ya está registrado en la base de datos
+            raise forms.ValidationError(
+                "Acceso denegado. Solo se permiten correos institucionales de la UTEQ (@uteq.edu.mx)."
+            )
         if Usuario.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo institucional ya se encuentra registrado.")
-            
         return email
 
-    # POLÍTICAS DE SEGURIDAD EN LA CONTRASEÑA
     def clean_password(self):
         password = self.cleaned_data.get('password')
-        
         if len(password) < 8:
             raise forms.ValidationError("La contraseña debe tener un mínimo de 8 caracteres.")
         if not re.search(r'[A-Z]', password):
             raise forms.ValidationError("La contraseña debe contener al menos una letra mayúscula.")
         if not re.search(r'[0-9]', password):
             raise forms.ValidationError("La contraseña debe contener al menos un número.")
-            
         return password
 
-    # COINCIDENCIA DE CONTRASEÑAS
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
-
         if password != confirm_password:
             raise forms.ValidationError("Las contraseñas no coinciden.")
-            
         return cleaned_data
