@@ -1,7 +1,8 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Proyecto, Usuario, Integrante
+from .models import Proyecto, Usuario, Integrante, Evaluacion
 import re
+from .models import Proyecto, Integrante
 
 # ─── Estilos reutilizables (dark theme que ya usan) ───────────────────────────
 INPUT_CLASS = 'form-control bg-dark text-white border-secondary'
@@ -76,8 +77,8 @@ IntegranteFormSet = inlineformset_factory(
 class EvaluacionForm(forms.ModelForm):
     """Formulario para que el evaluador califique y comente un proyecto."""
     class Meta:
-        model = Proyecto
-        fields = ['calificacion', 'comentarios_evaluador', 'estatus']
+        model = Evaluacion  # 🟢 CAMBIAR AQUÍ (Antes decía Proyecto)
+        fields = ['calificacion', 'comentarios_evaluador']
         widgets = {
             'calificacion': forms.NumberInput(attrs={
                 'class': INPUT_CLASS,
@@ -190,3 +191,17 @@ class RegistroForm(forms.ModelForm):
         if password != confirm_password:
             raise forms.ValidationError("Las contraseñas no coinciden.")
         return cleaned_data
+    
+
+class ProyectoForm(forms.ModelForm):
+    class Meta:
+        model = Proyecto
+        fields = ['titulo', 'descripcion', 'carrera', 'grupo', 'categoria', 'logo']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Ej. Sistema de Control ConEvent'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control bg-dark text-white border-secondary', 'rows': 4, 'placeholder': 'Resume de qué trata tu proyecto...'}),
+            'carrera': forms.Select(attrs={'class': 'form-select bg-dark text-white border-secondary'}),
+            'grupo': forms.TextInput(attrs={'class': 'form-control bg-dark text-white border-secondary', 'placeholder': 'Ej. 8° A'}),
+            'categoria': forms.Select(attrs={'class': 'form-select bg-dark text-white border-secondary'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control bg-dark text-white border-secondary'}),
+        }

@@ -7,110 +7,195 @@
     <title>ConEvent - Panel de Control</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    
+
     <style>
-        /* Estilos rápidos para el layout del Dashboard */
-        .wrapper { display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background-color: var(--gris-oscuro); padding: 20px; border-right: 1px solid rgba(50, 140, 193, 0.2); }
-        .content { flex: 1; padding: 30px; background-color: var(--fondo-oscuro); }
-        .sidebar-brand { color: var(--azul-tecnologico); font-size: 22px; font-weight: bold; margin-bottom: 30px; display: block; text-decoration: none; }
-        .nav-link-custom { color: var(--gris-claro); display: block; padding: 12px 15px; border-radius: 5px; text-decoration: none; margin-bottom: 5px; transition: 0.3s; }
-        .nav-link-custom:hover, .nav-link-custom.active { background-color: var(--azul-profundo); color: white; }
-        .card-custom { background-color: var(--gris-oscuro); border: 1px solid rgba(50, 140, 193, 0.1); color: white; border-radius: 10px; padding: 20px; }
-        .badge-role { background-color: var(--azul-tecnologico); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+        .wrapper       { display: flex; min-height: 100vh; }
+        .sidebar       { width: 260px; background-color: var(--gris-oscuro); padding: 20px;
+                         border-right: 1px solid rgba(50,140,193,0.2); flex-shrink: 0; }
+        .content       { flex: 1; padding: 30px; background-color: var(--fondo-oscuro); overflow-y: auto; }
+        .sidebar-brand { color: var(--azul-tecnologico); font-size: 22px; font-weight: bold;
+                         margin-bottom: 30px; display: block; text-decoration: none; }
+        .nav-link-custom { color: var(--gris-claro); display: block; padding: 12px 15px;
+                           border-radius: 5px; text-decoration: none; margin-bottom: 5px; transition: 0.3s; }
+        .nav-link-custom:hover,
+        .nav-link-custom.active { background-color: var(--azul-profundo); color: white; }
+        .badge-role    { background-color: var(--azul-tecnologico); color: white;
+                         padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+        .card-kpi      { background-color: var(--gris-oscuro);
+                         border: 1px solid rgba(50,140,193,0.15);
+                         border-radius: 12px; padding: 20px; color: white; transition: 0.2s; }
+        .card-kpi:hover { border-color: rgba(50,140,193,0.5); }
+        .kpi-icon      { font-size: 2rem; margin-bottom: 8px; }
+        .kpi-value     { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .kpi-label     { font-size: 0.85rem; color: var(--gris-claro); margin-top: 4px; }
     </style>
 </head>
 <body>
+<div class="wrapper">
 
-    <div class="wrapper">
-        <nav class="sidebar">
-            <a href="{% url 'index' %}" class="sidebar-brand">
-                <i class="fas fa-calendar-alt"></i> ConEvent
-            </a>
-            
-            <div class="user-info mb-4 border-bottom pb-3">
-                <p class="m-0 small text-muted">Usuario conectado:</p>
-                <h6 class="m-0 text-white">{{ request.user.username }}</h6>
-                <span class="badge badge-role mt-1">
-                    {% if request.user.rol == 'admin' %} Administrador
-                    {% elif request.user.rol == 'evaluador' %} Evaluador / Docente
-                    {% else %} Alumno
+    <nav class="sidebar">
+        <a href="{% url 'index' %}" class="sidebar-brand">
+            <i class="fas fa-calendar-alt"></i> ConEvent
+        </a>
+
+        <div class="user-info mb-4 border-bottom pb-3">
+            <p class="m-0 small text-muted">Usuario conectado:</p>
+            <h6 class="m-0 text-white">{{ request.user.get_full_name|default:request.user.username }}</h6>
+            <small class="text-muted d-block mb-1">{{ request.user.email }}</small>
+            <span class="badge badge-role">
+                {% if request.user.rol == 'ADMIN' %}Administrador
+                {% elif request.user.rol == 'EVALUADOR' %}Docente Evaluador
+                {% else %}Alumno Participante{% endif %}
+            </span>
+        </div>
+
+        <ul class="nav flex-column">
+            <li><a href="{% url 'index' %}" class="nav-link-custom">
+                <i class="fas fa-home me-2"></i> Inicio
+            </a></li>
+
+            {% if request.user.rol == 'ALUMNO' %}
+            <li><a href="{% url 'mi_proyecto' %}" class="nav-link-custom">
+                <i class="fas fa-project-diagram me-2"></i> Mi Proyecto
+            </a></li>
+            <li><a href="{% url 'ver_calificacion' %}" class="nav-link-custom">
+                <i class="fas fa-star me-2"></i> Mis Calificaciones
+            </a></li>
+            {% endif %}
+
+            {% if request.user.rol == 'EVALUADOR' %}
+            <li><a href="{% url 'proyectos_asignados' %}" class="nav-link-custom">
+                <i class="fas fa-clipboard-check me-2"></i> Mis Evaluaciones
+            </a></li>
+            {% endif %}
+
+            {% if request.user.rol == 'ADMIN' %}
+            <li><a href="{% url 'panel_admin' %}" class="nav-link-custom">
+                <i class="fas fa-cogs me-2"></i> Panel Administrativo
+            </a></li>
+            {% endif %}
+
+            <li class="mt-4">
+                <a href="{% url 'logout' %}" class="nav-link-custom text-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="content">
+
+        {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+            {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+
+        {% block content %}
+            {% if request.user.rol == 'ALUMNO' %}
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="text-white fw-bold mb-0">Bienvenido, {{ request.user.first_name|default:request.user.username }} 👋</h4>
+                        <small class="text-muted">Panel de alumno — ConEvent</small>
+                    </div>
+                    {% if not stats.tiene_proyecto %}
+                    <a href="{% url 'mi_proyecto' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i> Registrar Proyecto
+                    </a>
                     {% endif %}
-                </span>
-            </div>
+                </div>
 
-            <ul class="nav flex-column">
-                <li><a href="{% url 'index' %}" class="nav-link-custom active"><i class="fas fa-home me-2"></i> Inicio</a></li>
-                
-                {% if request.user.rol == 'admin' %}
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-users me-2"></i> Gestionar Usuarios</a></li>
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-cogs me-2"></i> Configuración</a></li>
-                {% endif %}
-
-                {% if request.user.rol == 'evaluador' or request.user.rol == 'admin' %}
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-file-signature me-2"></i> Evaluar Proyectos</a></li>
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-clipboard-list me-2"></i> Rúbricas</a></li>
-                {% endif %}
-
-                {% if request.user.rol == 'alumno' %}
-                    <li><a href="{% url 'mi_proyecto' %}" class="nav-link-custom"><i class="fas fa-project-diagram me-2"></i> Mi Proyecto</a></li>
-                    <li><a href="#" class="nav-link-custom"><i class="fas fa-star me-2"></i> Ver Calificaciones</a></li>
-                {% endif %}
-
-                <li class="mt-4"><a href="{% url 'logout' %}" class="nav-link-custom text-danger"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
-            </ul>
-        </nav>
-
-        <main class="content">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Panel Principal</h2>
-                <span class="text-muted">Sistema ConEvent v2.0</span>
-            </div>
-
-            <div class="row">
-                
-                {% if request.user.rol == 'admin' %}
-                    <div class="col-md-4 mb-3">
-                        <div class="card-custom">
-                            <h3><i class="fas fa-users text-info"></i></h3>
-                            <h5>Usuarios Totales</h5>
-                            <p class="fs-3 m-0">12</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card-kpi">
+                            <div class="kpi-icon text-info"><i class="fas fa-project-diagram"></i></div>
+                            <div class="kpi-value">{{ stats.total_proyectos }}</div>
+                            <div class="kpi-label">Proyecto{{ stats.total_proyectos|pluralize }} Registrado{{ stats.total_proyectos|pluralize }}</div>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card-custom">
-                            <h3><i class="fas fa-lightbulb text-warning"></i></h3>
-                            <h5>Proyectos Registrados</h5>
-                            <p class="fs-3 m-0">4</p>
+                    <div class="col-md-3">
+                        <div class="card-kpi">
+                            <div class="kpi-icon text-warning"><i class="fas fa-users"></i></div>
+                            <div class="kpi-value">{{ stats.total_integrantes }}</div>
+                            <div class="kpi-label">Integrante{{ stats.total_integrantes|pluralize }} en tu equipo</div>
                         </div>
                     </div>
-                {% endif %}
-
-                {% if request.user.rol == 'evaluador' %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card-custom">
-                            <h5><i class="fas fa-tasks text-success me-2"></i> Proyectos por Evaluar</h5>
-                            <p>Tienes proyectos pendientes asignados en la rúbrica actual.</p>
-                            <button class="btn btn-sm btn-outline-info">Ir a evaluar</button>
+                    <div class="col-md-3">
+                        <div class="card-kpi">
+                            <div class="kpi-icon {% if stats.estatus == 'aprobado' %}text-success{% elif stats.estatus == 'rechazado' %}text-danger{% else %}text-warning{% endif %}">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="kpi-value" style="font-size:1.1rem;">
+                                {% if stats.estatus == 'aprobado' %}Aprobado
+                                {% elif stats.estatus == 'rechazado' %}Rechazado
+                                {% elif stats.estatus == 'revision' %}En Revisión
+                                {% else %}Sin proyecto{% endif %}
+                            </div>
+                            <div class="kpi-label">Estatus actual</div>
                         </div>
                     </div>
-                {% endif %}
-
-                {% if request.user.rol == 'alumno' %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card-custom">
-                            <h5><i class="fas fa-trophy text-warning me-2"></i> Estado de tu Proyecto</h5>
-                            <p class="m-0">Estatus: <span class="text-warning">En revisión</span></p>
-                            <p class="small text-muted mt-2">Tu asesor subirá los comentarios pronto.</p>
+                    <div class="col-md-3">
+                        <div class="card-kpi">
+                            <div class="kpi-icon text-success"><i class="fas fa-star"></i></div>
+                            <div class="kpi-value">{% if stats.calificacion %}{{ stats.calificacion }}{% else %}—{% endif %}</div>
+                            <div class="kpi-label">Calificación Final</div>
                         </div>
                     </div>
+                </div>
+
+                {% if stats.tiene_proyecto %}
+                <div class="card bg-dark border-secondary mb-4">
+                    <div class="card-header text-white fw-semibold"><i class="fas fa-info-circle me-2 text-info"></i>Mi Proyecto Actual</div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="text-white mb-1">{{ stats.proyecto.titulo }}</h5>
+                                <small class="text-muted">{{ stats.proyecto.codigo }} · {{ stats.proyecto.carrera }} — Grupo {{ stats.proyecto.grupo }}</small>
+                                <p class="text-muted mt-2 mb-0 small">{{ stats.proyecto.descripcion|truncatewords:20 }}</p>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <a href="{% url 'mi_proyecto' %}" class="btn btn-outline-info btn-sm me-2"><i class="fas fa-eye me-1"></i> Ver detalle</a>
+                                {% if stats.proyecto.estatus == 'revision' %}
+                                <a href="{% url 'editar_proyecto' stats.proyecto.pk %}" class="btn btn-outline-warning btn-sm"><i class="fas fa-pencil-alt me-1"></i> Editar</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
 
-            </div>
-        </main>
-    </div>
+            {% elif request.user.rol == 'EVALUADOR' %}
+                <div class="mb-4">
+                    <h4 class="text-white fw-bold mb-0">Bienvenido, {{ request.user.first_name|default:request.user.username }}</h4>
+                    <small class="text-muted">Panel de evaluador — ConEvent</small>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-info"><i class="fas fa-clipboard-list"></i></div><div class="kpi-value">{{ stats.asignados }}</div><div class="kpi-label">Proyectos asignados</div></div></div>
+                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-success"><i class="fas fa-check-circle"></i></div><div class="kpi-value">{{ stats.evaluados }}</div><div class="kpi-label">Ya evaluados</div></div></div>
+                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-warning"><i class="fas fa-hourglass-half"></i></div><div class="kpi-value">{{ stats.pendientes }}</div><div class="kpi-label">Pendientes</div></div></div>
+                </div>
+                <a href="{% url 'proyectos_asignados' %}" class="btn btn-outline-info"><i class="fas fa-clipboard-check me-1"></i> Ir a mis evaluaciones</a>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            {% elif request.user.rol == 'ADMIN' %}
+                <div class="mb-4">
+                    <h4 class="text-white fw-bold mb-0">Panel Administrativo</h4>
+                    <small class="text-muted">Vista general del evento — ConEvent</small>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><div class="card-kpi"><div class="kpi-icon text-info"><i class="fas fa-users"></i></div><div class="kpi-value">{{ stats.total_usuarios }}</div><div class="kpi-label">Usuarios registrados</div></div></div>
+                    <div class="col-md-3"><div class="card-kpi"><div class="kpi-icon text-warning"><i class="fas fa-lightbulb"></i></div><div class="kpi-value">{{ stats.total_proyectos }}</div><div class="kpi-label">Proyectos registrados</div></div></div>
+                    <div class="col-md-3"><div class="card-kpi"><div class="kpi-icon text-success"><i class="fas fa-check-circle"></i></div><div class="kpi-value">{{ stats.evaluados }}</div><div class="kpi-label">Proyectos evaluados</div></div></div>
+                    <div class="col-md-3"><div class="card-kpi"><div class="kpi-icon text-danger"><i class="fas fa-hourglass-half"></i></div><div class="kpi-value">{{ stats.sin_evaluador }}</div><div class="kpi-label">Sin evaluador asignado</div></div></div>
+                </div>
+                <a href="{% url 'panel_admin' %}" class="btn btn-outline-primary"><i class="fas fa-cogs me-1"></i> Ir al panel administrativo</a>
+            {% endif %}
+        {% endblock %}
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

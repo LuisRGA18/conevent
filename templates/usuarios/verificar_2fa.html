@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConEvent - Verificación de Seguridad</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b111e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card-2fa {
+            background: #111a2e;
+            border: 1px solid #233554;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        .icon-shield {
+            font-size: 48px;
+            color: #3b82f6;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .codigo-input {
+            background: #1e293b;
+            border: 2px solid #475569;
+            color: #fff;
+            font-size: 24px;
+            letter-spacing: 8px;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            width: 80%;
+            margin: 20px 0;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+        .codigo-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .btn-verificar {
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 85%;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-verificar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0 25px 0;
+            font-size: 14px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .checkbox-container input {
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+        .reenviar-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+        .reenviar-link:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-2fa">
+        <div class="icon-shield">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <h2>Verificación de Dos Pasos</h2>
+        <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">
+            Hemos enviado un código de seguridad de 6 dígitos a tu correo institucional de la UTEQ. Por favor, introdúcelo para continuar.
+        </p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="text" name="codigo_2fa" class="codigo-input" placeholder="000000" maxlength="6" required autocomplete="off">
+            
+            <label class="checkbox-container">
+                <input type="checkbox" name="recordar_dispositivo" value="si" checked>
+                Recordar este dispositivo por 30 días
+            </label>
+
+            <button type="submit" class="btn-verificar">
+                Verificar y Entrar
+            </button>
+        </form>
+
+        <div style="margin-top: 25px;">
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 5px;">¿No recibiste el código?</p>
+            <a href="#" class="reenviar-link" id="btn-reenviar">Reenviar código por correo</a>
+        </div>
+    </div>
+
+    <script>
+        // Efecto visual sencillo de simulación de reenvío
+        document.getElementById('btn-reenviar').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Simulación: Un nuevo código de seguridad ha sido enviado a tu buzón @uteq.edu.mx');
+        });
+    </script>
+</body>
+</html>

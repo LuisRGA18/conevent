@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from usuarios import views as usuarios_views
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -34,4 +35,5 @@ urlpatterns = [
 
     # Dashboard
     path('', usuarios_views.index_view, name='index'),
+
 ]

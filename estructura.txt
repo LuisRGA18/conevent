@@ -1,0 +1,21 @@
+Listado de rutas de carpetas para el volumen Acer
+El número de serie del volumen es A803-BF2B
+C:\USERS\LUIS ANGEL\DOCUMENTS\GITHUB\CONEVENT\CONEVENT
++---conevent
++---__pycache__
+Listado de rutas de carpetas para el volumen Acer
+El número de serie del volumen es A803-BF2B
+C:\USERS\LUIS ANGEL\DOCUMENTS\GITHUB\CONEVENT\STATIC
++---css
++---js
+Listado de rutas de carpetas para el volumen Acer
+El número de serie del volumen es A803-BF2B
+C:\USERS\LUIS ANGEL\DOCUMENTS\GITHUB\CONEVENT\TEMPLATES
++---seguridad
++---usuarios
+Listado de rutas de carpetas para el volumen Acer
+El número de serie del volumen es A803-BF2B
+C:\USERS\LUIS ANGEL\DOCUMENTS\GITHUB\CONEVENT\USUARIOS
++---migrations
+¦   +---__pycache__
++---__pycache__

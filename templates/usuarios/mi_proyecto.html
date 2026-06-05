@@ -1,6 +1,5 @@
 {% extends "seguridad/index.html" %}
 {% block content %}
-
 <div class="container py-4">
 
   {% for msg in messages %}
@@ -9,7 +8,7 @@
   </div>
   {% endfor %}
 
-  <!-- Mis Proyectos Registrados -->
+  <!-- ── TABLA DE PROYECTOS REGISTRADOS ─────────────────────── -->
   {% if mis_proyectos %}
   <div class="card bg-dark border-secondary mb-4">
     <div class="card-header text-white fw-semibold">
@@ -34,11 +33,15 @@
             <td><span class="badge bg-secondary">{{ p.codigo }}</span></td>
             <td>
               <span class="fw-semibold">{{ p.titulo }}</span>
-              {% if p.carrera %}<br><small class="text-muted">{{ p.carrera }} — Grupo {{ p.grupo }}</small>{% endif %}
+              {# ✅ carrera es FK, se muestra directo (no get_carrera_display) #}
+              {% if p.carrera %}
+              <br><small class="text-muted">{{ p.carrera }} — Grupo {{ p.grupo }}</small>
+              {% endif %}
             </td>
             <td>{{ p.get_categoria_display }}</td>
             <td class="text-center">
-              <span class="badge bg-info text-dark">{{ p.num_integrantes }}</span>
+              {# ✅ related_name correcto: miembros #}
+              <span class="badge bg-info text-dark">{{ p.miembros.count }}</span>
             </td>
             <td class="text-center">
               {% if p.estatus == 'revision' %}
@@ -57,8 +60,11 @@
               {% endif %}
             </td>
             <td class="text-center">
+              <a href="{% url 'ver_calificacion' %}" class="btn btn-sm btn-outline-info me-1" title="Ver detalle">
+                <i class="bi bi-eye"></i>
+              </a>
               {% if p.estatus == 'revision' %}
-              <a href="{% url 'editar_proyecto' p.pk %}" class="btn btn-sm btn-outline-warning">
+              <a href="{% url 'editar_proyecto' p.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
                 <i class="bi bi-pencil"></i>
               </a>
               {% endif %}
@@ -81,22 +87,25 @@
   </div>
   {% endif %}
 
-  <!-- Formulario Nuevo Proyecto -->
+  <!-- ── FORMULARIO NUEVO PROYECTO ──────────────────────────── -->
+  {% if not proyecto_existente %}
   <div class="card bg-dark border-secondary">
     <div class="card-header text-white fw-semibold">
       <i class="bi bi-plus-circle me-2"></i>Registrar Nuevo Proyecto
     </div>
     <div class="card-body">
-      <form method="post" novalidate>
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
-        <!-- Info del proyecto -->
+        <!-- Paso 1: Info del proyecto -->
         <h6 class="text-secondary mb-3">1. Información del Proyecto</h6>
         <div class="row g-3 mb-4">
           <div class="col-12">
             <label class="form-label text-white">{{ form.titulo.label }} *</label>
             {{ form.titulo }}
-            {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>{% endif %}
+            {% if form.titulo.errors %}
+            <div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>
+            {% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label text-white">{{ form.carrera.label }}</label>
@@ -114,14 +123,21 @@
             <label class="form-label text-white">{{ form.descripcion.label }}</label>
             {{ form.descripcion }}
           </div>
+          <div class="col-12">
+            <label class="form-label text-white">{{ form.logo.label }}</label>
+            {{ form.logo }}
+          </div>
         </div>
 
         {% if form.non_field_errors %}
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <!-- Integrantes -->
-        <h6 class="text-secondary mb-3">2. Integrantes del Equipo <small class="text-muted">(mín. 1, máx. 6)</small></h6>
+        <!-- Paso 2: Integrantes -->
+        <h6 class="text-secondary mb-3">
+          2. Integrantes del Equipo
+          <small class="text-muted">(mín. 1, máx. 6)</small>
+        </h6>
         {{ formset.management_form }}
 
         {% for f in formset %}
@@ -139,7 +155,9 @@
             <div class="col-md-4">
               <label class="form-label text-white small">Nombre Completo *</label>
               {{ f.nombre_completo }}
-              {% if f.nombre_completo.errors %}<div class="text-danger small">{{ f.nombre_completo.errors.0 }}</div>{% endif %}
+              {% if f.nombre_completo.errors %}
+              <div class="text-danger small">{{ f.nombre_completo.errors.0 }}</div>
+              {% endif %}
             </div>
             <div class="col-md-3">
               <label class="form-label text-white small">Matrícula *</label>
@@ -150,7 +168,7 @@
               {{ f.correo }}
             </div>
             <div class="col-md-1 d-flex align-items-end pb-1">
-              <div class="form-check" title="Marcar como líder del equipo">
+              <div class="form-check" title="Marcar como líder">
                 {{ f.es_lider }}
                 <label class="form-check-label text-warning small" for="{{ f.es_lider.id_for_label }}">
                   <i class="bi bi-star-fill"></i>
@@ -162,7 +180,8 @@
         {% endfor %}
 
         <p class="text-muted small">
-          <i class="bi bi-star-fill text-warning me-1"></i>La estrella indica el <strong>líder del equipo</strong>. Marca exactamente uno.
+          <i class="bi bi-star-fill text-warning me-1"></i>
+          La estrella marca al <strong>líder del equipo</strong>. Selecciona exactamente uno.
         </p>
 
         <div class="d-flex justify-content-end gap-2 mt-3">
@@ -171,10 +190,17 @@
             <i class="bi bi-send me-1"></i> Registrar Proyecto
           </button>
         </div>
-
       </form>
     </div>
   </div>
+
+  {% else %}
+  <div class="alert border-info bg-dark text-info mt-3">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    Ya tienes un proyecto registrado en este evento. Puedes editarlo con el botón
+    <i class="bi bi-pencil text-warning"></i> si aún está en revisión.
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}

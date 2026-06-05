@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConEvent | Registrar Proyecto</title>
+    <link rel="stylesheet" href="style_wizard.css">
+</head>
+<body>
+
+<div class="wizard-container">
+    <div class="wizard-header">
+        <h2>Registro de Proyecto Académico</h2>
+        <p>Completa la información oficial para postular tu proyecto en ConEvent.</p>
+    </div>
+
+    <div class="stepper">
+        <div class="step active" id="step-indicator-1">
+            <div class="step-number">1</div>
+            <div class="step-label">Datos Generales</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step-indicator-2">
+            <div class="step-number">2</div>
+            <div class="step-label">Integrantes del Equipo</div>
+        </div>
+    </div>
+
+    <form id="project-wizard-form" method="POST" enctype="multipart/form-data">
+        <div class="wizard-step active" id="wizard-step-1">
+            <div class="form-section-title">1. Información General del Proyecto</div>
+            
+            <div class="form-group">
+                <label for="titulo_proyecto">Título del Proyecto *</label>
+                <input type="text" id="titulo_proyecto" name="titulo" placeholder="Ej. Sistema Inteligente de Gestión..." required>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="carrera_proyecto">Carrera *</label>
+                    <select id="carrera_proyecto" name="carrera" required>
+                        <option value="" disabled selected>Selecciona tu carrera</option>
+                        {% for carrera in carreras %}
+                            <option value="{{ carrera.pk }}">{{ carrera.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="grupo_proyecto">Grupo *</label>
+                    <input type="text" id="grupo_proyecto" name="grupo" placeholder="Ej. TI-141 o DSM-43" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="logo_empresa">Logotipo de la Empresa / Proyecto</label>
+                <div class="file-drop-area">
+                    <span class="file-btn">Seleccionar Imagen</span>
+                    <span class="file-message">o arrastra y suelta el logo aquí</span>
+                    <input type="file" id="logo_empresa" name="logo" accept="image/*" class="file-input">
+                </div>
+                <div id="preview-container" class="preview-hidden">
+                    <img id="logo-preview" src="#" alt="Vista previa del logotipo">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="descripcion_proyecto">Descripción Detallada *</label>
+                <textarea id="descripcion_proyecto" name="descripcion" rows="5" placeholder="Explica brevemente el objetivo, problemática que resuelve y tecnología utilizada en tu proyecto..." required></textarea>
+            </div>
+
+            <div class="wizard-buttons">
+                <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continuar al Paso 2 &rarr;</button>
+            </div>
+        </div>
+
+        <div class="wizard-step" id="wizard-step-2">
+            <div class="form-section-title">2. Integrantes del Equipo</div>
+            <p class="section-subtitle">Registra a los alumnos que forman parte del proyecto. Debe existir al menos un integrante (tú).</p>
+
+            <div id="contenedor-integrantes">
+                <div class="integrante-row" id="integrante-1">
+                    <div class="row-header">
+                        <span>Líder / Integrante 1</span>
+                    </div>
+                    <div class="integrante-grid">
+                        <div class="form-group">
+                            <label>Matrícula / Correo *</label>
+                            <input type="text" name="matricula[]" placeholder="Ej. 2023123456" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre(s) *</label>
+                            <input type="text" name="nombres[]" placeholder="Ej. Luis Ángel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Apellidos *</label>
+                            <input type="text" name="apellidos[]" placeholder="Ej. García García" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-add-member" id="btn-agregar-integrante">
+                <span>+</span> Agregar otro integrante al equipo
+            </button>
+
+            <div class="wizard-buttons">
+                <button type="button" class="btn btn-secondary" onclick="prevStep(1)">&larr; Regresar al Paso 1</button>
+                <button type="submit" class="btn btn-success">Finalizar y Registrar Proyecto 🚀</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="wizard_logic.js"></script>
+</body>
+</html>

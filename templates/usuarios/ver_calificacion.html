@@ -1,0 +1,180 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+
+  <div class="mb-4">
+    <h4 class="fw-bold text-white mb-0">
+      <i class="fas fa-star text-warning me-2"></i>Mis Calificaciones
+    </h4>
+    <small class="text-muted">Resultados de la evaluación de tu proyecto</small>
+  </div>
+
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+
+  {% if proyecto %}
+
+  <!-- ── INFO DEL PROYECTO ─────────────────────────────────── -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header fw-semibold text-white">
+      <i class="fas fa-project-diagram me-2 text-info"></i>Información del Proyecto
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <h5 class="text-white mb-1">{{ proyecto.titulo }}</h5>
+          <small class="text-muted">
+            {{ proyecto.codigo }}
+            {% if proyecto.carrera %} · {{ proyecto.carrera }}{% endif %}
+            {% if proyecto.grupo %} — Grupo {{ proyecto.grupo }}{% endif %}
+          </small>
+          <p class="text-muted mt-2 mb-0">{{ proyecto.descripcion }}</p>
+        </div>
+        <div class="col-md-4 mt-3 mt-md-0">
+          <dl class="mb-0">
+            <dt class="text-muted small">Categoría</dt>
+            <dd class="text-white">{{ proyecto.get_categoria_display }}</dd>
+            <dt class="text-muted small">Fecha de registro</dt>
+            <dd class="text-white">{{ proyecto.fecha_registro|date:"d/m/Y" }}</dd>
+            <dt class="text-muted small">Evaluador asignado</dt>
+            <dd class="text-white">
+              {{ proyecto.evaluador_asignado.get_full_name|default:"Sin asignar" }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INTEGRANTES ───────────────────────────────────────── -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header fw-semibold text-white">
+      <i class="fas fa-users me-2 text-warning"></i>Integrantes del Equipo
+    </div>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th>Nombre</th>
+            <th>Matrícula</th>
+            <th>Correo</th>
+            <th class="text-center">Rol</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in integrantes %}
+          <tr>
+            <td class="text-white">{{ i.nombre_completo }}</td>
+            <td><code class="text-info">{{ i.matricula }}</code></td>
+            <td class="text-muted">{{ i.correo }}</td>
+            <td class="text-center">
+              {% if i.es_lider %}
+              <span class="badge bg-warning text-dark">
+                <i class="bi bi-star-fill me-1"></i>Líder
+              </span>
+              {% else %}
+              <span class="text-muted small">Integrante</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-3">Sin integrantes registrados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── RESULTADO DE EVALUACIÓN ───────────────────────────── -->
+  {% if evaluaciones %}
+  {% for ev in evaluaciones %}
+  <div class="card mb-4
+    {% if ev.estatus_sugerido == 'aprobado' %}border-success
+    {% elif ev.estatus_sugerido == 'rechazado' %}border-danger
+    {% else %}border-warning{% endif %}
+    bg-dark">
+    <div class="card-header fw-semibold text-white d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-clipboard-check me-2"></i>Evaluación</span>
+      <small class="text-muted">{{ ev.fecha_evaluacion|date:"d/m/Y H:i" }}</small>
+    </div>
+    <div class="card-body">
+      <div class="row align-items-center">
+
+        <!-- Calificación grande -->
+        <div class="col-md-3 text-center border-end border-secondary">
+          <div class="display-4 fw-bold
+            {% if ev.calificacion >= 8 %}text-success
+            {% elif ev.calificacion >= 6 %}text-warning
+            {% else %}text-danger{% endif %}">
+            {{ ev.calificacion }}
+          </div>
+          <small class="text-muted">/ 10.00</small>
+          <div class="mt-2">
+            {% if ev.estatus_sugerido == 'aprobado' %}
+              <span class="badge bg-success fs-6">
+                <i class="fas fa-check me-1"></i>Aprobado
+              </span>
+            {% elif ev.estatus_sugerido == 'rechazado' %}
+              <span class="badge bg-danger fs-6">
+                <i class="fas fa-times me-1"></i>Rechazado
+              </span>
+            {% else %}
+              <span class="badge bg-warning text-dark fs-6">En Revisión</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Comentarios -->
+        <div class="col-md-9 ps-4 mt-3 mt-md-0">
+          <h6 class="text-secondary mb-2">Comentarios del Evaluador</h6>
+          {% if ev.comentarios_evaluador %}
+          <p class="text-white mb-0">{{ ev.comentarios_evaluador }}</p>
+          {% else %}
+          <p class="text-muted fst-italic mb-0">Sin comentarios adicionales.</p>
+          {% endif %}
+          {% if ev.evaluador %}
+          <small class="text-muted mt-2 d-block">
+            — {{ ev.evaluador.get_full_name|default:ev.evaluador.username }}
+          </small>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <!-- Sin evaluación aún -->
+  <div class="card bg-dark border-secondary text-center py-5">
+    <div class="card-body">
+      <i class="fas fa-hourglass-half fs-1 text-warning mb-3 d-block"></i>
+      <h5 class="text-white">Tu proyecto aún no ha sido evaluado</h5>
+      <p class="text-muted mb-0">
+        Tu evaluador revisará el proyecto próximamente. Recibirás los resultados aquí.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Sin proyecto registrado -->
+  <div class="card bg-dark border-secondary text-center py-5">
+    <div class="card-body">
+      <i class="fas fa-folder-open fs-1 text-muted mb-3 d-block"></i>
+      <h5 class="text-white">Aún no tienes un proyecto registrado</h5>
+      <p class="text-muted">Primero registra tu proyecto para poder ver tus calificaciones.</p>
+      <a href="{% url 'mi_proyecto' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Registrar mi Proyecto
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
