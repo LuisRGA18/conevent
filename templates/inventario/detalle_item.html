@@ -1,0 +1,326 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConEvent - Mobiliario Escaneado</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <style>
+        :root {
+            --fondo-oscuro: #0f172a;
+            --gris-oscuro: #1e293b;
+            --gris-medio: #334155;
+            --gris-claro: #94a3b8;
+            --azul-tecnologico: #38bdf8;
+            --azul-profundo: #0284c7;
+            --borde-tarjeta: rgba(56, 189, 248, 0.15);
+        }
+        
+        body {
+            background-color: var(--fondo-oscuro);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header-brand {
+            border-bottom: 1px solid var(--borde-tarjeta);
+            background-color: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .brand-logo {
+            color: var(--azul-tecnologico);
+            font-size: 24px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .card-custom {
+            background-color: var(--gris-oscuro);
+            border: 1px solid var(--borde-tarjeta);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card-custom:hover {
+            border-color: rgba(56, 189, 248, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .badge-status.bueno {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-status.regular {
+            background-color: rgba(234, 179, 8, 0.15);
+            color: #facc15;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .badge-status.malo {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-priority {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-priority.alta {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .badge-priority.media {
+            background-color: #f97316;
+            color: white;
+        }
+
+        .badge-priority.baja {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--gris-medio);
+            color: white;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(15, 23, 42, 0.8);
+            border-color: var(--azul-tecnologico);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+            color: white;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--azul-profundo) 0%, var(--azul-tecnologico) 100%);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+        }
+
+        .incidencia-item {
+            background-color: rgba(15, 23, 42, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-brand py-3 px-4 mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/" class="brand-logo">
+                <i class="fas fa-calendar-alt me-2"></i> ConEvent
+            </a>
+            {% if request.user.is_authenticated %}
+                <span class="small text-muted">
+                    Conectado: <strong class="text-white">{{ request.user.username }}</strong>
+                </span>
+            {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-sign-in-alt me-1"></i> Iniciar Sesión
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container mb-5">
+        
+        {% for msg in messages %}
+        <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show mb-4" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+
+        <div class="row g-4">
+            <!-- Columna Izquierda: Información del Mobiliario -->
+            <div class="col-lg-6">
+                <div class="card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="text-muted small uppercase font-monospace">UUID: {{ item.uuid }}</span>
+                            <h2 class="text-white fw-bold mt-1 mb-0">{{ item.nombre }}</h2>
+                        </div>
+                        <span class="badge-status {{ item.estado }}">{{ item.get_estado_display }}</span>
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        {% if item.descripcion %}{{ item.descripcion }}{% else %}Sin descripción disponible para este ítem.{% endif %}
+                    </p>
+
+                    <div class="border-top border-secondary pt-3 mt-3">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Ubicación asignada</small>
+                                <span class="text-white fw-semibold">
+                                    {% if item.stand_asignado %}
+                                        <i class="fas fa-map-marker-alt text-info me-1"></i> {{ item.stand_asignado }}
+                                    {% else %}
+                                        <i class="fas fa-exclamation-triangle text-warning me-1"></i> Sin stand asignado
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Proyecto en esta ubicación</small>
+                                <span class="text-white fw-semibold">
+                                    {% if item.stand_asignado and item.stand_asignado.asignacion %}
+                                        <i class="fas fa-project-diagram text-info me-1"></i> {{ item.stand_asignado.asignacion.proyecto.titulo }}
+                                    {% else %}
+                                        Ninguno
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listado de incidencias -->
+                <div class="card-custom p-4">
+                    <h4 class="text-white fw-bold mb-3">Reportes e Incidencias</h4>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-warning fw-semibold mb-2">Activas ({{ incidencias_activas.count }})</h6>
+                        {% if incidencias_activas %}
+                            <div class="d-flex flex-column gap-2">
+                                {% for inc in incidencias_activas %}
+                                    <div class="incidencia-item p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="text-white fw-semibold mb-0">{{ inc.titulo }}</h6>
+                                            <span class="badge-priority {{ inc.prioridad }}">{{ inc.get_prioridad_display }}</span>
+                                        </div>
+                                        <p class="text-muted small mb-2">{{ inc.descripcion }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small">Por: {{ inc.reportado_por.username|default:"Anónimo" }}</span>
+                                            <span class="text-muted small font-monospace">{{ inc.fecha_reporte|date:"d/m/Y H:i" }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">No hay incidencias activas reportadas para este ítem. ¡Todo funciona bien!</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <h6 class="text-success fw-semibold mb-2">Resueltas ({{ incidencias_resueltas.count }})</h6>
+                        {% if incidencias_resueltas %}
+                            <div class="d-flex flex-column gap-2" style="opacity: 0.7;">
+                                {% for inc in incidencias_resueltas %}
+                                    <div class="incidencia-item p-3 border-success-subtle">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="text-white fw-semibold mb-0"><del>{{ inc.titulo }}</del></h6>
+                                            <span class="badge bg-success font-monospace" style="font-size: 10px;">RESUELTA</span>
+                                        </div>
+                                        <p class="text-muted small mb-1">{{ inc.descripcion }}</p>
+                                        {% if inc.comentarios_resolucion %}
+                                            <div class="p-2 bg-dark rounded border-start border-3 border-success mb-2 small text-success">
+                                                <strong>Resolución:</strong> {{ inc.comentarios_resolucion }}
+                                            </div>
+                                        {% endif %}
+                                        <span class="text-muted small d-block">Resuelta el: {{ inc.fecha_resolucion|date:"d/m/Y" }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">No hay incidencias resueltas anteriormente.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Formulario para Reportar -->
+            <div class="col-lg-6">
+                <div class="card-custom p-4">
+                    <h4 class="text-white fw-bold mb-2">Reportar una Falla / Necesidad</h4>
+                    <p class="text-muted small mb-4">
+                        ¿Este equipo tiene algún problema? Reporta los detalles para que el comité de ConEvent pueda solucionarlo.
+                    </p>
+
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="titulo" class="form-label text-white-50">¿Qué falla presenta?</label>
+                            <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Ej. Extensión eléctrica dañada, Falta silla" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="prioridad" class="form-label text-white-50">Nivel de Urgencia</label>
+                            <select class="form-select" id="prioridad" name="prioridad">
+                                <option value="baja">Baja (No afecta la presentación)</option>
+                                <option value="media" selected>Media (Incomodidad o falla menor)</option>
+                                <option value="alta">Alta / Crítica (Impide la presentación del proyecto)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="descripcion" class="form-label text-white-50">Describe detalladamente el problema</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" placeholder="Ej. El conector está flojo y no pasa corriente a la computadora." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2">
+                            <i class="fas fa-paper-plane me-1"></i> Enviar Reporte de Incidencia
+                        </button>
+
+                        <div class="text-center mt-3">
+                            {% if not request.user.is_authenticated %}
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i> Tu reporte se enviará de forma anónima.
+                                </small>
+                            {% else %}
+                                <small class="text-success">
+                                    <i class="fas fa-user-check me-1"></i> Registrado a tu nombre como usuario: {{ request.user.username }}
+                                </small>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center text-muted py-4 mt-auto border-top border-secondary" style="background-color: rgba(30, 41, 59, 0.3);">
+        <small>© 2026 ConEvent UTEQ · Sistema de Control Integrado</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

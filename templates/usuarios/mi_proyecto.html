@@ -1,82 +1,96 @@
 {% extends "seguridad/index.html" %}
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
 
+  <!-- Mensajes de Alerta -->
   {% for msg in messages %}
-  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
-    {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert">
+    <i class="bi {% if msg.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+    {{ msg }} 
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   {% endfor %}
 
+  <!-- Encabezado de Sección -->
+  <div class="mb-4">
+    <h4 class="text-white fw-bold mb-0">
+      <i class="fas fa-project-diagram text-info me-2"></i>Gestión de Proyecto
+    </h4>
+    <small class="text-muted">Administra los datos de tu proyecto de investigación e integra a tus compañeros de equipo.</small>
+  </div>
+
   <!-- ── TABLA DE PROYECTOS REGISTRADOS ─────────────────────── -->
   {% if mis_proyectos %}
-  <div class="card bg-dark border-secondary mb-4">
-    <div class="card-header text-white fw-semibold">
-      <i class="bi bi-journal-check me-2"></i>Mis Proyectos Registrados
+  <div class="card bg-dark border-secondary mb-4 shadow-sm">
+    <div class="card-header text-white fw-semibold border-secondary d-flex align-items-center bg-black bg-opacity-20 py-3">
+      <i class="bi bi-journal-check me-2 text-info fs-5"></i>Mis Proyectos Registrados
     </div>
     <div class="table-responsive">
-      <table class="table table-dark table-hover align-middle mb-0">
-        <thead class="table-secondary text-dark">
+      <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+        <thead class="table-group-divider border-secondary text-muted small">
           <tr>
-            <th>Código</th>
-            <th>Título</th>
+            <th class="ps-3">Código</th>
+            <th>Título del Proyecto</th>
             <th>Categoría</th>
             <th class="text-center">Integrantes</th>
             <th class="text-center">Estatus</th>
             <th class="text-center">Calificación</th>
-            <th class="text-center">Acciones</th>
+            <th class="text-center pe-3">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for p in mis_proyectos %}
           <tr>
-            <td><span class="badge bg-secondary">{{ p.codigo }}</span></td>
+            <td class="ps-3"><span class="badge bg-secondary px-2 py-1">{{ p.codigo }}</span></td>
             <td>
-              <span class="fw-semibold">{{ p.titulo }}</span>
-              {# ✅ carrera es FK, se muestra directo (no get_carrera_display) #}
+              <span class="fw-semibold text-white d-block mb-1">{{ p.titulo }}</span>
               {% if p.carrera %}
-              <br><small class="text-muted">{{ p.carrera }} — Grupo {{ p.grupo }}</small>
+              <small class="text-muted">
+                <i class="fas fa-graduation-cap me-1"></i>{{ p.carrera }} · <i class="fas fa-users me-1"></i>Grupo {{ p.grupo }}
+              </small>
               {% endif %}
             </td>
-            <td>{{ p.get_categoria_display }}</td>
+            <td class="text-white-50">{{ p.get_categoria_display }}</td>
             <td class="text-center">
-              {# ✅ related_name correcto: miembros #}
-              <span class="badge bg-info text-dark">{{ p.miembros.count }}</span>
+              <span class="badge bg-info text-dark rounded-circle px-2 py-1 fw-bold">{{ p.miembros.count }}</span>
             </td>
             <td class="text-center">
               {% if p.estatus == 'revision' %}
-                <span class="badge bg-warning text-dark">En Revisión</span>
+                <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-clock me-1"></i>En Revisión</span>
               {% elif p.estatus == 'aprobado' %}
-                <span class="badge bg-success">Aprobado</span>
+                <span class="badge bg-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>Aprobado</span>
               {% else %}
-                <span class="badge bg-danger">Rechazado</span>
+                <span class="badge bg-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>Rechazado</span>
               {% endif %}
             </td>
             <td class="text-center">
               {% if p.calificacion %}
-                <span class="fw-bold text-success">{{ p.calificacion }}</span>
+                <span class="fw-bold text-success fs-5">{{ p.calificacion }}</span>
               {% else %}
                 <span class="text-muted">—</span>
               {% endif %}
             </td>
-            <td class="text-center">
-              <a href="{% url 'ver_calificacion' %}" class="btn btn-sm btn-outline-info me-1" title="Ver detalle">
-                <i class="bi bi-eye"></i>
-              </a>
-              {% if p.estatus == 'revision' %}
-              <a href="{% url 'editar_proyecto' p.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
-                <i class="bi bi-pencil"></i>
-              </a>
-              {% endif %}
+            <td class="text-center pe-3">
+              <div class="btn-group" role="group">
+                <a href="{% url 'ver_calificacion' %}" class="btn btn-sm btn-outline-info" title="Ver detalle de evaluación">
+                  <i class="bi bi-eye"></i> Detalle
+                </a>
+                {% if p.estatus == 'revision' %}
+                <a href="{% url 'editar_proyecto' p.pk %}" class="btn btn-sm btn-outline-warning" title="Editar datos del proyecto">
+                  <i class="bi bi-pencil"></i> Editar
+                </a>
+                {% endif %}
+              </div>
             </td>
           </tr>
+          
           {% if p.comentarios_evaluador %}
           <tr>
-            <td colspan="7" class="bg-dark">
-              <small class="text-info">
-                <i class="bi bi-chat-left-text me-1"></i>
-                <strong>Comentarios del evaluador:</strong> {{ p.comentarios_evaluador }}
-              </small>
+            <td colspan="7" class="bg-black bg-opacity-30 border-secondary ps-3">
+              <div class="p-2 text-info small">
+                <i class="bi bi-chat-left-text-fill me-2"></i>
+                <strong>Retroalimentación del evaluador:</strong> {{ p.comentarios_evaluador }}
+              </div>
             </td>
           </tr>
           {% endif %}
@@ -89,105 +103,126 @@
 
   <!-- ── FORMULARIO NUEVO PROYECTO ──────────────────────────── -->
   {% if not proyecto_existente %}
-  <div class="card bg-dark border-secondary">
-    <div class="card-header text-white fw-semibold">
-      <i class="bi bi-plus-circle me-2"></i>Registrar Nuevo Proyecto
+  <div class="card bg-dark border-secondary shadow-lg">
+    <div class="card-header text-white fw-semibold border-secondary bg-black bg-opacity-20 py-3">
+      <i class="bi bi-plus-circle me-2 text-primary fs-5"></i>Formulario de Registro Oficial
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         <!-- Paso 1: Info del proyecto -->
-        <h6 class="text-secondary mb-3">1. Información del Proyecto</h6>
-        <div class="row g-3 mb-4">
+        <div class="d-flex align-items-center mb-3">
+          <span class="badge bg-primary rounded-circle me-2 d-inline-flex align-items-center justify-content-center" style="width:24px; height:24px;">1</span>
+          <h6 class="text-white-50 m-0 fw-semibold">Información Técnica del Proyecto</h6>
+        </div>
+        
+        <div class="row g-3 mb-4 p-3 rounded bg-black bg-opacity-20 border border-secondary border-opacity-50">
           <div class="col-12">
-            <label class="form-label text-white">{{ form.titulo.label }} *</label>
+            <label class="form-label text-white small fw-medium">{{ form.titulo.label }} *</label>
             {{ form.titulo }}
             {% if form.titulo.errors %}
-            <div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>
+            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ form.titulo.errors.0 }}</div>
             {% endif %}
           </div>
           <div class="col-md-6">
-            <label class="form-label text-white">{{ form.carrera.label }}</label>
+            <label class="form-label text-white small fw-medium">{{ form.carrera.label }}</label>
             {{ form.carrera }}
           </div>
           <div class="col-md-3">
-            <label class="form-label text-white">{{ form.grupo.label }}</label>
+            <label class="form-label text-white small fw-medium">{{ form.grupo.label }}</label>
             {{ form.grupo }}
           </div>
           <div class="col-md-3">
-            <label class="form-label text-white">{{ form.categoria.label }}</label>
+            <label class="form-label text-white small fw-medium">{{ form.categoria.label }}</label>
             {{ form.categoria }}
           </div>
           <div class="col-12">
-            <label class="form-label text-white">{{ form.descripcion.label }}</label>
+            <label class="form-label text-white small fw-medium">{{ form.descripcion.label }}</label>
             {{ form.descripcion }}
           </div>
           <div class="col-12">
-            <label class="form-label text-white">{{ form.logo.label }}</label>
-            {{ form.logo }}
+            <label class="form-label text-white small fw-medium">{{ form.logo.label }}</label>
+            <div class="input-group">
+              <span class="input-group-text bg-secondary text-white border-secondary"><i class="bi bi-image"></i></span>
+              {{ form.logo }}
+            </div>
           </div>
         </div>
 
         {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        <div class="alert alert-danger border-0 mb-4">{{ form.non_field_errors }}</div>
         {% endif %}
 
         <!-- Paso 2: Integrantes -->
-        <h6 class="text-secondary mb-3">
-          2. Integrantes del Equipo
-          <small class="text-muted">(mín. 1, máx. 6)</small>
-        </h6>
+        <div class="d-flex align-items-center mb-3">
+          <span class="badge bg-warning text-dark rounded-circle me-2 d-inline-flex align-items-center justify-content-center" style="width:24px; height:24px;">2</span>
+          <h6 class="text-white-50 m-0 fw-semibold">Integrantes del Equipo <small class="text-muted">(mín. 1, máx. 6)</small></h6>
+        </div>
+        
         {{ formset.management_form }}
 
-        {% for f in formset %}
-        <div class="border border-secondary rounded p-3 mb-3 position-relative">
-          {{ f.id }}
-          {% if formset.can_delete %}
-          <div class="position-absolute top-0 end-0 m-2 form-check">
-            {{ f.DELETE }}
-            <label class="form-check-label text-danger small" for="{{ f.DELETE.id_for_label }}">
-              <i class="bi bi-trash"></i> Quitar
-            </label>
-          </div>
-          {% endif %}
-          <div class="row g-2">
-            <div class="col-md-4">
-              <label class="form-label text-white small">Nombre Completo *</label>
-              {{ f.nombre_completo }}
-              {% if f.nombre_completo.errors %}
-              <div class="text-danger small">{{ f.nombre_completo.errors.0 }}</div>
-              {% endif %}
+        <div id="formset-container">
+          {% for f in formset %}
+          <div class="border border-secondary bg-black bg-opacity-10 rounded p-3 mb-3 position-relative shadow-sm transition-row">
+            {{ f.id }}
+            
+            {% if formset.can_delete %}
+            <div class="position-absolute top-0 end-0 m-2 form-check">
+              {{ f.DELETE }}
+              <label class="form-check-label text-danger small cursor-pointer" for="{{ f.DELETE.id_for_label }}">
+                <i class="bi bi-trash3-fill"></i> Eliminar
+              </label>
             </div>
-            <div class="col-md-3">
-              <label class="form-label text-white small">Matrícula *</label>
-              {{ f.matricula }}
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-white small">Correo *</label>
-              {{ f.correo }}
-            </div>
-            <div class="col-md-1 d-flex align-items-end pb-1">
-              <div class="form-check" title="Marcar como líder">
-                {{ f.es_lider }}
-                <label class="form-check-label text-warning small" for="{{ f.es_lider.id_for_label }}">
-                  <i class="bi bi-star-fill"></i>
-                </label>
+            {% endif %}
+            
+            <div class="row g-3">
+              <div class="col-lg-4 col-md-12">
+                <label class="form-label text-white-50 small">Nombre Completo *</label>
+                {{ f.nombre_completo }}
+                {% if f.nombre_completo.errors %}
+                <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ f.nombre_completo.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-lg-3 col-md-6">
+                <label class="form-label text-white-50 small">Matrícula o Control *</label>
+                {{ f.matricula }}
+                {% if f.matricula.errors %}
+                <div class="text-danger small mt-1">{{ f.matricula.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-lg-4 col-md-6">
+                <label class="form-label text-white-50 small">Correo Institucional *</label>
+                {{ f.correo }}
+                {% if f.correo.errors %}
+                <div class="text-danger small mt-1">{{ f.correo.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-lg-1 col-md-12 d-flex align-items-center justify-content-lg-center pt-3 pt-lg-4">
+                <div class="form-check" title="Marcar como líder del equipo">
+                  {{ f.es_lider }}
+                  <label class="form-check-label text-warning small ms-1 cursor-pointer" for="{{ f.es_lider.id_for_label }}">
+                    <i class="bi bi-star-fill text-warning fs-5"></i>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
 
-        <p class="text-muted small">
-          <i class="bi bi-star-fill text-warning me-1"></i>
-          La estrella marca al <strong>líder del equipo</strong>. Selecciona exactamente uno.
-        </p>
+        <div class="alert bg-black bg-opacity-20 border-secondary text-muted small py-2 px-3 mt-3 mb-4 d-flex align-items-center">
+          <i class="bi bi-star-fill text-warning me-2 fs-5"></i>
+          <span>La estrella marca al <strong>líder del equipo</strong>. Asegúrate de seleccionar exactamente a un integrante.</span>
+        </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-3">
-          <button type="reset" class="btn btn-outline-secondary">Limpiar</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-send me-1"></i> Registrar Proyecto
+        <!-- Botones de Acción -->
+        <div class="d-flex justify-content-end gap-2 border-top border-secondary pt-3">
+          <button type="reset" class="btn btn-outline-secondary px-4">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar Campos
+          </button>
+          <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="bi bi-send-check-fill me-2"></i>Finalizar y Registrar Proyecto 🚀
           </button>
         </div>
       </form>
@@ -195,12 +230,32 @@
   </div>
 
   {% else %}
-  <div class="alert border-info bg-dark text-info mt-3">
-    <i class="bi bi-info-circle-fill me-2"></i>
-    Ya tienes un proyecto registrado en este evento. Puedes editarlo con el botón
-    <i class="bi bi-pencil text-warning"></i> si aún está en revisión.
+  <!-- Banner Informativo Extra si ya tiene proyecto -->
+  <div class="alert border-info bg-dark text-info mt-3 shadow-sm d-flex align-items-center py-3">
+    <i class="bi bi-info-circle-fill me-3 fs-4 text-info"></i>
+    <div>
+      <h6 class="m-0 fw-semibold text-white">Proyecto Activo en ConEvent</h6>
+      <span class="small text-muted">Ya cuentas con un proyecto registrado. Si requieres hacer correcciones técnicas o de integrantes, utiliza el botón <i class="bi bi-pencil text-warning mx-1"></i> de la tabla superior mientras mantenga el estatus en revisión.</span>
+    </div>
   </div>
   {% endif %}
 
 </div>
+
+<!-- Ajustes CSS Rápidos para Inputs nativos de Django de estilo oscuro -->
+<style>
+  .form-control, .form-select {
+    background-color: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+  }
+  .form-control:focus, .form-select:focus {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    border-color: var(--azul-tecnologico, #328cc1) !important;
+    box-shadow: 0 0 0 0.25rem rgba(50, 140, 193, 0.25) !important;
+  }
+  .cursor-pointer { cursor: pointer; }
+  .transition-row { transition: all 0.2s ease-in-out; }
+  .transition-row:hover { border-color: rgba(50, 140, 193, 0.4) !important; }
+</style>
 {% endblock %}

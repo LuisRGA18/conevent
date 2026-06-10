@@ -10,6 +10,10 @@ urlpatterns = [
     # App usuarios
     path('auth/', include('usuarios.urls')),
 
+    # Nuevas Apps (Fase 1)
+    path('espacios/', include('espacios.urls')),
+    path('inventario/', include('inventario.urls')),
+
     # Reset de contraseña
     path('auth/password-reset/',
          auth_views.PasswordResetView.as_view(

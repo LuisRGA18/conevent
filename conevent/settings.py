@@ -17,6 +17,8 @@ ALLOWED_HOSTS = []
 # para que Django registre el modelo de usuario personalizado correctamente
 INSTALLED_APPS = [
     'usuarios',                          # <-- PRIMERO la app con AUTH_USER_MODEL
+    'espacios',                          # <-- App de gestión de espacios / stands
+    'inventario',                        # <-- App de gestión de inventario / QR
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -1,116 +1,322 @@
-<!DOCTYPE html>
-<html lang="es-MX">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConEvent | Registrar Proyecto</title>
-    <link rel="stylesheet" href="style_wizard.css">
-</head>
-<body>
+{% extends "seguridad/index.html" %}
+{% load static %}
 
-<div class="wizard-container">
-    <div class="wizard-header">
-        <h2>Registro de Proyecto Académico</h2>
-        <p>Completa la información oficial para postular tu proyecto en ConEvent.</p>
-    </div>
+{% block content %}
+<style>
+    .wizard-container { max-width: 900px; margin: 20px auto; padding: 30px; background: #15171c; border-radius: 12px; border: 1px solid #2d3139; color: #ffffff; }
+    .wizard-header { text-align: center; margin-bottom: 30px; }
+    .wizard-header h2 { font-size: 28px; color: #00d2ff; margin-bottom: 8px; font-weight: 700; }
+    .wizard-header p { color: #98a2b3; font-size: 15px; }
+    .stepper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; padding: 0 40px; }
+    .step { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; }
+    .step-number { width: 40px; height: 40px; border-radius: 50%; background: #22252d; border: 2px solid #3d4351; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #98a2b3; transition: all 0.3s ease; }
+    .step.active .step-number { background: #00d2ff; border-color: #00d2ff; color: #0b0f19; box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+    .step-label { margin-top: 10px; font-size: 14px; color: #98a2b3; font-weight: 500; }
+    .step.active .step-label { color: #ffffff; font-weight: 600; }
+    .step-line { flex-grow: 1; height: 2px; background: #3d4351; margin: 0 -10px; transform: translateY(-14px); position: relative; z-index: 1; }
+    .wizard-step { display: none; }
+    .wizard-step.active { display: block; animation: fadeIn 0.4s ease; }
+    .form-section-title { font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 20px; padding-bottom: 8px; border-bottom: 1px solid #2d3139; }
+    .section-subtitle { color: #98a2b3; font-size: 14px; margin-top: -15px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #cbd5e1; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; background: #0b0f19; border: 1px solid #3d4351; border-radius: 8px; color: #ffffff; font-size: 15px; transition: all 0.3s ease; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.2); }
+    .form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .integrante-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+    .integrante-row { background: #1c1f26; border: 1px solid #2d3139; border-radius: 8px; padding: 20px; margin-bottom: 15px; position: relative; }
+    .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 600; font-size: 14px; color: #00d2ff; }
+    .btn-remove { background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 14px; font-weight: 500; }
+    .btn-remove:hover { text-decoration: underline; }
+    .btn-add-member { width: 100%; padding: 14px; background: #1c1f26; border: 1px dashed #4b5563; border-radius: 8px; color: #98a2b3; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 25px; transition: all 0.3s; text-align: center; }
+    .btn-add-member:hover { background: #22252d; border-color: #00d2ff; color: #00d2ff; }
+    .wizard-buttons { display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #2d3139; }
+    .btn { padding: 12px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s; }
+    .btn-primary { background: #00d2ff; color: #0b0f19; }
+    .btn-primary:hover { background: #00b4dc; transform: translateY(-1px); }
+    .btn-secondary { background: #334155; color: #ffffff; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-success { background: #10b981; color: #ffffff; }
+    .btn-success:hover { background: #059669; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+    .file-drop-area { position: relative; display: flex; align-items: center; padding: 20px; background: #0b0f19; border: 2px dashed #3d4351; border-radius: 8px; text-align: center; justify-content: center; cursor: pointer; }
+    .file-btn { background: #22252d; border: 1px solid #3d4351; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-right: 12px; }
+    .file-message { font-size: 14px; color: #98a2b3; }
+    .file-input { position: absolute; left: 0; top: 0; height: 100%; width: 100%; opacity: 0; cursor: pointer; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 
-    <div class="stepper">
-        <div class="step active" id="step-indicator-1">
-            <div class="step-number">1</div>
-            <div class="step-label">Datos Generales</div>
-        </div>
-        <div class="step-line"></div>
-        <div class="step" id="step-indicator-2">
-            <div class="step-number">2</div>
-            <div class="step-label">Integrantes del Equipo</div>
-        </div>
-    </div>
-
-    <form id="project-wizard-form" method="POST" enctype="multipart/form-data">
-        <div class="wizard-step active" id="wizard-step-1">
-            <div class="form-section-title">1. Información General del Proyecto</div>
-            
-            <div class="form-group">
-                <label for="titulo_proyecto">Título del Proyecto *</label>
-                <input type="text" id="titulo_proyecto" name="titulo" placeholder="Ej. Sistema Inteligente de Gestión..." required>
+<div class="container-fluid px-4 py-4 text-white">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show bg-dark text-white border-secondary shadow mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+        {% endfor %}
+    {% endif %}
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="carrera_proyecto">Carrera *</label>
-                    <select id="carrera_proyecto" name="carrera" required>
-                        <option value="" disabled selected>Selecciona tu carrera</option>
-                        {% for carrera in carreras %}
-                            <option value="{{ carrera.pk }}">{{ carrera.nombre }}</option>
+    {% if proyecto_registrado %}
+    <div class="mb-4">
+        <h2 class="fw-bold text-white"><i class="fas fa-folder-open me-2 text-info"></i>Tu Proyecto Registrado</h2>
+        <p class="text-white-50">Tu proyecto se encuentra activo en ConEvent. Puedes modificar su información o eliminarlo si lo requieres.</p>
+    </div>
+
+    <div class="card bg-dark border-secondary text-white mb-4 shadow-lg">
+        <div class="card-header border-secondary bg-black bg-opacity-30 py-3">
+            <h5 class="mb-0 text-info fw-semibold"><i class="fas fa-table me-2"></i>Detalles en Plataforma</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="text-muted small border-secondary">
+                        <tr>
+                            <th class="ps-3">Código</th>
+                            <th>Título del Proyecto</th>
+                            <th>Carrera</th>
+                            <th class="text-center">Grupo</th>
+                            <th class="text-center">Categoría</th>
+                            <th class="text-center">Calificación</th>
+                            <th class="text-center pe-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-secondary">
+                        <tr>
+                            <td class="ps-3"><span class="badge bg-secondary px-2 py-1">{{ proyecto_registrado.codigo|default:"EQU-001" }}</span></td>
+                            <td><span class="fw-semibold text-white">{{ proyecto_registrado.titulo }}</span></td>
+                            <td><span class="text-white-50 small">{{ proyecto_registrado.carrera.nombre }}</span></td>
+                            <td class="text-center"><span class="badge bg-dark border border-secondary text-info">{{ proyecto_registrado.grupo }}</span></td>
+                            <td class="text-center"><span class="badge bg-outline-light text-capitalize">{{ proyecto_registrado.categoria }}</span></td>
+                            <td class="text-center fw-bold text-warning">{{ proyecto_registrado.calificacion|default:"—" }}</td>
+                            <td class="text-center pe-3">
+                                <button type="button" class="btn btn-sm btn-outline-warning me-1 px-3 py-1" onclick="document.getElementById('seccion-editar').scrollIntoView({behavior: 'smooth'});">
+                                    <i class="fas fa-edit me-1"></i>Modificar
+                                </button>
+                                <form action="{% url 'eliminar_proyecto' proyecto_registrado.pk %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás absolutamente seguro de eliminar tu proyecto? Se perderán todos los registros y tendrás que darlo de alta de nuevo.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="seccion-editar" class="card bg-dark border-secondary text-white shadow-lg mt-5" style="max-width: 850px; margin: 0 auto;">
+        <div class="card-header border-secondary bg-black bg-opacity-30 py-3">
+            <h5 class="mb-0 text-warning fw-semibold"><i class="fas fa-sliders-h me-2"></i>Editar Datos Generales del Proyecto</h5>
+        </div>
+        <form method="POST" enctype="multipart/form-data" class="p-4">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label text-white-50 small">Título del Proyecto *</label>
+                    <input type="text" name="titulo" value="{{ proyecto_registrado.titulo }}" class="form-control bg-black text-white border-secondary" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-white-50 small">Descripción o Resumen Ejecutivo *</label>
+                    <textarea name="descripcion" rows="4" class="form-control bg-black text-white border-secondary" required>{{ proyecto_registrado.descripcion }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-white-50 small">Carrera Académica *</label>
+                    <select name="carrera" class="form-select bg-black text-white border-secondary" required>
+                        {% for c in carreras %}
+                            <option value="{{ c.id }}" {% if proyecto_registrado.carrera.id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label text-white-50 small">Grupo *</label>
+                    <input type="text" name="grupo" value="{{ proyecto_registrado.grupo }}" class="form-control bg-black text-white border-secondary" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-white-50 small">Categoría *</label>
+                    <select name="categoria" class="form-select bg-black text-white border-secondary">
+                        <option value="software" {% if proyecto_registrado.categoria == 'software' %}selected{% endif %}>Desarrollo de Software</option>
+                        <option value="hardware" {% if proyecto_registrado.categoria == 'hardware' %}selected{% endif %}>Hardware / Electrónica</option>
+                        <option value="redes" {% if proyecto_registrado.categoria == 'redes' %}selected{% endif %}>Redes y Telecomunicaciones</option>
+                        <option value="ia" {% if proyecto_registrado.categoria == 'ia' %}selected{% endif %}>Inteligencia Artificial</option>
+                        <option value="otro" {% if proyecto_registrado.categoria == 'otro' %}selected{% endif %}>Otro</option>
+                    </select>
+                </div>
+                <div class="col-12 text-end mt-4">
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-4">Actualizar Información ✔</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% else %}
+    <div class="wizard-container shadow-lg">
+        <div class="wizard-header">
+            <h2>Registro de Proyecto Académico</h2>
+            <p>Completa la información oficial para postular tu proyecto en ConEvent.</p>
+        </div>
+
+        <div class="stepper">
+            <div class="step active" id="step-indicator-1">
+                <div class="step-number">1</div>
+                <div class="step-label">Datos Generales</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="step-indicator-2">
+                <div class="step-number">2</div>
+                <div class="step-label">Integrantes del Equipo</div>
+            </div>
+        </div>
+
+        <form id="project-wizard-form" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="wizard-step active" id="wizard-step-1">
+                <div class="form-section-title">1. Información General del Proyecto</div>
+                
                 <div class="form-group">
-                    <label for="grupo_proyecto">Grupo *</label>
-                    <input type="text" id="grupo_proyecto" name="grupo" placeholder="Ej. TI-141 o DSM-43" required>
+                    <label for="titulo_proyecto">Título del Proyecto *</label>
+                    <input type="text" id="titulo_proyecto" name="titulo" placeholder="Ej. Sistema Inteligente de Gestión..." required>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="logo_empresa">Logotipo de la Empresa / Proyecto</label>
-                <div class="file-drop-area">
-                    <span class="file-btn">Seleccionar Imagen</span>
-                    <span class="file-message">o arrastra y suelta el logo aquí</span>
-                    <input type="file" id="logo_empresa" name="logo" accept="image/*" class="file-input">
-                </div>
-                <div id="preview-container" class="preview-hidden">
-                    <img id="logo-preview" src="#" alt="Vista previa del logotipo">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="descripcion_proyecto">Descripción Detallada *</label>
-                <textarea id="descripcion_proyecto" name="descripcion" rows="5" placeholder="Explica brevemente el objetivo, problemática que resuelve y tecnología utilizada en tu proyecto..." required></textarea>
-            </div>
-
-            <div class="wizard-buttons">
-                <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continuar al Paso 2 &rarr;</button>
-            </div>
-        </div>
-
-        <div class="wizard-step" id="wizard-step-2">
-            <div class="form-section-title">2. Integrantes del Equipo</div>
-            <p class="section-subtitle">Registra a los alumnos que forman parte del proyecto. Debe existir al menos un integrante (tú).</p>
-
-            <div id="contenedor-integrantes">
-                <div class="integrante-row" id="integrante-1">
-                    <div class="row-header">
-                        <span>Líder / Integrante 1</span>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="carrera_proyecto">Carrera *</label>
+                        <select id="carrera_proyecto" name="carrera" required>
+                            <option value="" selected disabled>Selecciona tu carrera</option>
+                            {% for carrera in carreras %}
+                                <option value="{{ carrera.pk }}">{{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="integrante-grid">
-                        <div class="form-group">
-                            <label>Matrícula / Correo *</label>
-                            <input type="text" name="matricula[]" placeholder="Ej. 2023123456" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Nombre(s) *</label>
-                            <input type="text" name="nombres[]" placeholder="Ej. Luis Ángel" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Apellidos *</label>
-                            <input type="text" name="apellidos[]" placeholder="Ej. García García" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="grupo_proyecto">Grupo *</label>
+                        <input type="text" id="grupo_proyecto" name="grupo" placeholder="Ej. TI-141 o DSM-43" required>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="categoria_proyecto">Categoría de Evaluación *</label>
+                    <select id="categoria_proyecto" name="categoria" required>
+                        <option value="software">Desarrollo de Software</option>
+                        <option value="hardware">Hardware / Electrónica</option>
+                        <option value="redes">Redes y Telecomunicaciones</option>
+                        <option value="ia">Inteligencia Artificial</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="logo_empresa">Logotipo del Proyecto</label>
+                    <div class="file-drop-area">
+                        <span class="file-btn">Seleccionar Imagen</span>
+                        <span class="file-message">o arrastra y suelta el logo aquí</span>
+                        <input type="file" id="logo_empresa" name="logo" accept="image/*" class="file-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion_proyecto">Descripción Detallada *</label>
+                    <textarea id="descripcion_proyecto" name="descripcion" rows="4" placeholder="Explica brevemente el objetivo y tecnologías utilizadas en tu proyecto..." required></textarea>
+                </div>
+
+                <div class="wizard-buttons">
+                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continuar al Paso 2 &rarr;</button>
+                </div>
             </div>
 
-            <button type="button" class="btn-add-member" id="btn-agregar-integrante">
-                <span>+</span> Agregar otro integrante al equipo
-            </button>
+            <div class="wizard-step" id="wizard-step-2">
+                <div class="form-section-title">2. Integrantes del Equipo</div>
+                <p class="section-subtitle">Tú (<strong>{{ request.user.get_full_name|default:request.user.username }}</strong>) ya has sido asignado automáticamente como <strong>Líder del Equipo</strong>. Registra abajo únicamente a tus compañeros de equipo adicionales si existen.</p>
 
-            <div class="wizard-buttons">
-                <button type="button" class="btn btn-secondary" onclick="prevStep(1)">&larr; Regresar al Paso 1</button>
-                <button type="submit" class="btn btn-success">Finalizar y Registrar Proyecto 🚀</button>
+                <div id="contenedor-integrantes">
+                    </div>
+
+                <button type="button" class="btn-add-member" id="btn-agregar-integrante">
+                    <span>+</span> Agregar un compañero al equipo
+                </button>
+
+                <div class="wizard-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(1)">&larr; Regresar al Paso 1</button>
+                    <button type="submit" class="btn btn-success">Finalizar y Registrar Proyecto 🚀</button>
+                </div>
             </div>
-        </div>
-    </form>
+        </form>
+    </div>
+    {% endif %}
 </div>
 
-<script src="wizard_logic.js"></script>
-</body>
-</html>
+<script>
+    let currentStep = 1;
+    let integranteCount = 0;
+
+    function nextStep(step) {
+        // Validación básica obligatoria del Paso 1 antes de avanzar
+        if(step === 2) {
+            const titulo = document.getElementById('titulo_proyecto').value;
+            const carrera = document.getElementById('carrera_proyecto').value;
+            const grupo = document.getElementById('grupo_proyecto').value;
+            const desc = document.getElementById('descripcion_proyecto').value;
+            
+            if(!titulo || !carrera || !grupo || !desc) {
+                alert('Por favor, completa todos los campos obligatorios del Paso 1.');
+                return;
+            }
+        }
+        
+        document.getElementById(`wizard-step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-indicator-${currentStep}`).classList.remove('active');
+        
+        currentStep = step;
+        
+        document.getElementById(`wizard-step-${currentStep}`).classList.add('active');
+        document.getElementById(`step-indicator-${currentStep}`).classList.add('active');
+    }
+
+    function prevStep(step) {
+        document.getElementById(`wizard-step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-indicator-${currentStep}`).classList.remove('active');
+        
+        currentStep = step;
+        
+        document.getElementById(`wizard-step-${currentStep}`).classList.add('active');
+        document.getElementById(`step-indicator-${currentStep}`).classList.add('active');
+    }
+
+    // Agregar filas dinámicas para compañeros de equipo adicionales en el Paso 2
+    document.getElementById('btn-agregar-integrante').addEventListener('click', function() {
+        integranteCount++;
+        const contenedor = document.getElementById('contenedor-integrantes');
+        
+        const row = document.createElement('div');
+        row.className = 'integrante-row';
+        row.id = `integrante-extra-${integranteCount}`;
+        row.innerHTML = `
+            <div class="row-header">
+                <span>Compañero ${integranteCount}</span>
+                <button type="button" class="btn-remove" onclick="eliminarFila(${integranteCount})">Quitar ×</button>
+            </div>
+            <div class="integrante-grid">
+                <div class="form-group">
+                    <label>Matrícula *</label>
+                    <input type="text" name="extra_matricula[]" placeholder="Ej. 2023123456" required>
+                </div>
+                <div class="form-group">
+                    <label>Nombre(s) *</label>
+                    <input type="text" name="extra_nombres[]" placeholder="Ej. Juan Carlos" required>
+                </div>
+                <div class="form-group">
+                    <label>Apellidos *</label>
+                    <input type="text" name="extra_apellidos[]" placeholder="Ej. Pérez Solís" required>
+                </div>
+            </div>
+        `;
+        contenedor.appendChild(row);
+    });
+
+    function eliminarFila(id) {
+        const fila = document.getElementById(`integrante-extra-${id}`);
+        if(fila) fila.remove();
+    }
+</script>
+{% endblock %}

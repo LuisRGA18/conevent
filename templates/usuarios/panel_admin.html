@@ -47,70 +47,108 @@
   <div class="card bg-dark border-secondary">
     <div class="table-responsive">
       <table class="table table-dark table-hover align-middle mb-0">
-        <thead class="table-secondary text-dark">
-          <tr>
-            <th>Código</th>
-            <th>Proyecto</th>
-            <th>Alumno</th>
-            <th class="text-center">Integrantes</th>
-            <th>Evaluador</th>
-            <th class="text-center">Estatus</th>
-            <th class="text-center">Calificación</th>
-            <th class="text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in proyectos %}
-          <tr>
-            <td><span class="badge bg-secondary">{{ p.codigo }}</span></td>
-            <td>
-              <span class="fw-semibold">{{ p.titulo }}</span>
-              {% if p.carrera %}
-              <br><small class="text-muted">{{ p.carrera }} · Grp {{ p.grupo }} · {{ p.get_categoria_display }}</small>
-              {% endif %}
-            </td>
-            <td>{{ p.alumno_creador.get_full_name|default:p.alumno_creador.username }}</td>
-            <td class="text-center">
-              <span class="badge bg-info text-dark">{{ p.num_integrantes }}</span>
-            </td>
-            <td>
-              {% if p.evaluador_asignado %}
-                <span class="text-success">{{ p.evaluador_asignado.get_full_name|default:p.evaluador_asignado.username }}</span>
-              {% else %}
-                <span class="text-muted fst-italic">Sin asignar</span>
-              {% endif %}
-            </td>
-            <td class="text-center">
-              {% if p.estatus == 'revision' %}
-                <span class="badge bg-warning text-dark">En Revisión</span>
-              {% elif p.estatus == 'aprobado' %}
-                <span class="badge bg-success">Aprobado</span>
-              {% else %}
-                <span class="badge bg-danger">Rechazado</span>
-              {% endif %}
-            </td>
-            <td class="text-center">
-              {% if p.calificacion %}
-                <strong class="text-success">{{ p.calificacion }}</strong>
-              {% else %}
-                <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-            <td class="text-center">
-              <a href="{% url 'asignar_evaluador' p.pk %}" class="btn btn-sm btn-outline-primary" title="Asignar evaluador">
-                <i class="bi bi-person-check"></i>
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="8" class="text-center text-muted py-5">
-              <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-              No hay proyectos con esos criterios.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
+        <thead class="table-group-divider border-secondary text-muted small">
+    <tr>
+        <th class="ps-3">Código</th>
+        <th>Proyecto / Equipo</th>
+        <th>Carrera y Grupo</th>
+        <th class="text-center">Stand / Mesa (Fase 1)</th>
+        <th class="text-center">Estatus Oficial</th>
+        <th>Asignar Evaluador</th>
+        <th class="text-center pe-3">Acciones</th>
+    </tr>
+</thead>
+<tbody>
+    {% for proyecto in todos_los_proyectos %}
+    <tr>
+        <td class="ps-3">
+            <span class="badge bg-secondary px-2 py-1">{{ proyecto.codigo }}</span>
+        </td>
+        <td>
+            <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
+            <small class="text-info text-capitalize">
+                <i class="fas fa-tag me-1 small"></i>{{ proyecto.get_categoria_display }}
+            </small>
+        </td>
+        <td>
+            <span class="text-white-50 small d-block">{{ proyecto.carrera.nombre|default:"Sin Carrera" }}</span>
+            <small class="text-muted">Grupo: {{ proyecto.grupo|default:"N/A" }}</small>
+        </td>
+        <td class="text-center">
+            {% if proyecto.asignaciones_stands.all %}
+                {% for asignacion in proyecto.asignaciones_stands.all %}
+                    <span class="badge bg-success text-white mb-1 d-block small mx-auto" style="max-width: 180px;">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ asignacion.stand.numero }} ({{ asignacion.stand.get_zona_display }})
+                    </span>
+                {% endfor %}
+            {% else %}
+                <span class="text-muted small italic"><i class="fas fa-exclamation-triangle text-warning me-1"></i>Sin Asignar</span>
+            {% endif %}
+        </td>
+        <td class="text-center">
+            <form action="{% url 'cambiar_estatus_proyecto' proyecto.pk %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <select name="nuevo_estatus" onchange="this.form.submit()" class="form-select form-select-sm d-inline-block {% if proyecto.estatus == 'aprobado' %}text-success border-success{% elif proyecto.estatus == 'rechazado' %}text-danger border-danger{% else %}text-warning border-warning{% endif %}" style="width: auto; background-color: rgba(0,0,0,0.3);">
+                    {% for val, name in estatus_choices %}
+                    <option value="{{ val }}" {% if proyecto.estatus == val %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </td>
+        <td>
+            <form action="{% url 'asignar_evaluador' proyecto.pk %}" method="post" class="d-flex gap-2">
+                {% csrf_token %}
+                <select name="docente_id" class="form-select form-select-sm text-white-50" style="background-color: rgba(0,0,0,0.3);" required>
+                    <option value="">-- Seleccionar Evaluador --</option>
+                    {% for docente in todos_los_docentes %}
+                    <option value="{{ docente.pk }}" {% if proyecto.evaluador_asignado.pk == docente.pk %}selected{% endif %}>
+                        {{ docente.get_full_name|default:docente.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i></button>
+            </form>
+        </td>
+        <td class="text-center pe-3">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ proyecto.pk }}">
+                <i class="fas fa-comments"></i> Notas
+            </button>
+        </td>
+    </tr>
+    <tr class="collapse" id="detalle-{{ proyecto.pk }}">
+        <td colspan="7" class="bg-black bg-opacity-30 p-3 border-secondary">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="text-warning small mb-1 fw-bold"><i class="fas fa-users me-1"></i>Integrantes Registrados:</h6>
+                    <ul class="list-unstyled mb-0 small text-white-50">
+                        {% for miembro in proyecto.miembros.all %}
+                        <li>• {{ miembro.nombre_completo }} ({{ miembro.matricula }}) {% if miembro.es_lider %}<span class="text-warning font-monospace">[Líder]</span>{% endif %}</li>
+                        {% empty %}
+                        <li class="text-muted italic">No hay integrantes registrados en este equipo.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <form action="{% url 'guardar_comentario_admin' proyecto.pk %}" method="post">
+                        {% csrf_token %}
+                        <label class="form-label text-muted small fw-medium">Comentarios / Observaciones del Administrador:</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="comentarios" value="{{ proyecto.comentarios_evaluador|default:'' }}" class="form-control bg-dark text-white border-secondary" placeholder="Escribe observaciones visibles para el equipo...">
+                            <button class="btn btn-warning" type="submit"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="7" class="text-center py-4 text-muted small">
+            <i class="fas fa-folder-open me-2"></i>No hay proyectos con esos criterios en la plataforma.
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
       </table>
     </div>
   </div>

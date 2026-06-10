@@ -2,20 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Count
 from django.db import transaction
 import unicodedata
 import random
-from .models import Proyecto, Usuario, Integrante, Evaluacion
-from .forms import ProyectoForm
-from django.db import transaction
-
+# 🟢 Aseguramos todos los modelos importados correctamente
+from .models import Proyecto, Usuario, Integrante, Evaluacion, Carrera 
 from .forms import (
     ProyectoForm, RegistroForm,
     IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
 )
-
-
 
 # ──────────────────────────────────────────────────────────────
 # AUTENTICACIÓN
@@ -32,13 +28,11 @@ def login_view(request):
 
         if user is not None:
             if user.is_active:
-                # Dispositivo ya recordado → login directo
                 if request.COOKIES.get(f'dispositivo_seguro_{user.id}') == 'true':
                     login(request, user)
                     request.session['mostrar_bienvenida'] = True
                     return redirect('index')
 
-                # Dispositivo nuevo → generar código 2FA
                 codigo_generado = str(random.randint(100000, 999999))
                 request.session['pre_auth_user_id']    = user.id
                 request.session['codigo_2fa_correcto'] = codigo_generado
@@ -124,7 +118,7 @@ def registro_view(request):
             user.last_name  = apellidos
             user.email      = form.cleaned_data['email']
             user.set_password(form.cleaned_data['password'])
-            user.is_active  = False   # Cuenta desactivada hasta verificar correo
+            user.is_active  = False   
             user.save()
 
             codigo_activacion = str(random.randint(100000, 999999))
@@ -171,7 +165,7 @@ def activar_cuenta_view(request):
 
 
 # ──────────────────────────────────────────────────────────────
-# DASHBOARD
+# DASHBOARD PRINCIPAL (CON CONTADORES REALES)
 # ──────────────────────────────────────────────────────────────
 
 @login_required(login_url='login')
@@ -180,88 +174,149 @@ def index_view(request):
         nombre = request.user.first_name or request.user.username
         messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
 
-    return render(request, 'seguridad/index.html')
+    stats = {}
+    rol = request.user.rol
+
+    if request.user.es_admin or rol == 'ADMIN':
+        stats = {
+            'total_usuarios': Usuario.objects.count(),
+            'total_proyectos': Proyecto.objects.count(),
+            'evaluados': Proyecto.objects.filter(calificacion__isnull=False).count(),
+            'sin_evaluador': Proyecto.objects.filter(evaluador_asignado__isnull=True).count()
+        }
+
+    return render(request, 'seguridad/index.html', {'stats': stats})
 
 
 # ──────────────────────────────────────────────────────────────
-# VISTAS ALUMNO
+# VISTAS ALUMNO (REGISTRO, PANEL Y CONTROL TOTAL)
 # ──────────────────────────────────────────────────────────────
 
 @login_required(login_url='login')
-def mi_proyecto_view(request):
-    """El alumno registra su proyecto e integrantes."""
-    # 🟢 Corregido: se cambia 'alumno_creador' por 'creado_por'
-    mis_proyectos = Proyecto.objects.filter(
-        creado_por=request.user
-    ).prefetch_related('miembros')
+def panel_alumno_view(request):
+    """🟢 Home/Dashboard del Alumno: Resuelve el bug enviando ambas variables exactas."""
+    if request.user.rol != 'ALUMNO':
+        return redirect('index')
+        
+    proyecto = Proyecto.objects.filter(creado_por=request.user).prefetch_related('miembros').first()
+    
+    return render(request, 'usuarios/registrar_proyecto.html', {
+        'proyecto': proyecto,
+        'proyecto_registrado': proyecto,
+        'miembros': proyecto.miembros.all() if proyecto else [],
+    })
 
-    proyecto_existente = mis_proyectos.exists()
+
+@login_required(login_url='login')
+def registrar_proyecto_view(request):
+    """🟢 Vista unificada de Gestión y Formulario: Remueve restricciones de estatus e inyecta al líder."""
+    if request.user.rol != 'ALUMNO':
+        messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
+        return redirect('index')
+
+    # Contingencia carreras vacías
+    if not Carrera.objects.exists():
+        Carrera.objects.create(nombre="Ingeniería en Redes Inteligentes y Ciberseguridad", clave="IRIC")
+        Carrera.objects.create(nombre="Desarrollo de Software Multiplataforma", clave="DSM")
+        Carrera.objects.create(nombre="Entornos Virtuales y Negocios Digitales", clave="EVND")
+
+    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
 
     if request.method == 'POST':
-        form    = ProyectoForm(request.POST, request.FILES)
-        formset = IntegranteFormSet(request.POST)
-
-        if form.is_valid() and formset.is_valid():
-            lideres = sum(
-                1 for f in formset
-                if f.cleaned_data.get('es_lider') and not f.cleaned_data.get('DELETE')
-            )
-            if lideres != 1:
-                messages.error(request, "Debe haber exactamente un integrante marcado como líder.")
-            else:
-                proyecto = form.save(commit=False)
-                # 🟢 Corregido: se asigna al campo real del modelo
-                proyecto.creado_por = request.user
+        # Caso A: El proyecto ya existe y se está editando desde el Modal
+        if proyecto:
+            titulo = request.POST.get('titulo')
+            descripcion = request.POST.get('descripcion')
+            carrera_id = request.POST.get('carrera')
+            grupo = request.POST.get('grupo', '').strip().upper()
+            categoria = request.POST.get('categoria')
+            
+            if titulo and descripcion and carrera_id and grupo:
+                proyecto.titulo = titulo
+                proyecto.descripcion = descripcion
+                proyecto.carrera = Carrera.objects.get(id=carrera_id)
+                proyecto.grupo = grupo
+                proyecto.categoria = categoria
+                if request.FILES.get('logo'):
+                    proyecto.logo = request.FILES.get('logo')
                 proyecto.save()
-                formset.instance = proyecto
-                formset.save()
-                messages.success(request, "¡Proyecto registrado con éxito en ConEvent!")
-                return redirect('mi_proyecto')
-    else:
-        form    = ProyectoForm()
-        formset = IntegranteFormSet()
+                messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
+                return redirect('registrar_proyecto')
+        
+        # Caso B: El proyecto no existe y se está creando desde cero
+        else:
+            titulo = request.POST.get('titulo')
+            descripcion = request.POST.get('descripcion')
+            carrera_id = request.POST.get('carrera')
+            grupo = request.POST.get('grupo', '').strip().upper()
+            categoria = request.POST.get('categoria')
+            logo = request.FILES.get('logo')
 
-    return render(request, 'usuarios/mi_proyecto.html', {
-        'form':    form,
-        'formset': formset,
-        'mis_proyectos': mis_proyectos,
-        'proyecto_existente': proyecto_existente,
+            if titulo and descripcion and carrera_id and grupo:
+                carrera_obj = Carrera.objects.get(id=carrera_id)
+                
+                with transaction.atomic():
+                    # 1. Creamos el proyecto limpio
+                    nuevo_proyecto = Proyecto.objects.create(
+                        titulo=titulo,
+                        descripcion=descripcion,
+                        carrera=carrera_obj,
+                        grupo=grupo,
+                        categoria=categoria,
+                        logo=logo,
+                        creado_por=request.user
+                    )
+
+                    # 2. AUTOMÁTICO: Insertamos al creador logueado como Integrante Líder
+                    Integrante.objects.create(
+                        proyecto=nuevo_proyecto,
+                        nombre_completo=f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
+                        matricula=request.user.matricula_empleado or "2023XXXXXX",
+                        correo=request.user.email,
+                        es_lider=True
+                    )
+
+                messages.success(request, "¡Proyecto registrado con éxito! Te hemos asignado automáticamente como líder de equipo.")
+                return redirect('registrar_proyecto')
+            else:
+                messages.error(request, "Por favor, completa todos los campos obligatorios.")
+
+    carreras = Carrera.objects.all()
+    return render(request, 'usuarios/registrar_proyecto.html', {
+        'proyecto_registrado': proyecto,
+        'proyecto': proyecto,
+        'carreras': carreras,
     })
 
 
 @login_required(login_url='login')
-def editar_proyecto_view(request, pk):
-    """El alumno edita su proyecto si aún está en revisión."""
-    # 🟢 Corregido: se cambia 'alumno_creador' por 'creado_por'
+def eliminar_proyecto_view(request, pk):
+    """🟢 Endpoint POST definitivo para eliminar el proyecto y limpiar el flujo."""
+    if request.user.rol != 'ALUMNO':
+        return redirect('index')
+        
     proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
-
-    if proyecto.estatus != 'revision':
-        messages.warning(request, "No puedes editar un proyecto que ya fue evaluado.")
-        return redirect('mi_proyecto')
-
+    
     if request.method == 'POST':
-        form    = ProyectoForm(request.POST, request.FILES, instance=proyecto)
-        formset = IntegranteFormSet(request.POST, instance=proyecto)
+        proyecto.delete()
+        messages.success(request, "Tu proyecto fue eliminado correctamente del sistema ConEvent.")
+        return redirect('registrar_proyecto')
+        
+    return redirect('registrar_proyecto')
 
-        if form.is_valid() and formset.is_valid():
-            lideres = sum(
-                1 for f in formset
-                if f.cleaned_data.get('es_lider') and not f.cleaned_data.get('DELETE')
-            )
-            if lideres != 1:
-                messages.error(request, "Debe haber exactamente un integrante marcado como líder.")
-            else:
-                form.save()
-                formset.save()
-                messages.success(request, "Proyecto actualizado correctamente.")
-                return redirect('mi_proyecto')
-    else:
-        form    = ProyectoForm(instance=proyecto)
-        formset = IntegranteFormSet(instance=proyecto)
 
-    return render(request, 'usuarios/editar_proyecto.html', {
-        'form': form, 'formset': formset, 'proyecto': proyecto,
-    })
+@login_required(login_url='login')
+def ver_calificacion_view(request):
+    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+    evaluacion = None
+    if proyecto:
+        evaluacion = Evaluacion.objects.filter(proyecto=proyecto).first()
+
+    context = {
+        'proyecto': proyecto,
+        'evaluacion': evaluacion,
+    }
+    return render(request, 'seguridad/mis_calificaciones.html', context)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -270,12 +325,10 @@ def editar_proyecto_view(request, pk):
 
 @login_required(login_url='login')
 def proyectos_asignados_view(request):
-    """El evaluador ve los proyectos que le fueron asignados."""
     if not request.user.es_evaluador:
         messages.error(request, "No tienes permiso para acceder a esta sección.")
         return redirect('index')
 
-    # ✅ related_name correcto: miembros
     proyectos = Proyecto.objects.filter(
         evaluador_asignado=request.user
     ).prefetch_related('miembros').select_related('carrera')
@@ -285,14 +338,11 @@ def proyectos_asignados_view(request):
 
 @login_required(login_url='login')
 def evaluar_proyecto_view(request, pk):
-    """El evaluador crea/actualiza una Evaluacion para un proyecto."""
     if not request.user.es_evaluador:
         messages.error(request, "No tienes permiso.")
         return redirect('index')
 
     proyecto = get_object_or_404(Proyecto, pk=pk, evaluador_asignado=request.user)
-
-    # Busca evaluación existente o prepara una nueva
     evaluacion_existente = Evaluacion.objects.filter(
         proyecto=proyecto, evaluador=request.user
     ).first()
@@ -305,7 +355,6 @@ def evaluar_proyecto_view(request, pk):
             evaluacion.evaluador = request.user
             evaluacion.save()
 
-            # Actualizar estatus y calificación en el Proyecto para consulta rápida
             proyecto.estatus      = evaluacion.estatus_sugerido
             proyecto.calificacion = evaluacion.calificacion
             proyecto.save(update_fields=['estatus', 'calificacion'])
@@ -318,7 +367,7 @@ def evaluar_proyecto_view(request, pk):
     return render(request, 'usuarios/evaluar_proyecto.html', {
         'form':       form,
         'proyecto':   proyecto,
-        'integrantes': proyecto.miembros.all(),  # ✅ related_name correcto
+        'integrantes': proyecto.miembros.all(),  
         'ya_evaluado': evaluacion_existente is not None,
     })
 
@@ -329,29 +378,31 @@ def evaluar_proyecto_view(request, pk):
 
 @login_required(login_url='login')
 def panel_admin_view(request):
-    """Panel del administrador con filtros."""
-    if not request.user.es_admin:
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
         messages.error(request, "No tienes permiso.")
         return redirect('index')
 
-    # ✅ Campos correctos: alumno_creador, miembros
     qs = Proyecto.objects.select_related(
-        'alumno_creador', 'evaluador_asignado', 'carrera'
-    ).prefetch_related('miembros')
+        'creado_por', 'evaluador_asignado', 'carrera'
+    ).prefetch_related('miembros', 'asignaciones_stands__stand')
 
     q       = request.GET.get('q', '').strip()
-    estatus = request.GET.get('estatus', '')
+    estatus = request.GET.get('estatus', '').strip()
 
     if q:
         qs = qs.filter(
-            Q(titulo__icontains=q) | Q(alumno_creador__username__icontains=q)
+            Q(titulo__icontains=q) | 
+            Q(creado_por__username__icontains=q) |
+            Q(creado_por__first_name__icontains=q)
         )
     if estatus:
         qs = qs.filter(estatus=estatus)
 
+    qs = qs.order_by('-id')
+
     return render(request, 'usuarios/panel_admin.html', {
-        'proyectos':       qs,
-        'evaluadores':     Usuario.objects.filter(rol='EVALUADOR'),
+        'todos_los_proyectos': qs,
+        'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
         'q':               q,
         'estatus_filtro':  estatus,
         'estatus_choices': Proyecto.ESTATUS_CHOICES,
@@ -359,109 +410,51 @@ def panel_admin_view(request):
 
 
 @login_required(login_url='login')
+def cambiar_estatus_proyecto_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+        
+    proyecto = get_object_or_404(Proyecto, pk=pk)
+    if request.method == 'POST':
+        nuevo_estatus = request.POST.get('nuevo_estatus')
+        if nuevo_estatus in ['revision', 'aprobado', 'rechazado']:
+            proyecto.estatus = nuevo_estatus
+            proyecto.save(update_fields=['estatus'])
+            messages.success(request, f'Estatus del proyecto "{proyecto.titulo}" cambiado a: {proyecto.get_estatus_display()}.')
+    return redirect('panel_admin')
+
+
+@login_required(login_url='login')
 def asignar_evaluador_view(request, pk):
-    """El admin asigna un evaluador."""
-    if not request.user.es_admin:
-        messages.error(request, "No tienes permiso.")
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
         return redirect('index')
 
     proyecto = get_object_or_404(Proyecto, pk=pk)
 
     if request.method == 'POST':
-        form = AsignacionEvaluadorForm(request.POST, instance=proyecto)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'Evaluador asignado a "{proyecto.titulo}".')
-            return redirect('panel_admin')
-    else:
-        form = AsignacionEvaluadorForm(instance=proyecto)
+        docente_id = request.POST.get('docente_id')
+        if docente_id:
+            docente = get_object_or_404(Usuario, pk=docente_id, rol='EVALUADOR')
+            proyecto.evaluador_asignado = docente
+            proyecto.save(update_fields=['evaluador_asignado'])
+            messages.success(request, f'Docente {docente.get_full_name() or docente.username} asignado correctamente a "{proyecto.titulo}".')
+        else:
+            proyecto.evaluador_asignado = None
+            proyecto.save(update_fields=['evaluador_asignado'])
+            messages.info(request, f'Se retiró el evaluador de "{proyecto.titulo}".')
+            
+    return redirect('panel_admin')
 
-    return render(request, 'usuarios/asignar_evaluador.html', {
-        'form': form, 'proyecto': proyecto,
-    })
-
-
-# ──────────────────────────────────────────────────────────────
-# REGISTRO DE PROYECTO (wizard)
-# ──────────────────────────────────────────────────────────────
 
 @login_required(login_url='login')
-def registrar_proyecto_view(request):
-    """Vista del wizard de registro de proyecto (paso a paso en JS)."""
-    
-    # 🟢 VALIDACIÓN EXTRA: Si el alumno ya creó un proyecto, lo mandamos a su panel
-    if Proyecto.objects.filter(creado_por=request.user).exists():
-        messages.warning(request, "Ya cuentas con un proyecto registrado en el sistema.")
-        return redirect('mi_proyecto')
+def guardar_comentario_admin_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
 
+    proyecto = get_object_or_404(Proyecto, pk=pk)
     if request.method == 'POST':
-        titulo      = request.POST.get('titulo', '').strip()
-        carrera_id  = request.POST.get('carrera')
-        categoria   = request.POST.get('categoria', 'software')
-        grupo       = request.POST.get('grupo', '').strip()
-        descripcion = request.POST.get('descripcion', '').strip()
-        logo        = request.FILES.get('logo')
-
-        matriculas      = request.POST.getlist('matricula[]')
-        nombres_lista   = request.POST.getlist('nombres[]')
-        apellidos_lista = request.POST.getlist('apellidos[]')
-
-        if not matriculas or not matriculas[0].strip():
-            messages.error(request, "Debe registrar al menos un integrante (Tú como líder).")
-            return render(request, 'usuarios/registrar_proyecto.html', {'carreras': Carrera.objects.all()})
-
-        try:
-            carrera_obj = Carrera.objects.filter(pk=carrera_id).first()
-
-            with transaction.atomic():
-                # 1. Creamos el proyecto asociándolo al alumno actual
-                proyecto = Proyecto.objects.create(
-                    titulo=titulo,
-                    carrera=carrera_obj,
-                    categoria=categoria,
-                    grupo=grupo,
-                    descripcion=descripcion,
-                    logo=logo,
-                    estatus='revision',
-                    creado_por=request.user,
-                )
-                
-                # 2. Iteramos los integrantes agregados en el paso 2 del Wizard
-                for i, matricula in enumerate(matriculas):
-                    if matricula.strip() and nombres_lista[i].strip():
-                        nombre_completo = f"{nombres_lista[i].strip()} {apellidos_lista[i].strip()}".strip()
-                        
-                        # El primer integrante (índice 0) se guarda automáticamente como líder
-                        Integrante.objects.create(
-                            proyecto=proyecto,
-                            matricula=matricula.strip(),
-                            nombre_completo=nombre_completo,
-                            correo=f"{matricula.strip()}@alumnos.uteq.edu.mx",
-                            es_lider=(i == 0),
-                        )
-
-            messages.success(request, "¡Proyecto registrado con éxito!")
-            return redirect('mi_proyecto')
-
-        except Exception as e:
-            messages.error(request, f"Error al guardar el proyecto: {str(e)}")
-
-    return render(request, 'usuarios/registrar_proyecto.html', {
-        'carreras': Carrera.objects.all()
-    })
-
-@login_required
-def ver_calificacion_view(request):
-    # 1. Intentamos buscar si el alumno logueado tiene un proyecto registrado
-    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
-    
-    evaluacion = None
-    if proyecto:
-        # 2. Si tiene proyecto, buscamos si ya cuenta con una evaluación realizada
-        evaluacion = Evaluacion.objects.filter(proyecto=proyecto).first()
-
-    context = {
-        'proyecto': proyecto,
-        'evaluacion': evaluacion,
-    }
-    return render(request, 'seguridad/mis_calificaciones.html', context)
+        comentarios = request.POST.get('comentarios', '').strip()
+        proyecto.comentarios_evaluador = comentarios
+        proyecto.save(update_fields=['comentarios_evaluador'])
+        messages.success(request, f'Comentarios actualizados para "{proyecto.titulo}".')
+    return redirect('panel_admin')
