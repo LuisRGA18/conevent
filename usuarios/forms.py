@@ -77,8 +77,8 @@ IntegranteFormSet = inlineformset_factory(
 class EvaluacionForm(forms.ModelForm):
     """Formulario para que el evaluador califique y comente un proyecto."""
     class Meta:
-        model = Evaluacion  # 🟢 CAMBIAR AQUÍ (Antes decía Proyecto)
-        fields = ['calificacion', 'comentarios_evaluador']
+        model = Evaluacion
+        fields = ['calificacion', 'comentarios_evaluador', 'estatus_sugerido']
         widgets = {
             'calificacion': forms.NumberInput(attrs={
                 'class': INPUT_CLASS,
@@ -92,12 +92,12 @@ class EvaluacionForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Observaciones sobre el proyecto...'
             }),
-            'estatus': forms.Select(attrs={'class': SELECT_CLASS}),
+            'estatus_sugerido': forms.Select(attrs={'class': SELECT_CLASS}),
         }
         labels = {
             'calificacion': 'Calificación (0 - 10)',
             'comentarios_evaluador': 'Comentarios',
-            'estatus': 'Estatus del Proyecto',
+            'estatus_sugerido': 'Estatus del Proyecto',
         }
 
 

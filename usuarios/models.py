@@ -148,6 +148,32 @@ class Integrante(models.Model):
 # ──────────────────────────────────────────────────────────────
 # EVALUACION  (modelo separado — una por proyecto por evaluador)
 # ──────────────────────────────────────────────────────────────
+# CRITERIO DE EVALUACIÓN
+# ──────────────────────────────────────────────────────────────
+
+class CriterioEvaluacion(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del criterio")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción o rúbrica de desempeño")
+    peso = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        help_text="Peso en decimal (ej. 0.35 para 35%). La suma de los criterios activos debe ser 1.00",
+        verbose_name="Peso del criterio"
+    )
+    activo = models.BooleanField(default=True, verbose_name="Criterio activo")
+
+    class Meta:
+        verbose_name = "Criterio de Evaluación"
+        verbose_name_plural = "Criterios de Evaluación"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.nombre} ({int(self.peso * 100)}%)"
+
+
+# ──────────────────────────────────────────────────────────────
+# EVALUACION  (modelo separado — una por proyecto por evaluador)
+# ──────────────────────────────────────────────────────────────
 
 class Evaluacion(models.Model):
     proyecto     = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='evaluaciones')
@@ -155,7 +181,7 @@ class Evaluacion(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='evaluaciones_realizadas'
     )
-    calificacion          = models.DecimalField(max_digits=4, decimal_places=2)
+    calificacion          = models.DecimalField(max_digits=4, decimal_places=2, default=0.0)
     comentarios_evaluador = models.TextField(blank=True, null=True)
     estatus_sugerido      = models.CharField(
         max_length=20, choices=Proyecto.ESTATUS_CHOICES, default='aprobado',
@@ -176,3 +202,67 @@ class Evaluacion(models.Model):
 
     def __str__(self):
         return f"Evaluación {self.proyecto.codigo} — {self.calificacion}"
+
+    def recalcular_calificacion(self):
+        """
+        Recalcula la calificación final a partir de los detalles cargados de la rúbrica.
+        """
+        detalles = self.detalles.all()
+        if detalles.exists():
+            calif_final = 0
+            for det in detalles:
+                calif_final += float(det.calificacion_numerica) * float(det.criterio.peso)
+            self.calificacion = calif_final
+            
+            # Guardamos únicamente la calificación para evitar ciclos infinitos de save()
+            Evaluacion.objects.filter(pk=self.pk).update(calificacion=self.calificacion)
+            
+            # También actualizamos la calificación final del proyecto
+            self.proyecto.calificacion = self.calificacion
+            self.proyecto.save(update_fields=['calificacion'])
+
+
+# ──────────────────────────────────────────────────────────────
+# DETALLE DE EVALUACIÓN
+# ──────────────────────────────────────────────────────────────
+
+class DetalleEvaluacion(models.Model):
+    CUALITATIVA_CHOICES = [
+        ('AU', 'Autónomo (10)'),
+        ('DE', 'Destacado (9)'),
+        ('SA', 'Satisfactorio (8)'),
+        ('NA', 'No Aprobatorio (0)'),
+    ]
+
+    VALORES_NUMERICOS = {
+        'AU': 10.0,
+        'DE': 9.0,
+        'SA': 8.0,
+        'NA': 0.0,
+    }
+
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name='detalles')
+    criterio = models.ForeignKey(CriterioEvaluacion, on_delete=models.CASCADE, related_name='detalles_evaluacion')
+    calificacion_cualitativa = models.CharField(max_length=2, choices=CUALITATIVA_CHOICES, verbose_name="Evaluación cualitativa")
+    calificacion_numerica = models.DecimalField(max_digits=4, decimal_places=2, editable=False, verbose_name="Calificación numérica")
+
+    class Meta:
+        verbose_name = "Detalle de Evaluación"
+        verbose_name_plural = "Detalles de Evaluación"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['evaluacion', 'criterio'],
+                name='unique_criterio_por_evaluacion'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.criterio.nombre}: {self.get_calificacion_cualitativa_display()}"
+
+    def save(self, *args, **kwargs):
+        # Auto-calcular el valor numérico basado en el valor cualitativo antes de guardar
+        self.calificacion_numerica = self.VALORES_NUMERICOS.get(self.calificacion_cualitativa, 0.0)
+        super().save(*args, **kwargs)
+        
+        # Recalcular la nota general de la evaluación principal
+        self.evaluacion.recalcular_calificacion()

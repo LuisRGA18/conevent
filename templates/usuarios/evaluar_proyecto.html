@@ -1,9 +1,9 @@
 {% extends "seguridad/index.html" %}
 {% block content %}
-<div class="container py-4" style="max-width: 700px;">
+<div class="container py-4" style="max-width: 800px;">
 
   {% for msg in messages %}
-  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show">
     {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   {% endfor %}
@@ -25,7 +25,7 @@
       <p class="text-muted mb-3">{{ proyecto.descripcion }}</p>
 
       <h6 class="text-secondary">Integrantes</h6>
-      <ul class="list-unstyled">
+      <ul class="list-unstyled mb-0">
         {% for i in integrantes %}
         <li class="text-white mb-1">
           {% if i.es_lider %}<i class="bi bi-star-fill text-warning me-1"></i>{% else %}<i class="bi bi-person me-1 text-muted"></i>{% endif %}
@@ -42,21 +42,70 @@
       <i class="bi bi-clipboard-check me-2"></i>Capturar Evaluación
     </div>
     <div class="card-body">
-      <form method="post" novalidate>
+      <form method="post" novalidate id="evaluation-form">
         {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label text-white">{{ form.calificacion.label }}</label>
-          {{ form.calificacion }}
-          {% if form.calificacion.errors %}<div class="text-danger small mt-1">{{ form.calificacion.errors.0 }}</div>{% endif %}
-        </div>
+
+        {% if criterios %}
+          <!-- RÚBRICA DINÁMICA -->
+          <div class="mb-4">
+            <h6 class="text-info fw-bold mb-3 border-bottom border-secondary pb-2"><i class="bi bi-list-stars me-1"></i> Rúbrica de Evaluación (Escala UTEQ)</h6>
+            
+            {% for c in criterios %}
+            <div class="p-3 mb-3 rounded bg-black bg-opacity-30 border border-secondary criterion-row" data-criterio-id="{{ c.id }}" data-peso="{{ c.peso }}">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="text-white fw-bold mb-1">{{ c.nombre }}</h6>
+                  <p class="text-muted small mb-0">{{ c.descripcion }}</p>
+                </div>
+                <span class="badge bg-dark border border-secondary text-info font-monospace">Peso: {{ c.peso }}</span>
+              </div>
+
+              <!-- Botones de opción cualitativos -->
+              <div class="d-flex gap-2 flex-wrap mt-2">
+                <input type="radio" class="btn-check rating-radio" name="criterio_{{ c.id }}" id="crit_{{ c.id }}_AU" value="AU" autocomplete="off" required
+                  {% for key, val in detalles_existentes.items %}{% if key == c.id and val == 'AU' %}checked{% endif %}{% endfor %}>
+                <label class="btn btn-outline-success btn-sm" for="crit_{{ c.id }}_AU">AU (Autónomo - 10)</label>
+
+                <input type="radio" class="btn-check rating-radio" name="criterio_{{ c.id }}" id="crit_{{ c.id }}_DE" value="DE" autocomplete="off"
+                  {% for key, val in detalles_existentes.items %}{% if key == c.id and val == 'DE' %}checked{% endif %}{% endfor %}>
+                <label class="btn btn-outline-info btn-sm" for="crit_{{ c.id }}_DE">DE (Destacado - 9)</label>
+
+                <input type="radio" class="btn-check rating-radio" name="criterio_{{ c.id }}" id="crit_{{ c.id }}_SA" value="SA" autocomplete="off"
+                  {% for key, val in detalles_existentes.items %}{% if key == c.id and val == 'SA' %}checked{% endif %}{% endfor %}>
+                <label class="btn btn-outline-warning btn-sm" for="crit_{{ c.id }}_SA">SA (Satisfactorio - 8)</label>
+
+                <input type="radio" class="btn-check rating-radio" name="criterio_{{ c.id }}" id="crit_{{ c.id }}_NA" value="NA" autocomplete="off"
+                  {% for key, val in detalles_existentes.items %}{% if key == c.id and val == 'NA' %}checked{% endif %}{% endfor %}>
+                <label class="btn btn-outline-danger btn-sm" for="crit_{{ c.id }}_NA">NA (No Aprobatorio - 0)</label>
+              </div>
+            </div>
+            {% endfor %}
+
+            <!-- Calificación en vivo estimada -->
+            <div class="alert bg-black bg-opacity-40 border-info p-3 mb-4 d-flex justify-content-between align-items-center">
+              <span class="text-white-50"><i class="bi bi-calculator me-1 text-info"></i> Promedio Estimado (Rúbrica):</span>
+              <span class="h5 mb-0 fw-bold text-info" id="live-average">0.00</span>
+            </div>
+          </div>
+        {% else %}
+          <!-- CALIFICACIÓN DIRECTA (Fallback) -->
+          <div class="mb-3">
+            <label class="form-label text-white">{{ form.calificacion.label }}</label>
+            {{ form.calificacion }}
+            {% if form.calificacion.errors %}<div class="text-danger small mt-1">{{ form.calificacion.errors.0 }}</div>{% endif %}
+          </div>
+        {% endif %}
+
         <div class="mb-3">
           <label class="form-label text-white">{{ form.comentarios_evaluador.label }}</label>
           {{ form.comentarios_evaluador }}
         </div>
+        
         <div class="mb-4">
-          <label class="form-label text-white">{{ form.estatus.label }}</label>
-          {{ form.estatus }}
+          <label class="form-label text-white">{{ form.estatus_sugerido.label }}</label>
+          {{ form.estatus_sugerido }}
         </div>
+
         <div class="d-flex justify-content-end gap-2">
           <a href="{% url 'proyectos_asignados' %}" class="btn btn-outline-secondary">Cancelar</a>
           <button type="submit" class="btn btn-success">
@@ -68,4 +117,46 @@
   </div>
 
 </div>
+
+<!-- JS para calcular el promedio ponderado en tiempo real -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const radioButtons = document.querySelectorAll('.rating-radio');
+    const averageDisplay = document.getElementById('live-average');
+    const criterionRows = document.querySelectorAll('.criterion-row');
+
+    const valoresNumericos = {
+      'AU': 10.0,
+      'DE': 9.0,
+      'SA': 8.0,
+      'NA': 0.0
+    };
+
+    function calcularPromedio() {
+      let sumaPonderada = 0;
+      let totalPeso = 0;
+
+      criterionRows.forEach(row => {
+        const peso = parseFloat(row.getAttribute('data-peso').replace(',', '.')) || 0;
+        const selectedRadio = row.querySelector('.rating-radio:checked');
+        if (selectedRadio) {
+          const valorCualitativo = selectedRadio.value;
+          const valorNumerico = valoresNumericos[valorCualitativo] || 0;
+          sumaPonderada += valorNumerico * peso;
+        }
+        totalPeso += peso;
+      });
+
+      if (totalPeso > 0) {
+        averageDisplay.textContent = sumaPonderada.toFixed(2);
+      }
+    }
+
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', calcularPromedio);
+    });
+
+    calcularPromedio();
+  });
+</script>
 {% endblock %}
