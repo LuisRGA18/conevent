@@ -100,3 +100,143 @@ class RubricaTestCase(TestCase):
         # 5. Validar calificaciones calculadas finales
         self.assertEqual(float(evaluacion.calificacion), 9.00)
         self.assertEqual(float(self.proyecto.calificacion), 9.00)
+
+
+from rest_framework.test import APITestCase
+from rest_framework import status
+
+class APIRESTTestCase(APITestCase):
+    def setUp(self):
+        # Crear usuarios de prueba
+        self.docente = User.objects.create_user(
+            username='prof.test',
+            email='prof@uteq.edu.mx',
+            password='Password123!',
+            rol='EVALUADOR'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.test',
+            email='alumno@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        
+        # Crear carrera
+        self.carrera = Carrera.objects.create(
+            nombre='Ingeniería en Redes Inteligentes y Ciberseguridad',
+            clave='IRIC'
+        )
+        
+        # Crear criterios de rúbrica
+        self.criterio_inv = CriterioEvaluacion.objects.create(
+            nombre='Innovación',
+            descripcion='Nivel de novedad de la propuesta.',
+            peso=1.00,
+            activo=True
+        )
+
+    def test_jwt_auth_workflow(self):
+        # 1. Intentar login y obtener tokens
+        login_url = '/api/token/'
+        data = {
+            'username': 'alumno.test',
+            'password': 'Password123!'
+        }
+        response = self.client.post(login_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+        access_token = response.data['access']
+
+        # 2. Consultar perfil /me sin token (debe fallar)
+        me_url = '/api/auth/me/'
+        response_fail = self.client.get(me_url)
+        self.assertEqual(response_fail.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 3. Consultar perfil /me con token (debe ser exitoso)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        response_success = self.client.get(me_url)
+        self.assertEqual(response_success.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_success.data['username'], 'alumno.test')
+        self.assertEqual(response_success.data['rol'], 'ALUMNO')
+
+    def test_proyecto_crud_via_api(self):
+        # Obtener token de alumno
+        login_response = self.client.post('/api/token/', {
+            'username': 'alumno.test',
+            'password': 'Password123!'
+        })
+        token = login_response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        # Crear proyecto
+        proyecto_data = {
+            'titulo': 'Nuevo Proyecto API',
+            'descripcion': 'Probando la creación de proyectos mediante DRF.',
+            'carrera_id': self.carrera.id,
+            'grupo': 'IRIC08',
+            'categoria': 'software',
+            'miembros': [
+                {
+                    'nombre_completo': 'Juan Perez',
+                    'matricula': '20230001',
+                    'correo': 'juan@uteq.edu.mx',
+                    'es_lider': True
+                },
+                {
+                    'nombre_completo': 'Ana Gomez',
+                    'matricula': '20230002',
+                    'correo': 'ana@uteq.edu.mx',
+                    'es_lider': False
+                }
+            ]
+        }
+        
+        response = self.client.post('/api/proyectos/', proyecto_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['titulo'], 'Nuevo Proyecto API')
+        self.assertEqual(len(response.data['miembros']), 2)
+        
+        # Validar que los miembros se guardaron en la base de datos
+        proyecto_id = response.data['id']
+        proyecto_obj = Proyecto.objects.get(pk=proyecto_id)
+        self.assertEqual(proyecto_obj.miembros.count(), 2)
+
+    def test_evaluacion_via_api(self):
+        # Crear un proyecto asignado al docente
+        proyecto = Proyecto.objects.create(
+            titulo='Proyecto Docente',
+            descripcion='Proyecto asignado para evaluación.',
+            carrera=self.carrera,
+            creado_por=self.alumno,
+            evaluador_asignado=self.docente
+        )
+
+        # Autenticar docente
+        login_response = self.client.post('/api/token/', {
+            'username': 'prof.test',
+            'password': 'Password123!'
+        })
+        token = login_response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
+        # Enviar evaluación
+        eval_data = {
+            'proyecto': proyecto.id,
+            'comentarios_evaluador': 'Muy buen proyecto experimental.',
+            'estatus_sugerido': 'aprobado',
+            'detalles': [
+                {
+                    'criterio_id': self.criterio_inv.id,
+                    'calificacion_cualitativa': 'AU'
+                }
+            ]
+        }
+
+        response = self.client.post('/api/evaluaciones/', eval_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(float(response.data['calificacion']), 10.00)
+
+        # Verificar en base de datos
+        evaluacion_obj = Evaluacion.objects.get(proyecto=proyecto, evaluador=self.docente)
+        self.assertEqual(evaluacion_obj.calificacion, 10.00)

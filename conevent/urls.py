@@ -7,6 +7,9 @@ from usuarios import views as usuarios_views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    # REST API
+    path('api/', include('usuarios.api_urls')),
+
     # App usuarios
     path('auth/', include('usuarios.urls')),
 
