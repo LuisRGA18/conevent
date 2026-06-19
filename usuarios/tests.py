@@ -240,3 +240,55 @@ class APIRESTTestCase(APITestCase):
         # Verificar en base de datos
         evaluacion_obj = Evaluacion.objects.get(proyecto=proyecto, evaluador=self.docente)
         self.assertEqual(evaluacion_obj.calificacion, 10.00)
+
+
+class ProyectoEditTestCase(TestCase):
+    def setUp(self):
+        self.alumno = User.objects.create_user(
+            username='alumno.edit',
+            email='alumno.edit@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.otro_alumno = User.objects.create_user(
+            username='alumno.otro',
+            email='alumno.otro@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(
+            nombre='DSM',
+            clave='DSM'
+        )
+        # Proyecto en revisión del primer alumno
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto Original',
+            descripcion='Descripción corta.',
+            carrera=self.carrera,
+            grupo='DSM4B',
+            categoria='software',
+            creado_por=self.alumno,
+            estatus='revision'
+        )
+        
+    def test_editar_proyecto_permissions_and_status(self):
+        # 1. Intentar editar sin login (debe redirigir)
+        url = f"/auth/mi-proyecto/{self.proyecto.pk}/editar/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        
+        # 2. Intentar editar con otro alumno (debe dar 404 / no encontrado ya que get_object_or_404 filtra por creado_por=request.user)
+        self.client.login(username='alumno.otro', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+        
+        # 3. Intentar editar con el alumno creador cuando está en 'revision' (debe dar 200)
+        self.client.login(username='alumno.edit', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        # 4. Cambiar estatus a 'aprobado' e intentar editar (debe dar 302 redirect con error)
+        self.proyecto.estatus = 'aprobado'
+        self.proyecto.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)

@@ -29,3 +29,12 @@ def lista_stands_json(request):
             'proyecto': proyecto_info
         })
     return JsonResponse({'stands': datos}, safe=False)
+
+from django.contrib.auth.decorators import login_required
+
+@login_required(login_url='/auth/login/')
+def mapa_auditorio_view(request):
+    """
+    Vista que renderiza el mapa interactivo del auditorio.
+    """
+    return render(request, 'espacios/mapa_auditorio.html')

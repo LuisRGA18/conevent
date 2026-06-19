@@ -16,6 +16,8 @@ class Stand(models.Model):
     capacidad_proyectos = models.PositiveIntegerField(default=1, verbose_name="Capacidad de proyectos simultáneos")
     descripcion = models.TextField(blank=True, verbose_name="Detalles adicionales del espacio")
     esta_activo = models.BooleanField(default=True, verbose_name="Disponible para asignación")
+    pos_fila = models.PositiveIntegerField(default=0, verbose_name="Posición Fila (Coordenada Y)")
+    pos_col = models.PositiveIntegerField(default=0, verbose_name="Posición Columna (Coordenada X)")
 
     class Meta:
         verbose_name = "Stand / Espacio"

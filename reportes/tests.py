@@ -138,3 +138,32 @@ class ReportesAPITestCase(APITestCase):
         self.assertIn('Proyecto Invernadero Automatizado', content)
         self.assertIn('ITI', content)
         self.assertIn('9.5', content)
+
+    def test_visual_dashboard_view_permissions(self):
+        # 1. Alumno intenta entrar (debe redirigir/fallar)
+        self.client.login(username='alumno.test', password='Password123!')
+        response = self.client.get('/reportes/dashboard/')
+        self.assertEqual(response.status_code, 302) # Redirige con error
+        
+        # 2. Docente intenta entrar (debe ser exitoso)
+        self.client.login(username='prof.test', password='Password123!')
+        response = self.client.get('/reportes/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        
+        # 3. Admin intenta entrar (debe ser exitoso)
+        self.client.login(username='admin.test', password='Password123!')
+        response = self.client.get('/reportes/dashboard/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_exportar_calificaciones_pdf_permissions(self):
+        # 1. Docente intenta entrar (debe redirigir/fallar)
+        self.client.login(username='prof.test', password='Password123!')
+        response = self.client.get('/reportes/exportar/calificaciones/pdf/')
+        self.assertEqual(response.status_code, 302) # Redirige por no tener permisos de admin
+        
+        # 2. Admin intenta entrar (debe generar el PDF)
+        self.client.login(username='admin.test', password='Password123!')
+        response = self.client.get('/reportes/exportar/calificaciones/pdf/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertTrue(response['Content-Disposition'].startswith('attachment; filename='))

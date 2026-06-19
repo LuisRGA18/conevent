@@ -1,0 +1,297 @@
+{% extends "seguridad/index.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4 text-white">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="text-white fw-bold mb-0">
+        <i class="fas fa-chart-line text-info me-2"></i>Dashboard de Métricas
+      </h4>
+      <small class="text-muted">Estadísticas consolidadas del evento, estado de evaluación y reportes físicos.</small>
+    </div>
+    <div>
+      {% if request.user.rol == 'ADMIN' %}
+        <a href="{% url 'reportes:exportar_calificaciones_pdf' %}" class="btn btn-outline-danger btn-sm px-3 py-2 shadow-sm">
+          <i class="fas fa-file-pdf me-1"></i> Exportar PDF de Calificaciones
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div class="text-center py-5" id="dashboard-loader">
+    <div class="spinner-border text-info mb-3" role="status"></div>
+    <p class="text-muted">Cargando métricas y estadísticas del evento...</p>
+  </div>
+
+  <!-- Dashboard Content (hidden until loaded) -->
+  <div class="d-none" id="dashboard-content">
+    
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card-kpi">
+          <div class="kpi-icon text-info"><i class="fas fa-project-diagram"></i></div>
+          <div class="kpi-value" id="kpi-proyectos">0</div>
+          <div class="kpi-label">Proyectos Registrados</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-kpi">
+          <div class="kpi-icon text-success"><i class="fas fa-star"></i></div>
+          <div class="kpi-value" id="kpi-evaluados">0</div>
+          <div class="kpi-label">Proyectos Evaluados</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-kpi">
+          <div class="kpi-icon text-warning"><i class="fas fa-map-marker-alt"></i></div>
+          <div class="kpi-value" id="kpi-stands">0</div>
+          <div class="kpi-label">Stands / Mesas Ocupadas</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-kpi">
+          <div class="kpi-icon text-danger"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="kpi-value" id="kpi-incidencias">0</div>
+          <div class="kpi-label">Incidencias de Inventario Activas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row g-4 mb-4">
+      <!-- Donut Chart: Projects by Category -->
+      <div class="col-md-6 col-lg-5">
+        <div class="card bg-dark border-secondary h-100 shadow-sm">
+          <div class="card-header border-secondary bg-black bg-opacity-20 text-white fw-semibold py-3">
+            <i class="fas fa-chart-pie me-2 text-info"></i>Proyectos por Categoría
+          </div>
+          <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
+            <div style="width: 250px; height: 250px;">
+              <canvas id="chart-categorias"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horizontal Bar Chart: Projects by Career -->
+      <div class="col-md-6 col-lg-7">
+        <div class="card bg-dark border-secondary h-100 shadow-sm">
+          <div class="card-header border-secondary bg-black bg-opacity-20 text-white fw-semibold py-3">
+            <i class="fas fa-graduation-cap me-2 text-info"></i>Proyectos por Especialidad / Carrera
+          </div>
+          <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
+            <canvas id="chart-carreras" style="max-height: 250px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row g-4">
+      <!-- Bar Chart: Average Score by Career -->
+      <div class="col-md-6 col-lg-6">
+        <div class="card bg-dark border-secondary h-100 shadow-sm">
+          <div class="card-header border-secondary bg-black bg-opacity-20 text-white fw-semibold py-3">
+            <i class="fas fa-chart-bar me-2 text-info"></i>Calificación Promedio por Carrera
+          </div>
+          <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
+            <canvas id="chart-calificaciones" style="max-height: 250px;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table: Top 5 Projects -->
+      <div class="col-md-6 col-lg-6">
+        <div class="card bg-dark border-secondary h-100 shadow-sm">
+          <div class="card-header border-secondary bg-black bg-opacity-20 text-white fw-semibold py-3">
+            <i class="fas fa-award me-2 text-info"></i>Top 5 Proyectos Destacados (Calificaciones)
+          </div>
+          <div class="card-body p-0 d-flex flex-column justify-content-center" style="min-height: 300px;">
+            <div class="table-responsive w-100 h-100">
+              <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+                <thead class="table-group-divider border-secondary text-muted small">
+                  <tr>
+                    <th scope="col" class="ps-3">Código</th>
+                    <th scope="col">Título del Proyecto</th>
+                    <th scope="col" class="text-center">Carrera</th>
+                    <th scope="col" class="text-center pe-3">Nota</th>
+                  </tr>
+                </thead>
+                <tbody class="border-secondary small" id="top-projects-tbody">
+                  <!-- Inserted dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Load Chart.js from Cloudflare CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const loader = document.getElementById("dashboard-loader");
+  const content = document.getElementById("dashboard-content");
+
+  // KPI Elements
+  const kpiProyectos = document.getElementById("kpi-proyectos");
+  const kpiEvaluados = document.getElementById("kpi-evaluados");
+  const kpiStands = document.getElementById("kpi-stands");
+  const kpiIncidencias = document.getElementById("kpi-incidencias");
+  const topProjectsTbody = document.getElementById("top-projects-tbody");
+
+  // Global Chart config defaults for dark theme
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.borderColor = 'rgba(148, 163, 184, 0.1)';
+
+  fetch("/api/reportes/dashboard/")
+    .then(response => {
+      if (!response.ok) throw new Error("Error fetching dashboard data");
+      return response.json();
+    })
+    .then(data => {
+      loader.classList.add("d-none");
+      content.classList.remove("d-none");
+
+      // 1. Update KPIs
+      kpiProyectos.innerText = data.metricas_generales.total_proyectos;
+      kpiEvaluados.innerText = data.metricas_generales.proyectos_evaluados;
+      kpiStands.innerText = data.metricas_generales.stands_ocupados;
+      kpiIncidencias.innerText = data.metricas_generales.total_incidencias;
+
+      // 2. Render Donut Chart: Categories
+      const catLabels = data.proyectos_por_categoria.map(c => c.categoria_nombre);
+      const catCounts = data.proyectos_por_categoria.map(c => c.cantidad);
+      new Chart(document.getElementById("chart-categorias"), {
+        type: 'doughnut',
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catCounts,
+            backgroundColor: ['#3b82f6', '#10b981', '#f97316', '#f59e0b', '#8b5cf6', '#6b7280'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { size: 11 }
+              }
+            }
+          }
+        }
+      });
+
+      // 3. Render Horizontal Bar Chart: Careers
+      const carrLabels = data.proyectos_por_carrera.map(c => c.carrera_clave);
+      const carrCounts = data.proyectos_por_carrera.map(c => c.cantidad);
+      new Chart(document.getElementById("chart-carreras"), {
+        type: 'bar',
+        data: {
+          labels: carrLabels,
+          datasets: [{
+            label: 'Proyectos',
+            data: carrCounts,
+            backgroundColor: 'rgba(56, 189, 248, 0.75)',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(148, 163, 184, 0.08)' },
+              ticks: { precision: 0 }
+            },
+            y: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+      // 4. Render Bar Chart: Averages
+      const avgLabels = data.calif_promedio_por_carrera.map(c => c.carrera_clave);
+      const avgScores = data.calif_promedio_por_carrera.map(c => c.promedio);
+      new Chart(document.getElementById("chart-calificaciones"), {
+        type: 'bar',
+        data: {
+          labels: avgLabels,
+          datasets: [{
+            label: 'Calificación Promedio',
+            data: avgScores,
+            backgroundColor: 'rgba(139, 92, 246, 0.75)',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              grid: { color: 'rgba(148, 163, 184, 0.08)' },
+              min: 0,
+              max: 10
+            }
+          }
+        }
+      });
+
+      // 5. Populate Top 5 Projects Table
+      if (data.top_proyectos.length === 0) {
+        topProjectsTbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center text-secondary py-4">No hay proyectos calificados aún.</td>
+          </tr>`;
+      } else {
+        let tbodyHTML = '';
+        data.top_proyectos.forEach((p, idx) => {
+          tbodyHTML += `
+            <tr class="border-secondary">
+              <td class="ps-3 font-monospace text-info">EQU-${String(p.id).padStart(3, '0')}</td>
+              <td class="text-white fw-semibold">${p.titulo}</td>
+              <td class="text-center"><span class="badge bg-secondary">${p.carrera_clave}</span></td>
+              <td class="text-center pe-3 fw-bold text-success">${p.calificacion.toFixed(2)}</td>
+            </tr>`;
+        });
+        topProjectsTbody.innerHTML = tbodyHTML;
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      loader.innerHTML = `
+        <div class="text-center text-danger py-5">
+          <i class="fas fa-exclamation-circle fs-1 mb-2"></i>
+          <h6>Error al cargar el dashboard</h6>
+          <p class="text-muted small">Verifica tu conexión e inténtalo de nuevo.</p>
+        </div>`;
+    });
+});
+</script>
+{% endblock %}

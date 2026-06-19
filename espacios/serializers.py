@@ -6,7 +6,7 @@ class StandSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Stand
-        fields = ['id', 'numero', 'zona', 'zona_display', 'capacidad_proyectos', 'descripcion', 'esta_activo']
+        fields = ['id', 'numero', 'zona', 'zona_display', 'capacidad_proyectos', 'descripcion', 'esta_activo', 'pos_fila', 'pos_col']
 
 class AsignacionStandSerializer(serializers.ModelSerializer):
     stand_info = StandSerializer(source='stand', read_only=True)

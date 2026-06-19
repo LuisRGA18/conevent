@@ -11,7 +11,7 @@ urlpatterns = [
 
     # ── Alumno ─────────────────────────────────
     path('mi-proyecto/', views.panel_alumno_view, name='mi_proyecto'),
-    #path('mi-proyecto/<int:pk>/editar/', views.editar_proyecto_view, name='editar_proyecto'),
+    path('mi-proyecto/<int:pk>/editar/', views.editar_proyecto_view, name='editar_proyecto'),
     path('proyecto/registrar/', views.registrar_proyecto_view, name='registrar_proyecto'),
     path('proyecto/eliminar/<int:pk>/', views.eliminar_proyecto_view, name='eliminar_proyecto'),
     # 🟢 NUEVA RUTA AGREGADA:

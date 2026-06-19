@@ -51,3 +51,67 @@ class EspaciosTestCase(TestCase):
         self.assertEqual(asignacion.stand, stand)
         self.assertEqual(asignacion.proyecto, self.proyecto)
         self.assertEqual(stand.asignacion.proyecto, self.proyecto)
+
+
+from rest_framework.test import APITestCase
+from rest_framework import status
+from django.core.management import call_command
+
+class EspaciosAPITestCase(APITestCase):
+    def setUp(self):
+        # Crear usuarios
+        self.admin = User.objects.create_user(
+            username='admin.test', password='Password123!', rol='ADMIN'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.test', password='Password123!', rol='ALUMNO'
+        )
+        # Carreras
+        self.carrera_dsm = Carrera.objects.create(nombre='DSM', clave='DSM')
+        self.carrera_iric = Carrera.objects.create(nombre='IRIC', clave='IRIC')
+        
+        # Proyectos aprobados
+        self.p1 = Proyecto.objects.create(
+            titulo='DSM Proy 1', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado'
+        )
+        self.p2 = Proyecto.objects.create(
+            titulo='DSM Proy 2', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado'
+        )
+        self.p3 = Proyecto.objects.create(
+            titulo='IRIC Proy 1', carrera=self.carrera_iric, creado_por=self.alumno, estatus='aprobado'
+        )
+        
+        # Stands con coordenadas en orden geométrico
+        self.s1 = Stand.objects.create(numero='M-01', pos_fila=1, pos_col=1, zona='auditorio')
+        self.s2 = Stand.objects.create(numero='M-02', pos_fila=1, pos_col=2, zona='auditorio')
+        self.s3 = Stand.objects.create(numero='M-03', pos_fila=1, pos_col=3, zona='auditorio')
+
+    def test_mapa_api_endpoint(self):
+        # Autenticar
+        self.client.force_authenticate(user=self.alumno)
+        response = self.client.get('/api/stands/mapa/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        self.assertEqual(response.data[0]['numero'], 'M-01')
+        self.assertIsNone(response.data[0]['proyecto_asignado'])
+
+    def test_asignar_stands_command(self):
+        # Verificar que no existen asignaciones previas
+        self.assertEqual(AsignacionStand.objects.count(), 0)
+        
+        # Ejecutar el comando
+        call_command('asignar_stands')
+        
+        # Verificar asignaciones creadas
+        self.assertEqual(AsignacionStand.objects.count(), 3)
+        
+        # Obtener asignaciones individuales
+        asig_p1 = AsignacionStand.objects.get(proyecto=self.p1)
+        asig_p2 = AsignacionStand.objects.get(proyecto=self.p2)
+        asig_p3 = AsignacionStand.objects.get(proyecto=self.p3)
+        
+        # Validar la contigüidad física: p1 y p2 de DSM se asignan en M-01 y M-02
+        # p3 de IRIC se asigna en M-03
+        self.assertIn(asig_p1.stand.numero, ['M-01', 'M-02'])
+        self.assertIn(asig_p2.stand.numero, ['M-01', 'M-02'])
+        self.assertEqual(asig_p3.stand.numero, 'M-03')

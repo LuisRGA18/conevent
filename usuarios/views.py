@@ -532,3 +532,40 @@ def guardar_comentario_admin_view(request, pk):
         proyecto.save(update_fields=['comentarios_evaluador'])
         messages.success(request, f'Comentarios actualizados para "{proyecto.titulo}".')
     return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def editar_proyecto_view(request, pk):
+    """
+    Permite al alumno creador editar su proyecto si y solo si
+    este se encuentra con estatus 'revision'.
+    """
+    if request.user.rol != 'ALUMNO':
+        messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
+        return redirect('index')
+
+    proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
+
+    if proyecto.estatus != 'revision':
+        messages.error(request, "No puedes editar tu proyecto si ya ha sido evaluado o tiene un estatus aprobado/rechazado.")
+        return redirect('mi_proyecto')
+
+    if request.method == 'POST':
+        form = ProyectoForm(request.POST, request.FILES, instance=proyecto)
+        formset = IntegranteFormSet(request.POST, instance=proyecto)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
+            return redirect('mi_proyecto')
+        else:
+            messages.error(request, "Por favor, corrige los errores en el formulario.")
+    else:
+        form = ProyectoForm(instance=proyecto)
+        formset = IntegranteFormSet(instance=proyecto)
+
+    return render(request, 'usuarios/editar_proyecto.html', {
+        'proyecto': proyecto,
+        'form': form,
+        'formset': formset,
+    })

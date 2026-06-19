@@ -16,6 +16,7 @@ urlpatterns = [
     # Nuevas Apps (Fase 1)
     path('espacios/', include('espacios.urls')),
     path('inventario/', include('inventario.urls')),
+    path('reportes/', include('reportes.urls')),
 
     # Reset de contraseña
     path('auth/password-reset/',

@@ -1,0 +1,366 @@
+{% extends "seguridad/index.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4 text-white">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="text-white fw-bold mb-0">
+        <i class="fas fa-map-marked-alt text-info me-2"></i>Mapa Interactivo del Auditorio
+      </h4>
+      <small class="text-muted">Visualiza la ubicación física de los stands de proyectos y su distribución divisional.</small>
+    </div>
+    <div class="text-end">
+      <span class="badge bg-secondary p-2 shadow-sm" id="stats-summary">Cargando stands...</span>
+    </div>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="card bg-dark border-secondary mb-4 shadow-sm">
+    <div class="card-body py-3">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="text-muted small me-2"><i class="fas fa-filter me-1"></i> Filtrar Carrera:</span>
+        <button class="btn btn-outline-light btn-sm active filter-btn" data-filter="all">Todos</button>
+        <button class="btn btn-outline-primary btn-sm filter-btn" data-filter="ISC">ISC / ITI</button>
+        <button class="btn btn-outline-success btn-sm filter-btn" data-filter="DSM">DSM</button>
+        <button class="btn btn-outline-warning btn-sm filter-btn" data-filter="IRIC" style="color:#f97316; border-color:#f97316;">IRIC</button>
+        <button class="btn btn-outline-amber btn-sm filter-btn" data-filter="IGE" style="color:#f59e0b; border-color:#f59e0b;">IGE</button>
+        <button class="btn btn-outline-purple btn-sm filter-btn" data-filter="IIA" style="color:#8b5cf6; border-color:#8b5cf6;">IIA</button>
+        <button class="btn btn-outline-secondary btn-sm filter-btn" data-filter="unassigned">Sin Asignar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Map and Details Section -->
+  <div class="row g-4">
+    <!-- SVG Map Container -->
+    <div class="col-lg-8">
+      <div class="card bg-dark border-secondary shadow-sm" style="min-height: 480px;">
+        <div class="card-header text-white fw-semibold border-secondary bg-black bg-opacity-20 d-flex justify-content-between align-items-center py-3">
+          <span><i class="bi bi-grid-3x3-gap me-2 text-info"></i>Plano del Evento</span>
+          <div class="d-flex gap-3 small text-muted">
+            <span><i class="fas fa-square me-1" style="color: #4b5563;"></i> Libre</span>
+            <span><i class="fas fa-square me-1 text-info"></i> Ocupado</span>
+          </div>
+        </div>
+        <div class="card-body d-flex justify-content-center align-items-center bg-black bg-opacity-40 p-4" style="overflow: auto;">
+          <!-- SVG element created dynamically by JavaScript -->
+          <div id="svg-map-wrapper" class="w-100 d-flex justify-content-center">
+            <div class="text-center py-5" id="loader">
+              <div class="spinner-border text-info mb-3" role="status"></div>
+              <p class="text-muted">Cargando distribución del mapa...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stand Detail Drawer (Side Panel) -->
+    <div class="col-lg-4">
+      <div class="card bg-dark border-secondary shadow-sm h-100" id="detail-card">
+        <div class="card-header text-white fw-semibold border-secondary bg-black bg-opacity-20 py-3">
+          <i class="bi bi-info-circle me-2 text-info"></i>Detalle del Espacio
+        </div>
+        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-4" id="detail-empty">
+          <div class="fs-1 text-secondary mb-3"><i class="fas fa-map-pin"></i></div>
+          <h5 class="text-white">Ningún stand seleccionado</h5>
+          <p class="text-muted small px-3">Haz clic sobre cualquier mesa del mapa para ver los datos del proyecto, integrantes y el docente evaluador asignado.</p>
+        </div>
+        
+        <div class="card-body d-none" id="detail-content">
+          <div class="d-flex justify-content-between align-items-start border-bottom border-secondary pb-3 mb-3">
+            <div>
+              <span class="badge bg-secondary mb-1" id="det-zona">Zona</span>
+              <h4 class="text-white fw-bold mb-0" id="det-stand-num">Stand 00</h4>
+            </div>
+            <div id="det-status-badge">
+              <span class="badge bg-success">Disponible</span>
+            </div>
+          </div>
+
+          <div id="project-details">
+            <div class="mb-3">
+              <label class="text-muted small d-block mb-1">Título del Proyecto</label>
+              <h5 class="text-white fw-semibold" id="det-titulo">Nombre del Proyecto</h5>
+            </div>
+            
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="text-muted small d-block mb-1">Carrera</label>
+                <span class="badge p-2 w-100 text-truncate text-start" id="det-carrera" style="background-color: #3b82f6;">Carrera</span>
+              </div>
+              <div class="col-6">
+                <label class="text-muted small d-block mb-1">Categoría</label>
+                <span class="badge bg-dark border border-secondary p-2 w-100 text-truncate text-start" id="det-categoria">Categoría</span>
+              </div>
+            </div>
+
+            <div class="border-top border-secondary pt-3 mb-3">
+              <label class="text-muted small d-block mb-2"><i class="fas fa-users text-info me-1"></i> Líder del Equipo</label>
+              <div class="p-2 bg-black bg-opacity-30 rounded text-white small" id="det-lider">Nombre Líder</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="text-muted small d-block mb-2"><i class="fas fa-chalkboard-teacher text-info me-1"></i> Docente Evaluador</label>
+              <div class="p-2 bg-black bg-opacity-30 rounded text-white small" id="det-evaluador">No asignado</div>
+            </div>
+          </div>
+
+          <div class="d-none mt-4 text-center text-muted p-4 border border-secondary rounded" id="no-project-msg">
+            <i class="fas fa-check-circle text-success fs-2 mb-2"></i>
+            <h6>Espacio Libre</h6>
+            <small class="d-block text-secondary">Este stand se encuentra disponible para asignarse a un proyecto aprobado.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* SVG Custom Styling */
+  .stand-node {
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.3s;
+  }
+  .stand-node:hover {
+    transform: scale(1.05);
+    transform-origin: center;
+  }
+  .stand-node rect {
+    transition: filter 0.2s, stroke-width 0.2s;
+  }
+  .stand-node:hover rect {
+    filter: brightness(1.2);
+    stroke-width: 2.5px !important;
+  }
+  .stand-node.dimmed {
+    opacity: 0.15;
+  }
+  .stand-node.highlighted rect {
+    stroke: #ffffff !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4));
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const svgWrapper = document.getElementById("svg-map-wrapper");
+  const loader = document.getElementById("loader");
+  const statsSummary = document.getElementById("stats-summary");
+  
+  const detailEmpty = document.getElementById("detail-empty");
+  const detailContent = document.getElementById("detail-content");
+  const projectDetails = document.getElementById("project-details");
+  const noProjectMsg = document.getElementById("no-project-msg");
+  
+  const detStandNum = document.getElementById("det-stand-num");
+  const detZona = document.getElementById("det-zona");
+  const detStatusBadge = document.getElementById("det-status-badge");
+  const detTitulo = document.getElementById("det-titulo");
+  const detCarrera = document.getElementById("det-carrera");
+  const detCategoria = document.getElementById("det-categoria");
+  const detLider = document.getElementById("det-lider");
+  const detEvaluador = document.getElementById("det-evaluador");
+
+  let allStands = [];
+
+  // Color Palette by Career
+  const careerColors = {
+    'ISC': '#3b82f6', // azul
+    'ITI': '#3b82f6', // azul (fallback)
+    'DSM': '#10b981', // verde
+    'IRIC': '#f97316', // coral/naranja
+    'IGE': '#f59e0b', // amarillo/ámbar
+    'IIA': '#8b5cf6', // morado
+    'free': '#4b5563'  // gris
+  };
+
+  const careerNames = {
+    'ISC': 'ISC',
+    'ITI': 'ITI',
+    'DSM': 'DSM',
+    'IRIC': 'IRIC',
+    'IGE': 'IGE',
+    'IIA': 'IIA',
+    'free': 'Libre'
+  };
+
+  // Fetch stands map data
+  fetch("/api/stands/mapa/")
+    .then(response => {
+      if (!response.ok) throw new Error("Error fetching map data");
+      return response.json();
+    })
+    .then(data => {
+      allStands = data;
+      loader.classList.add("d-none");
+      renderSVGMap(data);
+      updateStats(data);
+    })
+    .catch(err => {
+      console.error(err);
+      svgWrapper.innerHTML = `
+        <div class="text-center text-danger py-5">
+          <i class="fas fa-exclamation-circle fs-1 mb-2"></i>
+          <h6>Error al cargar el mapa</h6>
+          <p class="text-muted small">Por favor, inténtalo de nuevo.</p>
+        </div>`;
+    });
+
+  function updateStats(stands) {
+    const total = stands.length;
+    const ocupados = stands.filter(s => s.proyecto_asignado !== null).length;
+    const libres = total - ocupados;
+    statsSummary.innerText = `Total: ${total} | Ocupados: ${ocupados} | Libres: ${libres}`;
+  }
+
+  function renderSVGMap(stands) {
+    if (stands.length === 0) {
+      svgWrapper.innerHTML = `<p class="text-muted py-5">No hay stands configurados en el sistema.</p>`;
+      return;
+    }
+
+    // Calcular dimensiones dinámicamente basadas en coordenadas
+    let maxFila = 0;
+    let maxCol = 0;
+    stands.forEach(s => {
+      if (s.pos_fila > maxFila) maxFila = s.pos_fila;
+      if (s.pos_col > maxCol) maxCol = s.pos_col;
+    });
+
+    // Asegurar tamaño mínimo de grilla
+    maxFila = Math.max(maxFila, 5);
+    maxCol = Math.max(maxCol, 8);
+
+    // Configuración de la cuadrícula
+    const nodeWidth = 60;
+    const nodeHeight = 50;
+    const gapX = 25;
+    const gapY = 25;
+    const padding = 30;
+
+    const svgWidth = (maxCol + 1) * (nodeWidth + gapX) + padding * 2;
+    const svgHeight = (maxFila + 1) * (nodeHeight + gapY) + padding * 2;
+
+    let svgHTML = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 520px;" xmlns="http://www.w3.org/2000/svg">`;
+
+    // Dibujar fondo de grilla decorativo
+    for (let f = 0; f <= maxFila + 1; f++) {
+      const y = padding + f * (nodeHeight + gapY) + nodeHeight / 2;
+      svgHTML += `<line x1="0" y1="${y}" x2="${svgWidth}" y2="${y}" stroke="#1e293b" stroke-dasharray="4 8" stroke-width="1" />`;
+    }
+    for (let c = 0; c <= maxCol + 1; c++) {
+      const x = padding + c * (nodeWidth + gapX) + nodeWidth / 2;
+      svgHTML += `<line x1="${x}" y1="0" x2="${x}" y2="${svgHeight}" stroke="#1e293b" stroke-dasharray="4 8" stroke-width="1" />`;
+    }
+
+    // Dibujar Stands
+    stands.forEach(s => {
+      // Coordenadas en SVG
+      const x = padding + s.pos_col * (nodeWidth + gapX);
+      const y = padding + s.pos_fila * (nodeHeight + gapY);
+
+      let color = careerColors.free;
+      let careerKey = "free";
+      
+      if (s.proyecto_asignado) {
+        const key = s.proyecto_asignado.carrera_clave.toUpperCase();
+        careerKey = careerColors[key] ? key : 'ISC'; // default a ISC si es otra carrera
+        color = careerColors[careerKey];
+      }
+
+      svgHTML += `
+        <g class="stand-node" id="node-${s.id}" data-id="${s.id}" data-carrera="${careerKey}">
+          <rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="8" 
+                fill="${color}" fill-opacity="0.8" stroke="${color}" stroke-width="1.5" />
+          <text x="${x + nodeWidth/2}" y="${y + nodeHeight/2 + 5}" 
+                fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">${s.numero}</text>
+        </g>
+      `;
+    });
+
+    svgHTML += `</svg>`;
+    svgWrapper.innerHTML = svgHTML;
+
+    // Agregar Listeners
+    document.querySelectorAll(".stand-node").forEach(node => {
+      node.addEventListener("click", function () {
+        const standId = parseInt(this.getAttribute("data-id"));
+        const stand = allStands.find(s => s.id === standId);
+        
+        // Highlight seleccionado
+        document.querySelectorAll(".stand-node").forEach(n => n.classList.remove("highlighted"));
+        this.classList.add("highlighted");
+
+        showDetails(stand);
+      });
+    });
+  }
+
+  function showDetails(stand) {
+    detailEmpty.classList.add("d-none");
+    detailContent.classList.remove("d-none");
+
+    detStandNum.innerText = `Stand ${stand.numero}`;
+    detZona.innerText = stand.zona_display;
+
+    if (stand.proyecto_asignado) {
+      projectDetails.classList.remove("d-none");
+      noProjectMsg.classList.add("d-none");
+      detStatusBadge.innerHTML = `<span class="badge bg-danger">Ocupado</span>`;
+
+      const p = stand.proyecto_asignado;
+      detTitulo.innerText = p.titulo;
+      detCategoria.innerText = p.categoria.toUpperCase();
+
+      const careerKey = p.carrera_clave.toUpperCase();
+      const color = careerColors[careerKey] || careerColors.ISC;
+      detCarrera.style.backgroundColor = color;
+      detCarrera.innerText = `[${p.carrera_clave}] ${p.carrera_nombre}`;
+      
+      detLider.innerText = p.lider_nombre;
+      detEvaluador.innerText = p.evaluador_nombre || "No asignado aún";
+    } else {
+      projectDetails.classList.add("d-none");
+      noProjectMsg.classList.remove("d-none");
+      detStatusBadge.innerHTML = `<span class="badge bg-success">Disponible</span>`;
+    }
+  }
+
+  // Filter functionality
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+      // Toggle active class
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+
+      const filter = this.getAttribute("data-filter");
+      
+      document.querySelectorAll(".stand-node").forEach(node => {
+        const career = node.getAttribute("data-carrera");
+        
+        if (filter === "all") {
+          node.classList.remove("dimmed");
+        } else if (filter === "unassigned") {
+          if (career === "free") {
+            node.classList.remove("dimmed");
+          } else {
+            node.classList.add("dimmed");
+          }
+        } else {
+          if (career === filter) {
+            node.classList.remove("dimmed");
+          } else {
+            node.classList.add("dimmed");
+          }
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

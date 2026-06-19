@@ -65,6 +65,12 @@
             </a></li>
             {% endif %}
 
+            {% if request.user.rol == 'ADMIN' or request.user.rol == 'EVALUADOR' %}
+            <li><a href="{% url 'reportes:dashboard' %}" class="nav-link-custom">
+                <i class="fas fa-chart-line me-2"></i> Dashboard de Métricas
+            </a></li>
+            {% endif %}
+
             {% if request.user.rol == 'EVALUADOR' %}
             <li><a href="{% url 'proyectos_asignados' %}" class="nav-link-custom">
                 <i class="fas fa-clipboard-check me-2"></i> Mis Evaluaciones
@@ -75,7 +81,17 @@
             <li><a href="{% url 'panel_admin' %}" class="nav-link-custom">
                 <i class="fas fa-cogs me-2"></i> Panel Administrativo
             </a></li>
+            <li><a href="{% url 'inventario:incidencias_activas' %}" class="nav-link-custom">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i> Incidencias Activas
+            </a></li>
+            <li><a href="{% url 'inventario:generar_qr_lote' %}" class="nav-link-custom">
+                <i class="fas fa-qrcode me-2"></i> Descargar QRs (Lote)
+            </a></li>
             {% endif %}
+
+            <li><a href="{% url 'espacios:mapa_auditorio' %}" class="nav-link-custom">
+                <i class="fas fa-map-marked-alt me-2"></i> Mapa del Auditorio
+            </a></li>
 
             <li class="mt-4">
                 <a href="{% url 'logout' %}" class="nav-link-custom text-danger">
