@@ -51,6 +51,11 @@
                     {{ form.rol }}
                 </div>
 
+                <div class="input-group" id="group_codigo_docente" style="display: none;">
+                    <label><i class="fas fa-key"></i> Código de acceso docente</label>
+                    {{ form.codigo_acceso_docente }}
+                </div>
+
                 <div class="input-group">
                     <label><i class="fas fa-lock"></i> Contraseña</label>
                     {{ form.password }}
@@ -70,5 +75,22 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const rolSelect = document.querySelector('select[name="rol"]');
+            const codeGroup = document.getElementById('group_codigo_docente');
+            function toggleDocenteCode() {
+                if (rolSelect && rolSelect.value === 'EVALUADOR') {
+                    codeGroup.style.display = 'block';
+                } else {
+                    codeGroup.style.display = 'none';
+                }
+            }
+            if (rolSelect) {
+                rolSelect.addEventListener('change', toggleDocenteCode);
+                toggleDocenteCode();
+            }
+        });
+    </script>
 </body>
 </html>

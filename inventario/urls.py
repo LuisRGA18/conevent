@@ -8,4 +8,6 @@ urlpatterns = [
     path('incidencias/', views.incidencias_activas_view, name='incidencias_activas'),
     path('qr/<int:item_id>/', views.generar_qr_view, name='generar_qr'),
     path('qr/lote/', views.generar_qr_lote_pdf_view, name='generar_qr_lote'),
+    path('gestionar/', views.gestionar_inventario_view, name='gestionar_inventario'),
+    path('gestionar/cambiar-estado/<int:item_id>/', views.cambiar_estado_item_view, name='cambiar_estado_item'),
 ]

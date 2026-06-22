@@ -144,3 +144,70 @@ class InventarioFlowTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertTrue(response['Content-Disposition'].startswith('attachment; filename='))
+
+
+from django.urls import reverse
+
+class InventarioGestionTestCase(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin.inv',
+            email='admin.inv@uteq.edu.mx',
+            password='Password123!',
+            rol='ADMIN'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.inv',
+            email='alumno.inv@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.item = ItemInventario.objects.create(
+            nombre='Mesa Plástica',
+            descripcion='Mesa plegable',
+            estado='bueno'
+        )
+
+    def test_gestionar_inventario_acceso(self):
+        url = reverse('inventario:gestionar_inventario')
+        
+        # 1. Alumno no puede acceder
+        self.client.login(username='alumno.inv', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        
+        # 2. Admin sí puede acceder
+        self.client.login(username='admin.inv', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Mesa Plástica')
+
+    def test_crear_item_via_post(self):
+        url = reverse('inventario:gestionar_inventario')
+        self.client.login(username='admin.inv', password='Password123!')
+        
+        data = {
+            'nombre': 'Silla plegable',
+            'descripcion': 'Silla plástica',
+            'estado': 'bueno',
+            'stand_asignado': ''
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302) # Redirects
+        
+        # Verify db
+        self.assertTrue(ItemInventario.objects.filter(nombre='Silla plegable').exists())
+
+    def test_cambiar_estado_item_view(self):
+        url = reverse('inventario:cambiar_estado_item', args=[self.item.id])
+        self.client.login(username='admin.inv', password='Password123!')
+        
+        data = {
+            'estado': 'malo'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.estado, 'malo')
+

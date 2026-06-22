@@ -1,0 +1,152 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container-fluid py-4 text-white">
+
+    <!-- Mensajes de Alerta -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show bg-dark text-white border-secondary shadow mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold text-white mb-0"><i class="fas fa-qrcode me-2 text-success"></i>Mobiliario e Inventario</h4>
+            <small class="text-muted">Da de alta elementos del mobiliario físico, asígnale un stand y descarga códigos QR para control en campo.</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'inventario:generar_qr_lote' %}" class="btn btn-outline-success fw-semibold">
+                <i class="fas fa-file-pdf me-1"></i> Descargar QRs (Lote)
+            </a>
+            <a href="{% url 'panel_admin' %}" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-1"></i> Panel Admin
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Listado de Items -->
+        <div class="col-lg-8">
+            <div class="card bg-dark border-secondary shadow-lg">
+                <div class="card-header border-secondary bg-black bg-opacity-20 py-3">
+                    <h5 class="mb-0 text-success fw-semibold"><i class="fas fa-table me-2"></i>Inventario Registrado</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+                            <thead class="text-muted small border-secondary">
+                                <tr>
+                                    <th class="ps-3">Nombre</th>
+                                    <th>Stand Asignado</th>
+                                    <th>UUID (Código QR)</th>
+                                    <th class="text-center">Estado Físico</th>
+                                    <th class="text-center">Descargar QR</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-secondary">
+                                {% for item in items %}
+                                <tr>
+                                    <td class="ps-3">
+                                        <span class="fw-semibold text-white d-block">{{ item.nombre }}</span>
+                                        <small class="text-muted">{{ item.descripcion|default:"Sin descripción" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if item.stand_asignado %}
+                                            <span class="badge bg-secondary">Stand {{ item.stand_asignado.numero }}</span>
+                                        {% else %}
+                                            <span class="text-muted small italic">Sin asignar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><code class="text-info small" style="font-size: 0.75rem;">{{ item.uuid }}</code></td>
+                                    <td class="text-center">
+                                        <form action="{% url 'inventario:cambiar_estado_item' item.id %}" method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <select name="estado" onchange="this.form.submit()" class="form-select form-select-sm d-inline-block {% if item.estado == 'bueno' %}text-success border-success{% elif item.estado == 'regular' %}text-warning border-warning{% else %}text-danger border-danger{% endif %}" style="width: auto; background-color: rgba(0,0,0,0.3); font-size: 0.85rem;">
+                                                {% for code, label in estado_choices %}
+                                                    <option value="{{ code }}" {% if item.estado == code %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'inventario:generar_qr' item.id %}" class="btn btn-sm btn-outline-info" target="_blank">
+                                            <i class="fas fa-download"></i> PNG
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <i class="fas fa-box-open fs-2 d-block mb-2"></i>
+                                        No hay elementos de inventario registrados.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario Nuevo Item -->
+        <div class="col-lg-4">
+            <div class="card bg-dark border-secondary shadow-lg">
+                <div class="card-header border-secondary bg-black bg-opacity-20 py-3">
+                    <h5 class="mb-0 text-success fw-semibold"><i class="fas fa-plus-circle me-2"></i>Registrar Mobiliario</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label text-white-50 small">Nombre del Mobiliario / Equipo *</label>
+                            <input type="text" name="nombre" class="form-control" placeholder="Ej. Mesa plegable, Proyector" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white-50 small">Descripción o N/S (Opcional)</label>
+                            <input type="text" name="descripcion" class="form-control" placeholder="Ej. Mesa plástica blanca, NS: 12345">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white-50 small">Estado Inicial *</label>
+                            <select name="estado" class="form-select" required>
+                                {% for code, label in estado_choices %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white-50 small">Asignar a Stand (Opcional)</label>
+                            <select name="stand_asignado" class="form-select">
+                                <option value="">-- Sin Stand --</option>
+                                {% for stand in stands %}
+                                    <option value="{{ stand.id }}">Stand {{ stand.numero }} ({{ stand.get_zona_display }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 mt-2">
+                            <i class="fas fa-save me-1"></i> Guardar Elemento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+  .form-control, .form-select {
+    background-color: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+  }
+  .form-control:focus, .form-select:focus {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    border-color: var(--azul-tecnologico, #328cc1) !important;
+    box-shadow: 0 0 0 0.25rem rgba(50, 140, 193, 0.25) !important;
+  }
+</style>
+{% endblock %}

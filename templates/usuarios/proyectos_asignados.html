@@ -31,8 +31,15 @@
           <tr>
             <td><span class="badge bg-secondary">{{ p.codigo }}</span></td>
             <td>
-              <span class="fw-semibold">{{ p.titulo }}</span>
-              {% if p.carrera %}<br><small class="text-muted">{{ p.carrera }} · Grp {{ p.grupo }}</small>{% endif %}
+              <div class="d-flex align-items-center">
+                {% if p.logo %}
+                  <img src="{{ p.logo.url }}" alt="Logo {{ p.titulo }}" style="height:48px; border-radius:4px; margin-right: 10px;">
+                {% endif %}
+                <div>
+                  <span class="fw-semibold">{{ p.titulo }}</span>
+                  {% if p.carrera %}<br><small class="text-muted">{{ p.carrera }} · Grp {{ p.grupo }}</small>{% endif %}
+                </div>
+              </div>
             </td>
             <td>{{ p.creado_por.get_full_name|default:p.creado_por.username }}</td>
             <td class="text-center"><span class="badge bg-info text-dark">{{ p.num_integrantes }}</span></td>

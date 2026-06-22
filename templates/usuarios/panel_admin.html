@@ -14,11 +14,14 @@
       <small class="text-muted">Gestión de proyectos y evaluadores — CONEVENT</small>
     </div>
     <div class="d-flex gap-2">
-      <a href="/admin/espacios/stand/" class="btn btn-outline-info btn-sm" target="_blank">
+      <a href="{% url 'espacios:gestionar_stands' %}" class="btn btn-outline-info btn-sm">
         <i class="fas fa-map-marker-alt me-1"></i> Gestionar Stands / Mesas
       </a>
-      <a href="/admin/inventario/iteminventario/" class="btn btn-outline-success btn-sm" target="_blank">
-        <i class="fas fa-qrcode me-1"></i> Mobiliario y Códigos QR
+      <a href="{% url 'inventario:gestionar_inventario' %}" class="btn btn-outline-success btn-sm">
+        <i class="fas fa-qrcode me-1"></i> Mobiliario e Inventario
+      </a>
+      <a href="{% url 'qr_externo_lote' %}" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-qrcode me-1"></i> QRs Proyectos (Lote)
       </a>
       <a href="/admin/" class="btn btn-outline-primary btn-sm" target="_blank">
         <i class="fas fa-user-shield me-1"></i> Django Admin completo
@@ -65,6 +68,7 @@
         <th>Carrera y Grupo</th>
         <th class="text-center">Stand / Mesa (Fase 1)</th>
         <th class="text-center">Estatus Oficial</th>
+        <th class="text-center">Eval. Externa</th>
         <th>Asignar Evaluador</th>
         <th class="text-center pe-3">Acciones</th>
     </tr>
@@ -76,10 +80,17 @@
             <span class="badge bg-secondary px-2 py-1">{{ proyecto.codigo }}</span>
         </td>
         <td>
-            <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
-            <small class="text-info text-capitalize">
-                <i class="fas fa-tag me-1 small"></i>{{ proyecto.get_categoria_display }}
-            </small>
+            <div class="d-flex align-items-center">
+                {% if proyecto.logo %}
+                  <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:48px; border-radius:4px; margin-right: 10px;">
+                {% endif %}
+                <div>
+                    <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
+                    <small class="text-info text-capitalize">
+                        <i class="fas fa-tag me-1 small"></i>{{ proyecto.get_categoria_display }}
+                    </small>
+                </div>
+            </div>
         </td>
         <td>
             <span class="text-white-50 small d-block">{{ proyecto.carrera.nombre|default:"Sin Carrera" }}</span>
@@ -105,6 +116,14 @@
                     {% endfor %}
                 </select>
             </form>
+        </td>
+        <td class="text-center">
+            {% if proyecto.num_externas %}
+                <span class="badge bg-info text-dark" title="Total Evaluaciones Externas">{{ proyecto.num_externas }}</span>
+                <span class="text-white ms-1 fw-bold">{{ proyecto.promedio_externa|floatformat:2 }}</span>
+            {% else %}
+                <span class="text-muted small">—</span>
+            {% endif %}
         </td>
         <td>
             <form action="{% url 'asignar_evaluador' proyecto.pk %}" method="post" class="d-flex gap-2">

@@ -6,8 +6,10 @@ from django.db.models import Q, Avg, Count
 from django.db import transaction
 import unicodedata
 import random
+from django.core.mail import send_mail
+from django.conf import settings
 # 🟢 Aseguramos todos los modelos importados correctamente
-from .models import Proyecto, Usuario, Integrante, Evaluacion, Carrera 
+from .models import Proyecto, Usuario, Integrante, Evaluacion, Carrera, CriterioEvaluacion, EvaluacionExterna 
 from .forms import (
     ProyectoForm, RegistroForm,
     IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
@@ -37,9 +39,13 @@ def login_view(request):
                 request.session['pre_auth_user_id']    = user.id
                 request.session['codigo_2fa_correcto'] = codigo_generado
 
-                print("\n" + "="*50)
-                print(f" CÓDIGO 2FA para {user.email}: {codigo_generado} ")
-                print("="*50 + "\n")
+                send_mail(
+                    subject="Tu código de verificación — CONEVENT",
+                    message=f"Tu código de verificación de inicio de sesión de dos factores es: {codigo_generado}",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
 
                 return redirect('verificar_2fa')
             else:
@@ -74,7 +80,7 @@ def verificar_2fa_view(request):
             if recordar == 'si':
                 response.set_cookie(
                     f'dispositivo_seguro_{user.id}', 'true',
-                    max_age=30 * 24 * 60 * 60, httponly=True
+                    max_age=24 * 60 * 60, httponly=True
                 )
             return response
         else:
@@ -125,9 +131,13 @@ def registro_view(request):
             request.session['id_usuario_pendiente']     = user.id
             request.session['codigo_activacion_correcto'] = codigo_activacion
 
-            print("\n" + "═"*50)
-            print(f" CÓDIGO DE ACTIVACIÓN para {user.email}: {codigo_activacion} ")
-            print("═"*50 + "\n")
+            send_mail(
+                subject="Tu código de verificación — CONEVENT",
+                message=f"Tu código de activación de cuenta es: {codigo_activacion}",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
 
             return redirect('activar_cuenta')
     else:
@@ -222,9 +232,7 @@ def registrar_proyecto_view(request):
 
     # Contingencia carreras vacías
     if not Carrera.objects.exists():
-        Carrera.objects.create(nombre="Ingeniería en Redes Inteligentes y Ciberseguridad", clave="IRIC")
-        Carrera.objects.create(nombre="Desarrollo de Software Multiplataforma", clave="DSM")
-        Carrera.objects.create(nombre="Entornos Virtuales y Negocios Digitales", clave="EVND")
+        messages.error(request, "No hay carreras registradas. Contacta al administrador del evento.")
 
     proyecto = Proyecto.objects.filter(creado_por=request.user).first()
 
@@ -456,9 +464,23 @@ def panel_admin_view(request):
         messages.error(request, "No tienes permiso.")
         return redirect('index')
 
+    from django.db.models import Count, Avg, Case, When, Value, FloatField
+
+    calificacion_numerica_expr = Case(
+        When(evaluaciones_externas__calificacion='AU', then=Value(10.0)),
+        When(evaluaciones_externas__calificacion='DE', then=Value(9.0)),
+        When(evaluaciones_externas__calificacion='SA', then=Value(8.0)),
+        When(evaluaciones_externas__calificacion='NA', then=Value(6.0)),
+        default=Value(0.0),
+        output_field=FloatField()
+    )
+
     qs = Proyecto.objects.select_related(
         'creado_por', 'evaluador_asignado', 'carrera'
-    ).prefetch_related('miembros', 'asignaciones_stands__stand')
+    ).prefetch_related('miembros', 'asignaciones_stands__stand').annotate(
+        num_externas=Count('evaluaciones_externas', distinct=True),
+        promedio_externa=Avg(calificacion_numerica_expr)
+    )
 
     q       = request.GET.get('q', '').strip()
     estatus = request.GET.get('estatus', '').strip()
@@ -569,3 +591,172 @@ def editar_proyecto_view(request, pk):
         'form': form,
         'formset': formset,
     })
+
+
+# ──────────────────────────────────────────────────────────────
+# EVALUACION EXTERNA PÚBLICA Y ENLACES QR
+# ──────────────────────────────────────────────────────────────
+
+def evaluar_externo_view(request, proyecto_id):
+    from decouple import config
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    error_msg = None
+    exito = False
+
+    if request.method == 'POST':
+        nombre_visitante = request.POST.get('nombre_visitante', '').strip()
+        empresa_procedencia = request.POST.get('empresa_procedencia', '').strip()
+        correo_contacto = request.POST.get('correo_contacto', '').strip().lower()
+        telefono_contacto = request.POST.get('telefono_contacto', '').strip()
+        calificacion = request.POST.get('calificacion', '').strip()
+        comentario = request.POST.get('comentario', '').strip()
+        codigo_acceso = request.POST.get('codigo_acceso', '').strip()
+
+        if not nombre_visitante or not empresa_procedencia or not correo_contacto or not calificacion or not codigo_acceso:
+            error_msg = "Por favor, completa todos los campos obligatorios."
+        elif codigo_acceso != config('CODIGO_EVALUACION_EXTERNA', default='UTEQ2025'):
+            error_msg = "Código de acceso incorrecto. Solicita el código correcto en el stand del proyecto."
+        elif calificacion not in ['AU', 'DE', 'SA', 'NA']:
+            error_msg = "Opción de calificación no válida."
+        elif EvaluacionExterna.objects.filter(proyecto=proyecto, correo_contacto=correo_contacto).exists():
+            error_msg = "Este correo electrónico ya ha registrado una evaluación para este proyecto."
+        else:
+            EvaluacionExterna.objects.create(
+                proyecto=proyecto,
+                nombre_visitante=nombre_visitante,
+                empresa_procedencia=empresa_procedencia,
+                correo_contacto=correo_contacto,
+                telefono_contacto=telefono_contacto,
+                calificacion=calificacion,
+                comentario=comentario,
+                codigo_acceso_usado=codigo_acceso
+            )
+            exito = True
+
+    return render(request, 'usuarios/evaluar_externo.html', {
+        'proyecto': proyecto,
+        'error_msg': error_msg,
+        'exito': exito,
+    })
+
+
+@login_required(login_url='login')
+def qr_externo_view(request, proyecto_id):
+    if request.user.rol != 'ADMIN' and not request.user.es_admin:
+        return HttpResponse("Acceso denegado", status=403)
+        
+    proyecto = get_object_or_404(Proyecto, id=proyecto_id)
+    url = request.build_absolute_uri(f"/proyectos/{proyecto.id}/evaluar-externo/")
+    
+    import qrcode
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    from io import BytesIO
+    response = HttpResponse(content_type="image/png")
+    img.save(response, "PNG")
+    return response
+
+
+@login_required(login_url='login')
+def qr_externo_lote_view(request):
+    if request.user.rol != 'ADMIN' and not request.user.es_admin:
+        return HttpResponse("Acceso denegado", status=403)
+        
+    proyectos = Proyecto.objects.all().exclude(estatus='rechazado').order_by('titulo')
+    
+    from io import BytesIO
+    import qrcode
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import Image as RLImage
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="qr_externos_lote.pdf"'
+    
+    doc = SimpleDocTemplate(
+        response, pagesize=letter,
+        rightMargin=36, leftMargin=36,
+        topMargin=36, bottomMargin=36
+    )
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        leading=22,
+        alignment=1,
+        spaceAfter=15
+    )
+    label_style = ParagraphStyle(
+        'LabelStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=1
+    )
+    
+    story.append(Paragraph("Códigos QR de Evaluación Externa - Proyectos", title_style))
+    story.append(Spacer(1, 10))
+    
+    data = []
+    row = []
+    
+    for proyecto in proyectos:
+        url = request.build_absolute_uri(f"/proyectos/{proyecto.id}/evaluar-externo/")
+        
+        qr = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        
+        rl_img = RLImage(buf, width=110, height=110)
+        
+        carrera_name = proyecto.carrera.clave if proyecto.carrera else "Sin carrera"
+        label_text = f"<b>{proyecto.titulo}</b><br/>Carrera: {carrera_name}<br/>Código: {proyecto.codigo}"
+        label_p = Paragraph(label_text, label_style)
+        
+        cell_table = Table([[rl_img], [label_p]], colWidths=[160])
+        cell_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+        ]))
+        
+        row.append(cell_table)
+        
+        if len(row) == 3:
+            data.append(row)
+            row = []
+            
+    if row:
+        while len(row) < 3:
+            row.append("")
+        data.append(row)
+        
+    if data:
+        t = Table(data, colWidths=[180, 180, 180])
+        t.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ]))
+        story.append(t)
+    else:
+        story.append(Paragraph("No hay proyectos registrados.", styles['Normal']))
+        
+    doc.build(story)
+    return response

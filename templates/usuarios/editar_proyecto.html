@@ -15,7 +15,7 @@
   </div>
   {% endfor %}
 
-  <form method="post" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
     <div class="card bg-dark border-secondary mb-4">
@@ -41,6 +41,18 @@
           <div class="col-12">
             <label class="form-label text-white">{{ form.descripcion.label }}</label>
             {{ form.descripcion }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-white">Logotipo del Proyecto</label>
+            {% if proyecto.logo %}
+              <div class="mb-2">
+                <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:48px; border-radius:4px;">
+              </div>
+            {% endif %}
+            <div class="input-group">
+              <span class="input-group-text bg-secondary text-white border-secondary"><i class="bi bi-image"></i></span>
+              {{ form.logo }}
+            </div>
           </div>
         </div>
       </div>

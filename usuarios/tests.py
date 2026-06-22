@@ -292,3 +292,101 @@ class ProyectoEditTestCase(TestCase):
         self.proyecto.save()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
+
+
+from decouple import config
+from django.urls import reverse
+from .models import EvaluacionExterna
+
+class EvaluatorRegistrationTestCase(TestCase):
+    def test_registro_evaluador_codigo_correcto(self):
+        url = reverse('registro')
+        data = {
+            'first_name': 'Juan',
+            'last_name': 'Perez',
+            'email': 'juan.docente@uteq.edu.mx',
+            'rol': 'EVALUADOR',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!',
+            'codigo_acceso_docente': config('CODIGO_REGISTRO_EVALUADOR', default='2011')
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('activar_cuenta'))
+        user = User.objects.get(email='juan.docente@uteq.edu.mx')
+        self.assertFalse(user.is_active)
+        self.assertEqual(user.rol, 'EVALUADOR')
+
+    def test_registro_evaluador_codigo_incorrecto(self):
+        url = reverse('registro')
+        data = {
+            'first_name': 'Juan',
+            'last_name': 'Perez',
+            'email': 'juan.docente@uteq.edu.mx',
+            'rol': 'EVALUADOR',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!',
+            'codigo_acceso_docente': 'WRONG_CODE'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Código de acceso docente incorrecto. Contacta al coordinador del evento.")
+
+
+class EvaluacionExternaTestCase(TestCase):
+    def setUp(self):
+        self.alumno = User.objects.create_user(
+            username='alumno.test',
+            email='alumno@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(nombre='ISC', clave='ISC')
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto Visitantes',
+            descripcion='Proyecto para testear visitas.',
+            carrera=self.carrera,
+            grupo='ISC8B',
+            categoria='software',
+            creado_por=self.alumno
+        )
+
+    def test_evaluacion_externa_workflow(self):
+        url = reverse('evaluar_externo', args=[self.proyecto.id])
+        
+        # 1. GET request should return 200
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.proyecto.titulo)
+
+        # 2. POST with wrong access code
+        data = {
+            'nombre_visitante': 'John Doe',
+            'empresa_procedencia': 'Google',
+            'correo_contacto': 'john.doe@gmail.com',
+            'telefono_contacto': '1234567890',
+            'calificacion': 'AU',
+            'comentario': 'Excelente!',
+            'codigo_acceso': 'WRONG'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Código de acceso incorrecto. Solicita el código correcto en el stand del proyecto.")
+        self.assertFalse(EvaluacionExterna.objects.filter(correo_contacto='john.doe@gmail.com').exists())
+
+        # 3. POST with correct access code
+        data['codigo_acceso'] = config('CODIGO_EVALUACION_EXTERNA', default='UTEQ2025')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "¡Evaluación Registrada!")
+        
+        # Verify db
+        eval_ext = EvaluacionExterna.objects.get(correo_contacto='john.doe@gmail.com')
+        self.assertEqual(eval_ext.calificacion, 'AU')
+        self.assertEqual(eval_ext.get_valor_numerico(), 10)
+
+        # 4. POST duplicate email evaluation
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Este correo electrónico ya ha registrado una evaluación para este proyecto.")
+

@@ -115,3 +115,78 @@ class EspaciosAPITestCase(APITestCase):
         self.assertIn(asig_p1.stand.numero, ['M-01', 'M-02'])
         self.assertIn(asig_p2.stand.numero, ['M-01', 'M-02'])
         self.assertEqual(asig_p3.stand.numero, 'M-03')
+
+
+from django.urls import reverse
+
+class StandsGestionTestCase(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin.stands',
+            email='admin.stands@uteq.edu.mx',
+            password='Password123!',
+            rol='ADMIN'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.stands',
+            email='alumno.stands@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.stand = Stand.objects.create(
+            numero='B-01',
+            zona='gimnasio',
+            pos_fila=1,
+            pos_col=1,
+            esta_activo=True
+        )
+
+    def test_gestionar_stands_acceso(self):
+        url = reverse('espacios:gestionar_stands')
+        
+        # 1. Alumno de ejemplo no puede acceder (debe redirigir a index con mensaje de error)
+        self.client.login(username='alumno.stands', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        
+        # 2. Administrador sí puede acceder
+        self.client.login(username='admin.stands', password='Password123!')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'B-01')
+
+    def test_crear_stand_via_post(self):
+        url = reverse('espacios:gestionar_stands')
+        self.client.login(username='admin.stands', password='Password123!')
+        
+        data = {
+            'numero': 'B-02',
+            'zona': 'gimnasio',
+            'pos_fila': '2',
+            'pos_col': '2',
+            'descripcion': 'Mesa auxiliar'
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302) # Redirect to self
+        
+        # Verify db
+        self.assertTrue(Stand.objects.filter(numero='B-02').exists())
+
+    def test_toggle_stand_view(self):
+        url = reverse('espacios:toggle_stand', args=[self.stand.id])
+        self.client.login(username='admin.stands', password='Password123!')
+        
+        # Toggle to inactive
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        
+        self.stand.refresh_from_db()
+        self.assertFalse(self.stand.esta_activo)
+
+    def test_asignar_stands_automatico_view(self):
+        url = reverse('espacios:asignar_stands_automatico')
+        self.client.login(username='admin.stands', password='Password123!')
+        
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+

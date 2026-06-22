@@ -205,3 +205,62 @@ def generar_qr_lote_pdf_view(request):
         
     doc.build(story)
     return response
+
+
+@login_required(login_url='/auth/login/')
+def gestionar_inventario_view(request):
+    from espacios.models import Stand
+    if request.user.rol != 'ADMIN':
+        messages.error(request, "Acceso denegado. Solo administradores pueden ver este panel.")
+        return redirect('index')
+        
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        estado = request.POST.get('estado', 'bueno').strip()
+        stand_id = request.POST.get('stand_asignado', '').strip()
+        
+        if not nombre or not estado:
+            messages.error(request, "El nombre del mobiliario y el estado son obligatorios.")
+        else:
+            stand_obj = None
+            if stand_id:
+                stand_obj = Stand.objects.filter(id=stand_id).first()
+                
+            ItemInventario.objects.create(
+                nombre=nombre,
+                descripcion=descripcion,
+                estado=estado,
+                stand_asignado=stand_obj
+            )
+            messages.success(request, f"¡Mobiliario '{nombre}' registrado con éxito!")
+            return redirect('inventario:gestionar_inventario')
+
+    items = ItemInventario.objects.all().order_by('nombre').select_related('stand_asignado')
+    stands = Stand.objects.filter(esta_activo=True).order_by('numero')
+    estado_choices = ItemInventario.ESTADO_CHOICES
+    
+    return render(request, 'inventario/gestionar_inventario.html', {
+        'items': items,
+        'stands': stands,
+        'estado_choices': estado_choices,
+    })
+
+
+@login_required(login_url='/auth/login/')
+def cambiar_estado_item_view(request, item_id):
+    if request.user.rol != 'ADMIN':
+        return HttpResponse("Acceso denegado", status=403)
+        
+    if request.method == 'POST':
+        item = get_object_or_404(ItemInventario, id=item_id)
+        nuevo_estado = request.POST.get('estado', '').strip()
+        if nuevo_estado in ['bueno', 'regular', 'malo']:
+            item.estado = nuevo_estado
+            item.save()
+            messages.success(request, f"Estatus de '{item.nombre}' cambiado a: {item.get_estado_display()}.")
+        else:
+            messages.error(request, "Estatus no válido.")
+            
+    return redirect('inventario:gestionar_inventario')
+

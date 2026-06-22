@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from .models import Proyecto, Usuario, Integrante, Evaluacion
 import re
-from .models import Proyecto, Integrante
+from decouple import config
 
 # ─── Estilos reutilizables (dark theme que ya usan) ───────────────────────────
 INPUT_CLASS = 'form-control bg-dark text-white border-secondary'
@@ -152,6 +152,14 @@ class RegistroForm(forms.ModelForm):
         }),
         label="Confirmar Contraseña"
     )
+    codigo_acceso_docente = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Código de acceso docente (solo evaluadores)'
+        }),
+        label="Código de acceso docente"
+    )
 
     class Meta:
         model = Usuario
@@ -190,6 +198,12 @@ class RegistroForm(forms.ModelForm):
         confirm_password = cleaned_data.get("confirm_password")
         if password != confirm_password:
             raise forms.ValidationError("Las contraseñas no coinciden.")
+        
+        rol = cleaned_data.get("rol")
+        if rol == 'EVALUADOR':
+            codigo = cleaned_data.get("codigo_acceso_docente")
+            if codigo != config('CODIGO_REGISTRO_EVALUADOR', default='2011'):
+                self.add_error('codigo_acceso_docente', "Código de acceso docente incorrecto. Contacta al coordinador del evento.")
         return cleaned_data
     
 

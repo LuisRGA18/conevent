@@ -98,6 +98,7 @@ class Proyecto(models.Model):
         max_digits=4, decimal_places=2, null=True, blank=True,
         verbose_name="Calificación Final"
     )
+    comentarios_evaluador = models.TextField(blank=True, default='')
 
     fecha_registro      = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
@@ -266,3 +267,32 @@ class DetalleEvaluacion(models.Model):
         
         # Recalcular la nota general de la evaluación principal
         self.evaluacion.recalcular_calificacion()
+
+
+# ──────────────────────────────────────────────────────────────
+# EVALUACION EXTERNA (Visitantes externos por QR)
+# ──────────────────────────────────────────────────────────────
+
+class EvaluacionExterna(models.Model):
+    ESCALA_CHOICES = [
+        ('AU', 'AU - Autónomo (10)'),
+        ('DE', 'DE - Destacado (9)'),
+        ('SA', 'SA - Satisfactorio (8)'),
+        ('NA', 'NA - No Acreditado'),
+    ]
+
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='evaluaciones_externas')
+    nombre_visitante = models.CharField(max_length=150)
+    empresa_procedencia = models.CharField(max_length=150)
+    correo_contacto = models.EmailField()
+    telefono_contacto = models.CharField(max_length=20, blank=True)
+    calificacion = models.CharField(max_length=2, choices=ESCALA_CHOICES)
+    comentario = models.TextField(blank=True)
+    codigo_acceso_usado = models.CharField(max_length=20)  # para auditoría
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+
+    def get_valor_numerico(self):
+        return {'AU': 10, 'DE': 9, 'SA': 8, 'NA': 6}.get(self.calificacion, 0)

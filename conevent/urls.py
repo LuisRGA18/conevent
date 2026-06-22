@@ -44,4 +44,14 @@ urlpatterns = [
     # Dashboard
     path('', usuarios_views.index_view, name='index'),
 
+    # Evaluación Externa y QRs por Proyecto
+    path('proyectos/<int:proyecto_id>/evaluar-externo/', usuarios_views.evaluar_externo_view, name='evaluar_externo'),
+    path('proyectos/<int:proyecto_id>/qr-externo/', usuarios_views.qr_externo_view, name='qr_externo'),
+    path('proyectos/qr-externo/lote/', usuarios_views.qr_externo_lote_view, name='qr_externo_lote'),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

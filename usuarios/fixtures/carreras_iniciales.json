@@ -1,0 +1,42 @@
+[
+  {
+    "model": "usuarios.carrera",
+    "pk": 1,
+    "fields": {
+      "nombre": "Ingeniería en Sistemas Computacionales",
+      "clave": "ISC"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 2,
+    "fields": {
+      "nombre": "Desarrollo de Software Multiplataforma",
+      "clave": "DSM"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 3,
+    "fields": {
+      "nombre": "Ingeniería en Redes Inteligentes y Ciberseguridad",
+      "clave": "IRIC"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 4,
+    "fields": {
+      "nombre": "Ingeniería en Gestión Empresarial",
+      "clave": "IGE"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 5,
+    "fields": {
+      "nombre": "Ingeniería en Inteligencia Artificial",
+      "clave": "IIA"
+    }
+  }
+]

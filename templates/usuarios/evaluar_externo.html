@@ -1,0 +1,282 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación de Visitante — CONEVENT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --azul-profundo: #0B3C5D;
+            --azul-tecnologico: #328cc1;
+            --fondo-oscuro: #0A192F;
+            --gris-oscuro: #1C2541;
+            --gris-claro: #A8B2D1;
+            --texto-primario: #ffffff;
+            --texto-secundario: #A8B2D1;
+        }
+
+        body {
+            background-color: var(--fondo-oscuro);
+            color: var(--texto-primario);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+        }
+
+        .eval-container {
+            background-color: var(--gris-oscuro);
+            border: 1px solid rgba(50, 140, 193, 0.3);
+            border-radius: 12px;
+            padding: 30px 20px;
+            max-width: 550px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-title {
+            color: var(--azul-tecnologico);
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .project-card {
+            background-color: rgba(10, 25, 47, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .project-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .form-label {
+            color: var(--gris-claro);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(10, 25, 47, 0.8) !important;
+            border: 1px solid rgba(50, 140, 193, 0.3) !important;
+            color: white !important;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--azul-tecnologico) !important;
+            box-shadow: 0 0 8px rgba(50, 140, 193, 0.4) !important;
+        }
+
+        /* Botones de radio cualitativos grandes */
+        .rubrica-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .rubrica-option {
+            position: relative;
+        }
+
+        .rubrica-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .rubrica-label {
+            display: block;
+            text-align: center;
+            background-color: rgba(10, 25, 47, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .rubrica-option input[type="radio"]:checked + .rubrica-label {
+            background-color: rgba(50, 140, 193, 0.2);
+            border-color: var(--azul-tecnologico);
+            box-shadow: 0 0 10px rgba(50, 140, 193, 0.3);
+        }
+
+        .rubrica-label-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: block;
+        }
+
+        .rubrica-label-desc {
+            font-size: 0.75rem;
+            color: var(--gris-claro);
+            margin-top: 3px;
+            display: block;
+        }
+
+        .btn-enviar {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--azul-tecnologico);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-enviar:hover {
+            background-color: #25709b;
+        }
+
+        .alert-custom-error {
+            background-color: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .success-box {
+            text-align: center;
+            padding: 40px 10px;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="eval-container">
+        {% if exito %}
+            <div class="success-box">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>¡Evaluación Registrada!</h3>
+                <p class="text-muted mt-2">
+                    Tu valiosa opinión ha sido guardada. Gracias por participar en la feria de proyectos de la UTEQ.
+                </p>
+            </div>
+        {% else %}
+            <h2 class="header-title"><i class="fas fa-qrcode"></i> Evaluar Proyecto</h2>
+
+            <!-- Ficha del Proyecto -->
+            <div class="project-card d-flex align-items-center gap-3">
+                {% if proyecto.logo %}
+                    <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:64px; border-radius:6px; object-fit: cover;">
+                {% endif %}
+                <div>
+                    <h3 class="project-title">{{ proyecto.titulo }}</h3>
+                    <span class="badge bg-secondary mb-1">
+                        {% if proyecto.carrera %}{{ proyecto.carrera.clave }}{% else %}Sin Carrera{% endif %}
+                    </span>
+                    <p class="text-muted small mb-0">{{ proyecto.descripcion|truncatewords:25 }}</p>
+                </div>
+            </div>
+
+            {% if error_msg %}
+                <div class="alert-custom-error">
+                    <i class="fas fa-exclamation-circle me-2"></i>{{ error_msg }}
+                </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" name="nombre_visitante" class="form-control" placeholder="Ej. Ana María Pérez" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Empresa / Procedencia *</label>
+                    <input type="text" name="empresa_procedencia" class="form-control" placeholder="Ej. UTEQ, Empresa S.A., etc." required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Correo de Contacto *</label>
+                    <input type="email" name="correo_contacto" class="form-control" placeholder="nombre@correo.com" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono (Opcional)</label>
+                    <input type="tel" name="telefono_contacto" class="form-control" placeholder="Ej. 4421234567">
+                </div>
+
+                <!-- Campo de Calificación Cualitativa UTEQ -->
+                <div class="mb-3">
+                    <label class="form-label">Calificación del Proyecto *</label>
+                    <div class="rubrica-selector">
+                        <div class="rubrica-option">
+                            <input type="radio" id="calif_au" name="calificacion" value="AU" required>
+                            <label for="calif_au" class="rubrica-label">
+                                <span class="rubrica-label-title">AU</span>
+                                <span class="rubrica-label-desc">Autónomo (10)</span>
+                            </label>
+                        </div>
+                        <div class="rubrica-option">
+                            <input type="radio" id="calif_de" name="calificacion" value="DE">
+                            <label for="calif_de" class="rubrica-label">
+                                <span class="rubrica-label-title">DE</span>
+                                <span class="rubrica-label-desc">Destacado (9)</span>
+                            </label>
+                        </div>
+                        <div class="rubrica-option">
+                            <input type="radio" id="calif_sa" name="calificacion" value="SA">
+                            <label for="calif_sa" class="rubrica-label">
+                                <span class="rubrica-label-title">SA</span>
+                                <span class="rubrica-label-desc">Satisfactorio (8)</span>
+                            </label>
+                        </div>
+                        <div class="rubrica-option">
+                            <input type="radio" id="calif_na" name="calificacion" value="NA">
+                            <label for="calif_na" class="rubrica-label">
+                                <span class="rubrica-label-title">NA</span>
+                                <span class="rubrica-label-desc">No Acreditado</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Comentarios u Observaciones (Opcional)</label>
+                    <textarea name="comentario" class="form-control" rows="3" placeholder="¿Qué te gustó del proyecto?"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Código de Acceso de Visitante *</label>
+                    <input type="text" name="codigo_acceso" class="form-control text-center" style="font-weight: bold; letter-spacing: 2px;" placeholder="Ingresa el código proporcionado" required autocomplete="off">
+                </div>
+
+                <button type="submit" class="btn-enviar">Registrar Evaluación 🚀</button>
+            </form>
+        {% endif %}
+    </div>
+
+</body>
+</html>

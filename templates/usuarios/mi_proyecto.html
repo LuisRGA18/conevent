@@ -43,12 +43,19 @@
           <tr>
             <td class="ps-3"><span class="badge bg-secondary px-2 py-1">{{ p.codigo }}</span></td>
             <td>
-              <span class="fw-semibold text-white d-block mb-1">{{ p.titulo }}</span>
-              {% if p.carrera %}
-              <small class="text-muted">
-                <i class="fas fa-graduation-cap me-1"></i>{{ p.carrera }} · <i class="fas fa-users me-1"></i>Grupo {{ p.grupo }}
-              </small>
-              {% endif %}
+              <div class="d-flex align-items-center">
+                {% if p.logo %}
+                  <img src="{{ p.logo.url }}" alt="Logo {{ p.titulo }}" style="height:48px; border-radius:4px; margin-right: 10px;">
+                {% endif %}
+                <div>
+                  <span class="fw-semibold text-white d-block mb-1">{{ p.titulo }}</span>
+                  {% if p.carrera %}
+                  <small class="text-muted">
+                    <i class="fas fa-graduation-cap me-1"></i>{{ p.carrera }} · <i class="fas fa-users me-1"></i>Grupo {{ p.grupo }}
+                  </small>
+                  {% endif %}
+                </div>
+              </div>
             </td>
             <td class="text-white-50">{{ p.get_categoria_display }}</td>
             <td class="text-center">
