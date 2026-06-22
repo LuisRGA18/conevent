@@ -1,7 +1,190 @@
-Prioridad alta:
+conevent/settings.py
+"""
+Django settings for CONEVENT / SIGEA project.
+"""
 
-usuarios/models.py — para ver los modelos principales (Proyecto, Evaluación, Criterio, etc.)
+from pathlib import Path
+from datetime import timedelta
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = 'django-insecure-zm_j!+%^3+_(thmqaaqlwuy43^plkdv-z26uwel(8f19xma6xn'
+
+DEBUG = True
+
+ALLOWED_HOSTS = []
+
+# ─── APPS ────────────────────────────────────────────────────
+# IMPORTANTE: 'usuarios' debe ir ANTES de 'django.contrib.admin'
+# para que Django registre el modelo de usuario personalizado correctamente
+INSTALLED_APPS = [
+    'usuarios',                          # <-- PRIMERO la app con AUTH_USER_MODEL
+    'espacios',                          # <-- App de gestión de espacios / stands
+    'inventario',                        # <-- App de gestión de inventario / QR
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',                    # <-- Django REST Framework
+    'corsheaders',                       # <-- CORS Headers
+    'reportes',                          # <-- Reportes y analíticas
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',            # <-- CORS middleware (debe ir antes de CommonMiddleware)
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'conevent.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'conevent.wsgi.application'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# ─── Internacionalización ────────────────────────────────────
+LANGUAGE_CODE = 'es-mx'           # <-- Cambiado a español México
+TIME_ZONE = 'America/Mexico_City' # <-- Zona horaria correcta para UTEQ
+USE_I18N = True
+USE_TZ = True
+
+# ─── Archivos estáticos ──────────────────────────────────────
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ─── Modelo de usuario personalizado ────────────────────────
+AUTH_USER_MODEL = 'usuarios.Usuario'  # REQUERIDO para que funcione todo
+
+# ─── Redirecciones de login ──────────────────────────────────
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/'
+
+# Correos en consola durante desarrollo
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# ─── Backends de autenticación ──────────────────────────────
+# Permite login con username O correo institucional
+AUTHENTICATION_BACKENDS = [
+    'usuarios.backends.EmailOrUsernameBackend',  # Nuestro backend personalizado
+    'django.contrib.auth.backends.ModelBackend', # Respaldo nativo de Django
+]
+
+# ─── Configuración de Django REST Framework (DRF) ────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+}
+
+# ─── Configuración de Simple JWT ─────────────────────────────
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Expiración cómoda para desarrollo
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+# ─── Configuración de CORS ───────────────────────────────────
+CORS_ALLOW_ALL_ORIGINS = True  # Permitir cualquier origen en desarrollo
+CORS_ALLOW_CREDENTIALS = True
+
+
+------------------------------------------------------
+conevent/urls.py
+from django.contrib import admin
+from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from usuarios import views as usuarios_views
+
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+
+    # REST API
+    path('api/', include('usuarios.api_urls')),
+
+    # App usuarios
+    path('auth/', include('usuarios.urls')),
+
+    # Nuevas Apps (Fase 1)
+    path('espacios/', include('espacios.urls')),
+    path('inventario/', include('inventario.urls')),
+    path('reportes/', include('reportes.urls')),
+
+    # Reset de contraseña
+    path('auth/password-reset/',
+         auth_views.PasswordResetView.as_view(
+             template_name='usuarios/password_reset.html',
+             email_template_name='usuarios/password_reset_email.html',
+             subject_template_name='usuarios/password_reset_subject.txt',
+         ), name='password_reset'),
+
+    path('auth/password-reset/enviado/',
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='usuarios/password_reset_done.html',
+         ), name='password_reset_done'),
+
+    path('auth/password-reset/<uidb64>/<token>/',
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='usuarios/password_reset_confirm.html',
+         ), name='password_reset_confirm'),
+
+    path('auth/password-reset/listo/',
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='usuarios/password_reset_complete.html',
+         ), name='password_reset_complete'),
+
+    # Dashboard
+    path('', usuarios_views.index_view, name='index'),
+
+]
+
+-----------------------------------------------------
+usuarios/models.py
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
@@ -270,191 +453,665 @@ class DetalleEvaluacion(models.Model):
         
         # Recalcular la nota general de la evaluación principal
         self.evaluacion.recalcular_calificacion()
------------------------------------------------------------------
-conevent/settings.py — apps instaladas, configuración general
-"""
-Django settings for CONEVENT / SIGEA project.
-"""
 
-from pathlib import Path
-from datetime import timedelta
+----------------------------------------------------
+usuarios/views.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Avg, Count
+from django.db import transaction
+import unicodedata
+import random
+# 🟢 Aseguramos todos los modelos importados correctamente
+from .models import Proyecto, Usuario, Integrante, Evaluacion, Carrera 
+from .forms import (
+    ProyectoForm, RegistroForm,
+    IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
+)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# ──────────────────────────────────────────────────────────────
+# AUTENTICACIÓN
+# ──────────────────────────────────────────────────────────────
 
-SECRET_KEY = 'django-insecure-zm_j!+%^3+_(thmqaaqlwuy43^plkdv-z26uwel(8f19xma6xn'
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
 
-DEBUG = True
+    if request.method == 'POST':
+        usuario = request.POST.get('username')
+        clave   = request.POST.get('password')
+        user    = authenticate(request, username=usuario, password=clave)
 
-ALLOWED_HOSTS = []
+        if user is not None:
+            if user.is_active:
+                if request.COOKIES.get(f'dispositivo_seguro_{user.id}') == 'true':
+                    login(request, user)
+                    request.session['mostrar_bienvenida'] = True
+                    return redirect('index')
 
-# ─── APPS ────────────────────────────────────────────────────
-# IMPORTANTE: 'usuarios' debe ir ANTES de 'django.contrib.admin'
-# para que Django registre el modelo de usuario personalizado correctamente
-INSTALLED_APPS = [
-    'usuarios',                          # <-- PRIMERO la app con AUTH_USER_MODEL
-    'espacios',                          # <-- App de gestión de espacios / stands
-    'inventario',                        # <-- App de gestión de inventario / QR
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',                    # <-- Django REST Framework
-    'corsheaders',                       # <-- CORS Headers
-    'reportes',                          # <-- Reportes y analíticas
-]
+                codigo_generado = str(random.randint(100000, 999999))
+                request.session['pre_auth_user_id']    = user.id
+                request.session['codigo_2fa_correcto'] = codigo_generado
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',            # <-- CORS middleware (debe ir antes de CommonMiddleware)
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+                print("\n" + "="*50)
+                print(f" CÓDIGO 2FA para {user.email}: {codigo_generado} ")
+                print("="*50 + "\n")
 
-ROOT_URLCONF = 'conevent.urls'
+                return redirect('verificar_2fa')
+            else:
+                messages.error(request, "Esta cuenta se encuentra desactivada.")
+        else:
+            messages.error(request, "Usuario o contraseña incorrectos.")
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
+    return render(request, 'usuarios/login.html')
 
-WSGI_APPLICATION = 'conevent.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+def verificar_2fa_view(request):
+    user_id        = request.session.get('pre_auth_user_id')
+    codigo_correcto = request.session.get('codigo_2fa_correcto')
+
+    if not user_id or not codigo_correcto:
+        return redirect('login')
+
+    user = get_object_or_404(Usuario, id=user_id)
+
+    if request.method == 'POST':
+        codigo_ingresado = request.POST.get('codigo_2fa', '').strip()
+        recordar         = request.POST.get('recordar_dispositivo')
+
+        if codigo_ingresado == codigo_correcto:
+            request.session.pop('pre_auth_user_id', None)
+            request.session.pop('codigo_2fa_correcto', None)
+
+            login(request, user, backend='usuarios.backends.EmailOrUsernameBackend')
+            request.session['mostrar_bienvenida'] = True
+
+            response = redirect('index')
+            if recordar == 'si':
+                response.set_cookie(
+                    f'dispositivo_seguro_{user.id}', 'true',
+                    max_age=30 * 24 * 60 * 60, httponly=True
+                )
+            return response
+        else:
+            messages.error(request, "Código de verificación incorrecto.")
+
+    return render(request, 'usuarios/verificar_2fa.html')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
+def limpiar_texto(texto):
+    return unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('utf-8').lower().strip()
+
+
+def registro_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+
+    if request.method == 'POST':
+        form = RegistroForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+
+            nombres   = form.cleaned_data['first_name']
+            apellidos = form.cleaned_data['last_name']
+            primer_nombre   = limpiar_texto(nombres.split()[0])
+            primer_apellido = limpiar_texto(apellidos.split()[0])
+            username_base   = f"{primer_nombre}.{primer_apellido}"
+
+            contador = 1
+            username_final = username_base
+            while Usuario.objects.filter(username=username_final).exists():
+                username_final = f"{username_base}{contador}"
+                contador += 1
+
+            user.username   = username_final
+            user.first_name = nombres
+            user.last_name  = apellidos
+            user.email      = form.cleaned_data['email']
+            user.set_password(form.cleaned_data['password'])
+            user.is_active  = False   
+            user.save()
+
+            codigo_activacion = str(random.randint(100000, 999999))
+            request.session['id_usuario_pendiente']     = user.id
+            request.session['codigo_activacion_correcto'] = codigo_activacion
+
+            print("\n" + "═"*50)
+            print(f" CÓDIGO DE ACTIVACIÓN para {user.email}: {codigo_activacion} ")
+            print("═"*50 + "\n")
+
+            return redirect('activar_cuenta')
+    else:
+        form = RegistroForm()
+
+    return render(request, 'usuarios/registro.html', {'form': form})
+
+
+def activar_cuenta_view(request):
+    user_id         = request.session.get('id_usuario_pendiente')
+    codigo_correcto = request.session.get('codigo_activacion_correcto')
+
+    if not user_id or not codigo_correcto:
+        return redirect('registro')
+
+    user = get_object_or_404(Usuario, id=user_id)
+
+    if request.method == 'POST':
+        codigo_ingresado = request.POST.get('codigo_activacion', '').strip()
+
+        if codigo_ingresado == codigo_correcto:
+            user.is_active = True
+            user.save()
+            del request.session['id_usuario_pendiente']
+            del request.session['codigo_activacion_correcto']
+            messages.success(
+                request,
+                f"¡Cuenta verificada! Tu usuario es: {user.username}. Ya puedes iniciar sesión."
+            )
+            return redirect('login')
+        else:
+            messages.error(request, "Código de validación incorrecto.")
+
+    return render(request, 'usuarios/activar_cuenta.html')
+
+
+# ──────────────────────────────────────────────────────────────
+# DASHBOARD PRINCIPAL (CON CONTADORES REALES)
+# ──────────────────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def index_view(request):
+    if request.session.pop('mostrar_bienvenida', False):
+        nombre = request.user.first_name or request.user.username
+        messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
+
+    stats = {}
+    rol = request.user.rol
+
+    if request.user.es_admin or rol == 'ADMIN':
+        stats = {
+            'total_usuarios': Usuario.objects.count(),
+            'total_proyectos': Proyecto.objects.count(),
+            'evaluados': Proyecto.objects.filter(calificacion__isnull=False).count(),
+            'sin_evaluador': Proyecto.objects.filter(evaluador_asignado__isnull=True).count()
+        }
+
+    return render(request, 'seguridad/index.html', {'stats': stats})
+
+
+# ──────────────────────────────────────────────────────────────
+# VISTAS ALUMNO (REGISTRO, PANEL Y CONTROL TOTAL)
+# ──────────────────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def panel_alumno_view(request):
+    """🟢 Home/Dashboard del Alumno: Resuelve el bug del POST y envía variables exactas."""
+    if request.user.rol != 'ALUMNO':
+        return redirect('index')
+        
+    if request.method == 'POST':
+        # Procesamos la creación/edición del proyecto delegando a la vista unificada
+        return registrar_proyecto_view(request)
+        
+    proyecto = Proyecto.objects.filter(creado_por=request.user).prefetch_related('miembros').first()
+    carreras = Carrera.objects.all()
+    
+    return render(request, 'usuarios/registrar_proyecto.html', {
+        'proyecto': proyecto,
+        'proyecto_registrado': proyecto,
+        'miembros': proyecto.miembros.all() if proyecto else [],
+        'carreras': carreras,
+    })
+
+
+@login_required(login_url='login')
+def registrar_proyecto_view(request):
+    """🟢 Vista unificada de Gestión y Formulario: Remueve restricciones de estatus e inyecta al líder y compañeros."""
+    if request.user.rol != 'ALUMNO':
+        messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
+        return redirect('index')
+
+    # Contingencia carreras vacías
+    if not Carrera.objects.exists():
+        Carrera.objects.create(nombre="Ingeniería en Redes Inteligentes y Ciberseguridad", clave="IRIC")
+        Carrera.objects.create(nombre="Desarrollo de Software Multiplataforma", clave="DSM")
+        Carrera.objects.create(nombre="Entornos Virtuales y Negocios Digitales", clave="EVND")
+
+    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+
+    if request.method == 'POST':
+        # Caso A: El proyecto ya existe y se está editando desde el Modal
+        if proyecto:
+            titulo = request.POST.get('titulo')
+            descripcion = request.POST.get('descripcion')
+            carrera_id = request.POST.get('carrera')
+            grupo = request.POST.get('grupo', '').strip().upper()
+            categoria = request.POST.get('categoria')
+            
+            if titulo and descripcion and carrera_id and grupo:
+                proyecto.titulo = titulo
+                proyecto.descripcion = descripcion
+                proyecto.carrera = Carrera.objects.get(id=carrera_id)
+                proyecto.grupo = grupo
+                proyecto.categoria = categoria
+                if request.FILES.get('logo'):
+                    proyecto.logo = request.FILES.get('logo')
+                proyecto.save()
+                messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
+                return redirect('mi_proyecto')
+        
+        # Caso B: El proyecto no existe y se está creando desde cero
+        else:
+            titulo = request.POST.get('titulo')
+            descripcion = request.POST.get('descripcion')
+            carrera_id = request.POST.get('carrera')
+            grupo = request.POST.get('grupo', '').strip().upper()
+            categoria = request.POST.get('categoria')
+            logo = request.FILES.get('logo')
+
+            if titulo and descripcion and carrera_id and grupo:
+                carrera_obj = Carrera.objects.get(id=carrera_id)
+                
+                with transaction.atomic():
+                    # 1. Creamos el proyecto limpio
+                    nuevo_proyecto = Proyecto.objects.create(
+                        titulo=titulo,
+                        descripcion=descripcion,
+                        carrera=carrera_obj,
+                        grupo=grupo,
+                        categoria=categoria,
+                        logo=logo,
+                        creado_por=request.user
+                    )
+
+                    # 2. AUTOMÁTICO: Insertamos al creador logueado como Integrante Líder
+                    Integrante.objects.create(
+                        proyecto=nuevo_proyecto,
+                        nombre_completo=f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
+                        matricula=request.user.matricula_empleado or "2023XXXXXX",
+                        correo=request.user.email,
+                        es_lider=True
+                    )
+
+                    # 3. ADICIONALES: Procesamos los integrantes extras del wizard
+                    extra_matriculas = request.POST.getlist('extra_matricula[]')
+                    extra_nombres = request.POST.getlist('extra_nombres[]')
+                    extra_apellidos = request.POST.getlist('extra_apellidos[]')
+                    
+                    for i in range(len(extra_matriculas)):
+                        mat = extra_matriculas[i].strip()
+                        nom = extra_nombres[i].strip()
+                        ape = extra_apellidos[i].strip()
+                        
+                        if mat and nom:
+                            nombre_completo = f"{nom} {ape}".strip()
+                            Integrante.objects.create(
+                                proyecto=nuevo_proyecto,
+                                nombre_completo=nombre_completo,
+                                matricula=mat,
+                                correo=f"{mat}@alumnos.uteq.edu.mx",
+                                es_lider=False
+                            )
+
+                messages.success(request, "¡Proyecto registrado con éxito! Te hemos asignado automáticamente como líder de equipo.")
+                return redirect('mi_proyecto')
+            else:
+                messages.error(request, "Por favor, completa todos los campos obligatorios.")
+
+    carreras = Carrera.objects.all()
+    return render(request, 'usuarios/registrar_proyecto.html', {
+        'proyecto_registrado': proyecto,
+        'proyecto': proyecto,
+        'carreras': carreras,
+    })
+
+
+@login_required(login_url='login')
+def eliminar_proyecto_view(request, pk):
+    """🟢 Endpoint POST definitivo para eliminar el proyecto y limpiar el flujo."""
+    if request.user.rol != 'ALUMNO':
+        return redirect('index')
+        
+    proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
+    
+    if request.method == 'POST':
+        proyecto.delete()
+        messages.success(request, "Tu proyecto fue eliminado correctamente del sistema ConEvent.")
+        return redirect('mi_proyecto')
+        
+    return redirect('mi_proyecto')
+
+
+@login_required(login_url='login')
+def ver_calificacion_view(request):
+    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+    evaluacion = None
+    if proyecto:
+        evaluacion = Evaluacion.objects.filter(proyecto=proyecto).first()
+
+    context = {
+        'proyecto': proyecto,
+        'evaluacion': evaluacion,
     }
-}
-
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-# ─── Internacionalización ────────────────────────────────────
-LANGUAGE_CODE = 'es-mx'           # <-- Cambiado a español México
-TIME_ZONE = 'America/Mexico_City' # <-- Zona horaria correcta para UTEQ
-USE_I18N = True
-USE_TZ = True
-
-# ─── Archivos estáticos ──────────────────────────────────────
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ─── Modelo de usuario personalizado ────────────────────────
-AUTH_USER_MODEL = 'usuarios.Usuario'  # REQUERIDO para que funcione todo
-
-# ─── Redirecciones de login ──────────────────────────────────
-LOGIN_URL = '/auth/login/'
-LOGIN_REDIRECT_URL = '/'
-
-# Correos en consola durante desarrollo
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# ─── Backends de autenticación ──────────────────────────────
-# Permite login con username O correo institucional
-AUTHENTICATION_BACKENDS = [
-    'usuarios.backends.EmailOrUsernameBackend',  # Nuestro backend personalizado
-    'django.contrib.auth.backends.ModelBackend', # Respaldo nativo de Django
-]
-
-# ─── Configuración de Django REST Framework (DRF) ────────────
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
-
-# ─── Configuración de Simple JWT ─────────────────────────────
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Expiración cómoda para desarrollo
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-}
-
-# ─── Configuración de CORS ───────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = True  # Permitir cualquier origen en desarrollo
-CORS_ALLOW_CREDENTIALS = True
+    return render(request, 'seguridad/mis_calificaciones.html', context)
 
 
-----------------------------------------------------------------------
-conevent/urls.py — rutas raíz
-from django.contrib import admin
-from django.urls import path, include
-from django.contrib.auth import views as auth_views
-from usuarios import views as usuarios_views
+# ──────────────────────────────────────────────────────────────
+# VISTAS EVALUADOR
+# ──────────────────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def proyectos_asignados_view(request):
+    if not request.user.es_evaluador:
+        messages.error(request, "No tienes permiso para acceder a esta sección.")
+        return redirect('index')
+
+    proyectos = Proyecto.objects.filter(
+        evaluador_asignado=request.user
+    ).prefetch_related('miembros').select_related('carrera')
+
+    return render(request, 'usuarios/proyectos_asignados.html', {'proyectos': proyectos})
 
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
+@login_required(login_url='login')
+def evaluar_proyecto_view(request, pk):
+    if not request.user.es_evaluador:
+        messages.error(request, "No tienes permiso.")
+        return redirect('index')
 
-    # REST API
-    path('api/', include('usuarios.api_urls')),
+    proyecto = get_object_or_404(Proyecto, pk=pk, evaluador_asignado=request.user)
+    evaluacion_existente = Evaluacion.objects.filter(
+        proyecto=proyecto, evaluador=request.user
+    ).first()
 
-    # App usuarios
-    path('auth/', include('usuarios.urls')),
+    criterios = CriterioEvaluacion.objects.filter(activo=True)
+    
+    # Cargar calificaciones de criterios si ya existen
+    detalles_existentes = {}
+    if evaluacion_existente:
+        for det in evaluacion_existente.detalles.all():
+            detalles_existentes[det.criterio_id] = det.calificacion_cualitativa
 
-    # Nuevas Apps (Fase 1)
-    path('espacios/', include('espacios.urls')),
-    path('inventario/', include('inventario.urls')),
+    if request.method == 'POST':
+        form = EvaluacionForm(request.POST, instance=evaluacion_existente)
+        
+        # Si hay criterios, la calificación numérica se calculará por lo que prellenamos con 0.0
+        if criterios.exists():
+            post_data = request.POST.copy()
+            post_data['calificacion'] = '0.00'
+            form = EvaluacionForm(post_data, instance=evaluacion_existente)
 
-    # Reset de contraseña
-    path('auth/password-reset/',
-         auth_views.PasswordResetView.as_view(
-             template_name='usuarios/password_reset.html',
-             email_template_name='usuarios/password_reset_email.html',
-             subject_template_name='usuarios/password_reset_subject.txt',
-         ), name='password_reset'),
+        if form.is_valid():
+            error_rubrica = False
+            respuestas_criterios = {}
+            if criterios.exists():
+                for c in criterios:
+                    clave_post = f"criterio_{c.id}"
+                    valor = request.POST.get(clave_post)
+                    if not valor or valor not in ['AU', 'DE', 'SA', 'NA']:
+                        error_rubrica = True
+                        messages.error(request, f"Por favor, selecciona una calificación para el criterio: {c.nombre}")
+                    else:
+                        respuestas_criterios[c.id] = valor
+            
+            if not error_rubrica:
+                with transaction.atomic():
+                    # 1. Guardar la evaluación base
+                    evaluacion = form.save(commit=False)
+                    evaluacion.proyecto  = proyecto
+                    evaluacion.evaluador = request.user
+                    evaluacion.save()
 
-    path('auth/password-reset/enviado/',
-         auth_views.PasswordResetDoneView.as_view(
-             template_name='usuarios/password_reset_done.html',
-         ), name='password_reset_done'),
+                    # 2. Guardar detalles de la rúbrica si existen
+                    if criterios.exists():
+                        for c_id, val_cualitativo in respuestas_criterios.items():
+                            criterio_obj = CriterioEvaluacion.objects.get(id=c_id)
+                            DetalleEvaluacion.objects.update_or_create(
+                                evaluacion=evaluacion,
+                                criterio=criterio_obj,
+                                defaults={'calificacion_cualitativa': val_cualitativo}
+                            )
+                        # Forzar recalculación para actualizar Evaluación y Proyecto
+                        evaluacion.recalcular_calificacion()
+                    else:
+                        # Si es evaluación directa, guardar la calificación ingresada
+                        proyecto.calificacion = evaluacion.calificacion
+                        proyecto.save(update_fields=['calificacion'])
 
-    path('auth/password-reset/<uidb64>/<token>/',
-         auth_views.PasswordResetConfirmView.as_view(
-             template_name='usuarios/password_reset_confirm.html',
-         ), name='password_reset_confirm'),
+                    # 3. Guardar estatus sugerido en el proyecto
+                    proyecto.estatus = evaluacion.estatus_sugerido
+                    proyecto.save(update_fields=['estatus'])
 
-    path('auth/password-reset/listo/',
-         auth_views.PasswordResetCompleteView.as_view(
-             template_name='usuarios/password_reset_complete.html',
-         ), name='password_reset_complete'),
+                messages.success(request, f'Evaluación guardada con éxito para "{proyecto.titulo}".')
+                return redirect('proyectos_asignados')
+    else:
+        form = EvaluacionForm(instance=evaluacion_existente)
 
-    # Dashboard
-    path('', usuarios_views.index_view, name='index'),
+    return render(request, 'usuarios/evaluar_proyecto.html', {
+        'form':       form,
+        'proyecto':   proyecto,
+        'integrantes': proyecto.miembros.all(),  
+        'ya_evaluado': evaluacion_existente is not None,
+        'criterios':  criterios,
+        'detalles_existentes': detalles_existentes,
+    })
 
-]
 
---------------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────
+# VISTAS ADMINISTRADOR
+# ──────────────────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def panel_admin_view(request):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        messages.error(request, "No tienes permiso.")
+        return redirect('index')
+
+    qs = Proyecto.objects.select_related(
+        'creado_por', 'evaluador_asignado', 'carrera'
+    ).prefetch_related('miembros', 'asignaciones_stands__stand')
+
+    q       = request.GET.get('q', '').strip()
+    estatus = request.GET.get('estatus', '').strip()
+
+    if q:
+        qs = qs.filter(
+            Q(titulo__icontains=q) | 
+            Q(creado_por__username__icontains=q) |
+            Q(creado_por__first_name__icontains=q)
+        )
+    if estatus:
+        qs = qs.filter(estatus=estatus)
+
+    qs = qs.order_by('-id')
+
+    return render(request, 'usuarios/panel_admin.html', {
+        'todos_los_proyectos': qs,
+        'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
+        'q':               q,
+        'estatus_filtro':  estatus,
+        'estatus_choices': Proyecto.ESTATUS_CHOICES,
+    })
+
+
+@login_required(login_url='login')
+def cambiar_estatus_proyecto_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+        
+    proyecto = get_object_or_404(Proyecto, pk=pk)
+    if request.method == 'POST':
+        nuevo_estatus = request.POST.get('nuevo_estatus')
+        if nuevo_estatus in ['revision', 'aprobado', 'rechazado']:
+            proyecto.estatus = nuevo_estatus
+            proyecto.save(update_fields=['estatus'])
+            messages.success(request, f'Estatus del proyecto "{proyecto.titulo}" cambiado a: {proyecto.get_estatus_display()}.')
+    return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def asignar_evaluador_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+
+    proyecto = get_object_or_404(Proyecto, pk=pk)
+
+    if request.method == 'POST':
+        docente_id = request.POST.get('docente_id')
+        if docente_id:
+            docente = get_object_or_404(Usuario, pk=docente_id, rol='EVALUADOR')
+            proyecto.evaluador_asignado = docente
+            proyecto.save(update_fields=['evaluador_asignado'])
+            messages.success(request, f'Docente {docente.get_full_name() or docente.username} asignado correctamente a "{proyecto.titulo}".')
+        else:
+            proyecto.evaluador_asignado = None
+            proyecto.save(update_fields=['evaluador_asignado'])
+            messages.info(request, f'Se retiró el evaluador de "{proyecto.titulo}".')
+            
+    return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def guardar_comentario_admin_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+
+    proyecto = get_object_or_404(Proyecto, pk=pk)
+    if request.method == 'POST':
+        comentarios = request.POST.get('comentarios', '').strip()
+        proyecto.comentarios_evaluador = comentarios
+        proyecto.save(update_fields=['comentarios_evaluador'])
+        messages.success(request, f'Comentarios actualizados para "{proyecto.titulo}".')
+    return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def editar_proyecto_view(request, pk):
+    """
+    Permite al alumno creador editar su proyecto si y solo si
+    este se encuentra con estatus 'revision'.
+    """
+    if request.user.rol != 'ALUMNO':
+        messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
+        return redirect('index')
+
+    proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
+
+    if proyecto.estatus != 'revision':
+        messages.error(request, "No puedes editar tu proyecto si ya ha sido evaluado o tiene un estatus aprobado/rechazado.")
+        return redirect('mi_proyecto')
+
+    if request.method == 'POST':
+        form = ProyectoForm(request.POST, request.FILES, instance=proyecto)
+        formset = IntegranteFormSet(request.POST, instance=proyecto)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
+            return redirect('mi_proyecto')
+        else:
+            messages.error(request, "Por favor, corrige los errores en el formulario.")
+    else:
+        form = ProyectoForm(instance=proyecto)
+        formset = IntegranteFormSet(instance=proyecto)
+
+    return render(request, 'usuarios/editar_proyecto.html', {
+        'proyecto': proyecto,
+        'form': form,
+        'formset': formset,
+    })
+
+---------------------------------------------------
+usuarios/api_views.py
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .models import Proyecto, Usuario, Carrera, Evaluacion, CriterioEvaluacion
+from .serializers import (
+    UsuarioSerializer, CarreraSerializer, ProyectoSerializer,
+    EvaluacionSerializer, CriterioEvaluacionSerializer
+)
+
+class UserMeView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        serializer = UsuarioSerializer(request.user)
+        data = serializer.data
+        if request.user.rol == 'ALUMNO':
+            proyectos = request.user.proyectos.all()
+            data['proyectos'] = ProyectoSerializer(proyectos, many=True, context={'request': request}).data
+        elif request.user.rol == 'EVALUADOR':
+            proyectos = request.user.proyectos_a_evaluar.all()
+            data['proyectos_asignados'] = ProyectoSerializer(proyectos, many=True, context={'request': request}).data
+        return Response(data)
+
+class ProyectoViewSet(viewsets.ModelViewSet):
+    serializer_class = ProyectoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'ADMIN':
+            return Proyecto.objects.all()
+        elif user.rol == 'EVALUADOR':
+            return Proyecto.objects.filter(evaluador_asignado=user)
+        elif user.rol == 'ALUMNO':
+            return Proyecto.objects.filter(creado_por=user)
+        return Proyecto.objects.none()
+
+    def perform_create(self, serializer):
+        if self.request.user.rol == 'ALUMNO':
+            serializer.save(creado_por=self.request.user)
+        else:
+            serializer.save()
+
+class CarreraViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Carrera.objects.all()
+    serializer_class = CarreraSerializer
+    permission_classes = [AllowAny]
+
+class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = UsuarioSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.rol == 'ADMIN':
+            return Usuario.objects.filter(rol='EVALUADOR')
+        return Usuario.objects.none()
+
+class CriterioEvaluacionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CriterioEvaluacion.objects.filter(activo=True)
+    serializer_class = CriterioEvaluacionSerializer
+    permission_classes = [IsAuthenticated]
+
+class EvaluacionViewSet(viewsets.ModelViewSet):
+    serializer_class = EvaluacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'ADMIN':
+            return Evaluacion.objects.all()
+        elif user.rol == 'EVALUADOR':
+            return Evaluacion.objects.filter(evaluador=user)
+        elif user.rol == 'ALUMNO':
+            return Evaluacion.objects.filter(proyecto__creado_por=user)
+        return Evaluacion.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(evaluador=self.request.user)
+
+
+-------------------------------------------------
 usuarios/urls.py
 from django.urls import path
 from . import views
@@ -469,7 +1126,7 @@ urlpatterns = [
 
     # ── Alumno ─────────────────────────────────
     path('mi-proyecto/', views.panel_alumno_view, name='mi_proyecto'),
-    #path('mi-proyecto/<int:pk>/editar/', views.editar_proyecto_view, name='editar_proyecto'),
+    path('mi-proyecto/<int:pk>/editar/', views.editar_proyecto_view, name='editar_proyecto'),
     path('proyecto/registrar/', views.registrar_proyecto_view, name='registrar_proyecto'),
     path('proyecto/eliminar/<int:pk>/', views.eliminar_proyecto_view, name='eliminar_proyecto'),
     # 🟢 NUEVA RUTA AGREGADA:
@@ -488,9 +1145,8 @@ urlpatterns = [
     path('panel-admin/comentario/<int:pk>/', views.guardar_comentario_admin_view, name='guardar_comentario_admin'),
 ]
 
-
--------------------------------------------------
-usuarios/api_urls.py — qué endpoints ya existen
+---------------------------------------------------
+usuarios/api_urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
@@ -526,11 +1182,7 @@ urlpatterns = [
 ]
 
 
-
----------------------------------------------------------------------
-
-Prioridad media:
-
+----------------------------------------------
 espacios/models.py
 from django.db import models
 from django.conf import settings
@@ -550,6 +1202,8 @@ class Stand(models.Model):
     capacidad_proyectos = models.PositiveIntegerField(default=1, verbose_name="Capacidad de proyectos simultáneos")
     descripcion = models.TextField(blank=True, verbose_name="Detalles adicionales del espacio")
     esta_activo = models.BooleanField(default=True, verbose_name="Disponible para asignación")
+    pos_fila = models.PositiveIntegerField(default=0, verbose_name="Posición Fila (Coordenada Y)")
+    pos_col = models.PositiveIntegerField(default=0, verbose_name="Posición Columna (Coordenada X)")
 
     class Meta:
         verbose_name = "Stand / Espacio"
@@ -614,8 +1268,147 @@ class CargaDocente(models.Model):
     def __str__(self):
         return f"{self.docente.username} -> Grupo {self.codigo_grupo}"
 
+------------------------------------------------
+espacios/api_views.py
+from rest_framework import viewsets, permissions
+from rest_framework.permissions import BasePermission
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import Stand, AsignacionStand
+from .serializers import StandSerializer, AsignacionStandSerializer
 
---------------------------------------
+class IsAdminUserRole(BasePermission):
+    """
+    Permiso personalizado que permite el acceso de escritura solo a administradores.
+    """
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.rol == 'ADMIN'
+
+class StandViewSet(viewsets.ModelViewSet):
+    serializer_class = StandSerializer
+    
+    def get_queryset(self):
+        return Stand.objects.all().select_related(
+            'asignacion__proyecto__carrera',
+            'asignacion__proyecto__evaluador_asignado',
+            'asignacion__proyecto__creado_por'
+        )
+    
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsAdminUserRole()]
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def mapa(self, request):
+        stands = self.get_queryset().filter(esta_activo=True)
+        data = []
+        for s in stands:
+            stand_data = {
+                'id': s.id,
+                'numero': s.numero,
+                'zona': s.zona,
+                'zona_display': s.get_zona_display(),
+                'pos_fila': s.pos_fila,
+                'pos_col': s.pos_col,
+                'esta_activo': s.esta_activo,
+                'proyecto_asignado': None
+            }
+            
+            asignacion = None
+            try:
+                asignacion = s.asignacion
+            except Stand.asignacion.RelatedObjectDoesNotExist:
+                pass
+                
+            if asignacion:
+                proyecto = asignacion.proyecto
+                evaluador_nombre = ""
+                if proyecto.evaluador_asignado:
+                    evaluador_nombre = proyecto.evaluador_asignado.get_full_name() or proyecto.evaluador_asignado.username
+                
+                creador_nombre = proyecto.creado_por.get_full_name() or proyecto.creado_por.username
+                
+                stand_data['proyecto_asignado'] = {
+                    'id': proyecto.id,
+                    'titulo': proyecto.titulo,
+                    'categoria': proyecto.categoria,
+                    'carrera_clave': proyecto.carrera.clave if proyecto.carrera else 'S/C',
+                    'carrera_nombre': proyecto.carrera.nombre if proyecto.carrera else 'Sin Carrera',
+                    'lider_nombre': creador_nombre,
+                    'evaluador_nombre': evaluador_nombre,
+                }
+            data.append(stand_data)
+        return Response(data)
+
+class AsignacionStandViewSet(viewsets.ModelViewSet):
+    queryset = AsignacionStand.objects.all()
+    serializer_class = AsignacionStandSerializer
+    
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsAdminUserRole()]
+
+
+----------------------------------------
+espacios/views.py
+from django.shortcuts import render
+from django.http import JsonResponse
+from .models import Stand
+
+def lista_stands_json(request):
+    """
+    Retorna la lista de stands y sus asignaciones actuales en formato JSON.
+    Útil para consumirse por el frontend o por APIs.
+    """
+    stands = Stand.objects.filter(esta_activo=True)
+    datos = []
+    for stand in stands:
+        proyecto_info = None
+        if hasattr(stand, 'asignacion'):
+            p = stand.asignacion.proyecto
+            proyecto_info = {
+                'id': p.id,
+                'titulo': p.titulo,
+                'carrera': p.carrera.nombre if p.carrera else "Sin carrera",
+                'categoria': p.get_categoria_display(),
+                'creado_por': p.creado_por.get_full_name() or p.creado_por.username
+            }
+        datos.append({
+            'id': stand.id,
+            'numero': stand.numero,
+            'zona': stand.zona,
+            'zona_display': stand.get_zona_display(),
+            'capacidad': stand.capacidad_proyectos,
+            'proyecto': proyecto_info
+        })
+    return JsonResponse({'stands': datos}, safe=False)
+
+from django.contrib.auth.decorators import login_required
+
+@login_required(login_url='/auth/login/')
+def mapa_auditorio_view(request):
+    """
+    Vista que renderiza el mapa interactivo del auditorio.
+    """
+    return render(request, 'espacios/mapa_auditorio.html')
+
+
+-----------------------------------------------
+espacios/urls.py
+from django.urls import path
+from . import views
+
+app_name = 'espacios'
+
+urlpatterns = [
+    path('api/listado/', views.lista_stands_json, name='lista_stands_json'),
+    path('mapa/', views.mapa_auditorio_view, name='mapa_auditorio'),
+]
+
+
+----------------------------------------------
 inventario/models.py
 import uuid
 from django.db import models
@@ -699,8 +1492,234 @@ class Incidencia(models.Model):
         return f"{self.titulo} - {self.item.nombre} ({estado_inc})"
 
 
---------------------------------------------------------------------------------
-reportes/api_views.py — parece que reportes aún no tiene models ni urls
+-------------------------------------------------
+inventario/views.py
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Case, When
+import qrcode
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from .models import ItemInventario, Incidencia
+
+def detalle_item_view(request, item_uuid):
+    """
+    Vista de detalle para un elemento de inventario escaneado por QR.
+    Permite visualizar el estado e incidencias, además de reportar nuevos problemas.
+    """
+    item = get_object_or_404(ItemInventario, uuid=item_uuid)
+    incidencias_activas = item.incidencias.filter(resuelta=False)
+    incidencias_resueltas = item.incidencias.filter(resuelta=True)
+    
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return redirect(f"/auth/login/?next={request.path}")
+            
+        titulo = request.POST.get('titulo', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        prioridad = request.POST.get('prioridad', 'media')
+        
+        if not titulo or not descripcion:
+            messages.error(request, "Por favor, completa el título y descripción del problema.")
+        else:
+            Incidencia.objects.create(
+                item=item,
+                titulo=titulo,
+                descripcion=descripcion,
+                prioridad=prioridad,
+                reportado_por=request.user,
+                resuelta=False
+            )
+            messages.success(request, "¡Incidencia reportada con éxito! Los organizadores la atenderán.")
+            return redirect('inventario:detalle_item', item_uuid=item.uuid)
+            
+    return render(request, 'inventario/detalle_item.html', {
+        'item': item,
+        'incidencias_activas': incidencias_activas,
+        'incidencias_resueltas': incidencias_resueltas,
+    })
+
+@login_required(login_url='/auth/login/')
+def incidencias_activas_view(request):
+    """
+    Panel de incidencias activas en el evento.
+    Solo accesible para administradores (rol ADMIN).
+    """
+    if request.user.rol != 'ADMIN':
+        messages.error(request, "Acceso denegado. Solo administradores pueden ver este panel.")
+        return redirect('index')
+        
+    if request.method == 'POST':
+        incidencia_id = request.POST.get('incidencia_id')
+        comentario = request.POST.get('comentarios_resolucion', '').strip()
+        incidencia = get_object_or_404(Incidencia, id=incidencia_id)
+        
+        incidencia.resuelta = True
+        incidencia.comentarios_resolucion = comentario
+        incidencia.fecha_resolucion = timezone.now()
+        incidencia.save()
+        
+        messages.success(request, f"La incidencia '{incidencia.titulo}' ha sido marcada como resuelta.")
+        return redirect('inventario:incidencias_activas')
+        
+    # Ordenar por prioridad (alta -> 0, media -> 1, baja -> 2)
+    incidencias = Incidencia.objects.filter(resuelta=False).order_by(
+        Case(
+            When(prioridad='alta', then=0),
+            When(prioridad='media', then=1),
+            When(prioridad='baja', then=2),
+            default=3
+        ),
+        '-fecha_reporte'
+    ).select_related('item__stand_asignado', 'reportado_por')
+    
+    return render(request, 'inventario/incidencias_activas.html', {
+        'incidencias': incidencias
+    })
+
+@login_required(login_url='/auth/login/')
+def generar_qr_view(request, item_id):
+    """
+    Genera un archivo de imagen PNG con el código QR para un elemento de inventario.
+    Solo accesible para el rol ADMIN.
+    """
+    if request.user.rol != 'ADMIN':
+        return HttpResponse("Acceso denegado", status=403)
+        
+    item = get_object_or_404(ItemInventario, id=item_id)
+    url = request.build_absolute_uri(item.url_qr)
+    
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    response = HttpResponse(content_type="image/png")
+    img.save(response, "PNG")
+    return response
+
+@login_required(login_url='/auth/login/')
+def generar_qr_lote_pdf_view(request):
+    """
+    Genera un archivo PDF con todos los códigos QR del inventario en una cuadrícula.
+    Solo accesible para el rol ADMIN.
+    """
+    if request.user.rol != 'ADMIN':
+        return HttpResponse("Acceso denegado", status=403)
+        
+    items = ItemInventario.objects.all().order_by('nombre').select_related('stand_asignado')
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="qr_codes_lote.pdf"'
+    
+    doc = SimpleDocTemplate(
+        response, pagesize=letter,
+        rightMargin=36, leftMargin=36,
+        topMargin=36, bottomMargin=36
+    )
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        leading=22,
+        alignment=1,
+        spaceAfter=15
+    )
+    item_label_style = ParagraphStyle(
+        'ItemLabelStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        alignment=1
+    )
+    
+    story.append(Paragraph("Códigos QR de Inventario - ConEvent", title_style))
+    story.append(Spacer(1, 10))
+    
+    data = []
+    row = []
+    
+    for item in items:
+        url = request.build_absolute_uri(item.url_qr)
+        
+        qr = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        buf = BytesIO()
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        
+        from reportlab.platypus import Image as RLImage
+        rl_img = RLImage(buf, width=110, height=110)
+        
+        stand_num = item.stand_asignado.numero if item.stand_asignado else "Sin stand"
+        label_text = f"<b>{item.nombre}</b><br/>Stand: {stand_num}<br/><font size='5'>{item.uuid}</font>"
+        label_p = Paragraph(label_text, item_label_style)
+        
+        cell_table = Table([[rl_img], [label_p]], colWidths=[120])
+        cell_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+        ]))
+        
+        row.append(cell_table)
+        
+        if len(row) == 4:
+            data.append(row)
+            row = []
+            
+    if row:
+        while len(row) < 4:
+            row.append("")
+        data.append(row)
+        
+    if data:
+        t = Table(data, colWidths=[135, 135, 135, 135])
+        t.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ]))
+        story.append(t)
+    else:
+        story.append(Paragraph("No hay ítems registrados en el inventario.", styles['Normal']))
+        
+    doc.build(story)
+    return response
+
+
+------------------------------------------------
+inventario/urls.py
+from django.urls import path
+from . import views
+
+app_name = 'inventario'
+
+urlpatterns = [
+    path('item/<uuid:item_uuid>/', views.detalle_item_view, name='detalle_item'),
+    path('incidencias/', views.incidencias_activas_view, name='incidencias_activas'),
+    path('qr/<int:item_id>/', views.generar_qr_view, name='generar_qr'),
+    path('qr/lote/', views.generar_qr_lote_pdf_view, name='generar_qr_lote'),
+]
+
+
+-----------------------------------------------
+reportes/api_views.py
 import csv
 from django.http import HttpResponse
 from django.db.models import Count, Avg
@@ -883,5 +1902,169 @@ class ExportCalificacionesCSVView(APIView):
         return response
 
 
+----------------------------------------------
+reportes/views.py (si existe)
+import io
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from usuarios.models import Proyecto
 
----------------------------------------------------------------------------
+@login_required(login_url='/auth/login/')
+def dashboard_view(request):
+    """
+    Renderiza la página del dashboard visual con gráficos y KPIs.
+    Solo accesible para docentes (EVALUADOR) y coordinadores (ADMIN).
+    """
+    if request.user.rol not in ['ADMIN', 'EVALUADOR']:
+        messages.error(request, "No tienes permiso para acceder a esta sección.")
+        return redirect('index')
+    return render(request, 'reportes/dashboard.html')
+
+@login_required(login_url='/auth/login/')
+def exportar_calificaciones_pdf_view(request):
+    """
+    Genera un archivo PDF con la tabla consolidada de calificaciones de proyectos.
+    Solo accesible para administradores (ADMIN).
+    """
+    if request.user.rol != 'ADMIN':
+        messages.error(request, "Acceso denegado. Solo administradores pueden exportar calificaciones en PDF.")
+        return redirect('index')
+        
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="calificaciones_conevent.pdf"'
+    
+    # Usar hoja horizontal (landscape) para acomodar todas las columnas
+    doc = SimpleDocTemplate(
+        response, pagesize=landscape(letter),
+        rightMargin=36, leftMargin=36,
+        topMargin=36, bottomMargin=36
+    )
+    story = []
+    
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'PDFTitle',
+        parent=styles['Heading1'],
+        fontSize=20,
+        leading=24,
+        alignment=1,
+        textColor=colors.HexColor('#0f172a'),
+        spaceAfter=4
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'PDFSubTitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=12,
+        alignment=1,
+        textColor=colors.HexColor('#475569'),
+        spaceAfter=15
+    )
+    
+    cell_style = ParagraphStyle(
+        'PDFCell',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+    )
+    
+    cell_header_style = ParagraphStyle(
+        'PDFCellHeader',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        fontName='Helvetica-Bold',
+        textColor=colors.white
+    )
+    
+    # Título del Evento
+    story.append(Paragraph("CONEVENT — UTEQ", title_style))
+    fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
+    story.append(Paragraph(f"Reporte Oficial de Calificaciones Finales · Generado el: {fecha_str}", subtitle_style))
+    story.append(Spacer(1, 10))
+    
+    # Definición de anchos de columnas (Usable horizontal = 720)
+    col_widths = [45, 140, 90, 70, 80, 110, 80, 45, 60]
+    
+    table_data = []
+    # Fila de cabecera
+    table_data.append([
+        Paragraph("Código", cell_header_style),
+        Paragraph("Título del Proyecto", cell_header_style),
+        Paragraph("Carrera", cell_header_style),
+        Paragraph("Categoría", cell_header_style),
+        Paragraph("Líder / Creador", cell_header_style),
+        Paragraph("Integrantes", cell_header_style),
+        Paragraph("Evaluador", cell_header_style),
+        Paragraph("Nota", cell_header_style),
+        Paragraph("Estatus", cell_header_style),
+    ])
+    
+    proyectos = Proyecto.objects.all().select_related('carrera', 'creado_por', 'evaluador_asignado').prefetch_related('miembros')
+    
+    cat_map = dict(Proyecto.CATEGORIA_CHOICES)
+    estatus_map = dict(Proyecto.ESTATUS_CHOICES)
+    
+    for p in proyectos:
+        integrantes_list = [m.nombre_completo for m in p.miembros.all()]
+        integrantes_str = ", ".join(integrantes_list)
+        
+        creador_str = f"{p.creado_por.first_name} {p.creado_por.last_name}" if p.creado_por.first_name else p.creado_por.username
+        evaluador_str = ""
+        if p.evaluador_asignado:
+            evaluador_str = f"{p.evaluador_asignado.first_name} {p.evaluador_asignado.last_name}" if p.evaluador_asignado.first_name else p.evaluador_asignado.username
+            
+        calif_str = f"{p.calificacion:.2f}" if p.calificacion is not None else 'N/A'
+        
+        table_data.append([
+            Paragraph(p.codigo, cell_style),
+            Paragraph(p.titulo, cell_style),
+            Paragraph(p.carrera.clave if p.carrera else 'S/C', cell_style),
+            Paragraph(cat_map.get(p.categoria, p.categoria).capitalize(), cell_style),
+            Paragraph(creador_str, cell_style),
+            Paragraph(integrantes_str, cell_style),
+            Paragraph(evaluador_str, cell_style),
+            Paragraph(calif_str, cell_style),
+            Paragraph(estatus_map.get(p.estatus, p.estatus), cell_style),
+        ])
+        
+    t = Table(table_data, colWidths=col_widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1e293b')),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
+    ]))
+    
+    story.append(t)
+    doc.build(story)
+    return response
+
+
+--------------------------------------------
+reportes/urls.py (si existe)
+from django.urls import path
+from . import views
+
+app_name = 'reportes'
+
+urlpatterns = [
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('exportar/calificaciones/pdf/', views.exportar_calificaciones_pdf_view, name='exportar_calificaciones_pdf'),
+]
+
+
+
+--------------------------------------------
