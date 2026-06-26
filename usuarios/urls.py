@@ -26,4 +26,5 @@ urlpatterns = [
     path('panel-admin/estatus/<int:pk>/', views.cambiar_estatus_proyecto_view, name='cambiar_estatus_proyecto'),
     path('panel-admin/asignar/<int:pk>/', views.asignar_evaluador_view, name='asignar_evaluador'),
     path('panel-admin/comentario/<int:pk>/', views.guardar_comentario_admin_view, name='guardar_comentario_admin'),
+    path('admin-logs/', views.admin_logs_view, name='admin_logs'),
 ]

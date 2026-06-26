@@ -1,0 +1,161 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Encabezado de Sección -->
+  <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <h4 class="text-white fw-bold mb-0">
+        <i class="fas fa-shield-alt text-info me-2"></i>Bitácora de Auditoría
+      </h4>
+      <small class="text-muted">Registro detallado de actividades y seguridad del sistema CONEVENT.</small>
+    </div>
+  </div>
+
+  <!-- Filtro por Tipo de Evento -->
+  <div class="card bg-dark border-secondary mb-4 shadow-sm">
+    <div class="card-body p-3">
+      <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-8">
+          <div class="input-group">
+            <span class="input-group-text bg-secondary border-secondary text-white-50"><i class="fas fa-filter"></i></span>
+            <select name="tipo" class="form-select bg-dark text-white border-secondary">
+              <option value="">-- Todos los tipos de eventos --</option>
+              {% for val, label in tipo_choices %}
+              <option value="{{ val }}" {% if tipo_filtro == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-info w-100 fw-semibold text-dark">
+            <i class="fas fa-search me-1"></i> Filtrar
+          </button>
+        </div>
+        {% if tipo_filtro %}
+        <div class="col-md-2">
+          <a href="{% url 'admin_logs' %}" class="btn btn-outline-danger w-100">
+            <i class="fas fa-times me-1"></i> Limpiar
+          </a>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla de Actividades -->
+  <div class="card bg-dark border-secondary shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg: transparent;">
+        <thead class="table-group-divider border-secondary text-muted small">
+          <tr>
+            <th class="ps-3" style="width: 15%;">Fecha</th>
+            <th style="width: 20%;">Usuario</th>
+            <th style="width: 20%;">Tipo de Evento</th>
+            <th style="width: 35%;">Descripción</th>
+            <th class="pe-3" style="width: 10%;">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in page_obj %}
+          <tr>
+            <td class="ps-3 text-white-50 small">
+              {{ log.fecha|date:"Y-m-d H:i:s" }}
+            </td>
+            <td>
+              {% if log.usuario %}
+                <div class="fw-semibold text-white">{{ log.usuario.get_full_name|default:log.usuario.username }}</div>
+                <small class="text-muted font-monospace">{{ log.usuario.email }}</small>
+              {% else %}
+                <span class="text-muted italic"><i class="fas fa-user-secret me-1"></i>Visitante / Anónimo</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if log.tipo == 'login' %}
+                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 px-2 py-1.5"><i class="fas fa-sign-in-alt me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'logout' %}
+                <span class="badge bg-secondary bg-opacity-20 text-secondary border border-secondary border-opacity-30 px-2 py-1.5"><i class="fas fa-sign-out-alt me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'login_fallido' or log.tipo == '2fa_fallido' %}
+                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30 px-2 py-1.5"><i class="fas fa-exclamation-triangle me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == '2fa_exitoso' %}
+                <span class="badge bg-info bg-opacity-20 text-info border border-info border-opacity-30 px-2 py-1.5"><i class="fas fa-shield-alt me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'registro' %}
+                <span class="badge bg-warning text-dark px-2 py-1.5"><i class="fas fa-user-plus me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'cambio_estatus' %}
+                <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 px-2 py-1.5"><i class="fas fa-sync-alt me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'evaluacion' or log.tipo == 'evaluacion_externa' %}
+                <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30 px-2 py-1.5"><i class="fas fa-star me-1"></i>{{ log.get_tipo_display }}</span>
+              {% elif log.tipo == 'resolucion_incidencia' %}
+                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 px-2 py-1.5"><i class="fas fa-check-circle me-1"></i>{{ log.get_tipo_display }}</span>
+              {% else %}
+                <span class="badge bg-dark border border-secondary text-white-50 px-2 py-1.5">{{ log.get_tipo_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-white-50 small">
+              {{ log.descripcion }}
+            </td>
+            <td class="pe-3 font-monospace small text-info">
+              {{ log.ip|default:"—" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-5">
+              <i class="fas fa-info-circle fs-3 d-block mb-2 text-secondary"></i>
+              No se encontraron logs de actividad registrados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer border-secondary bg-black bg-opacity-20 py-3">
+      <nav class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="text-muted small">
+          Mostrando página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link bg-dark border-secondary text-white" href="?page={{ page_obj.previous_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled">
+            <span class="page-link bg-dark border-secondary text-muted"><i class="fas fa-chevron-left"></i></span>
+          </li>
+          {% endif %}
+
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link bg-info border-info text-dark fw-bold">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+            <li class="page-item">
+              <a class="page-link bg-dark border-secondary text-white" href="?page={{ num }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link bg-dark border-secondary text-white" href="?page={{ page_obj.next_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+          {% else %}
+          <li class="page-item disabled">
+            <span class="page-link bg-dark border-secondary text-muted"><i class="fas fa-chevron-right"></i></span>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

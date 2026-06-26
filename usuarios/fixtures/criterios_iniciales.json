@@ -1,0 +1,32 @@
+[
+  {
+    "model": "usuarios.criterioevaluacion",
+    "pk": 1,
+    "fields": {
+      "nombre": "Innovación",
+      "descripcion": "Nivel de novedad, originalidad y creatividad de la propuesta presentada.",
+      "peso": "0.40",
+      "activo": true
+    }
+  },
+  {
+    "model": "usuarios.criterioevaluacion",
+    "pk": 2,
+    "fields": {
+      "nombre": "Exposición",
+      "descripcion": "Claridad, dominio técnico, calidad de la presentación y defensa de las preguntas.",
+      "peso": "0.30",
+      "activo": true
+    }
+  },
+  {
+    "model": "usuarios.criterioevaluacion",
+    "pk": 3,
+    "fields": {
+      "nombre": "Viabilidad",
+      "descripcion": "Factibilidad de implementación técnica, comercial o social y uso de metodologías.",
+      "peso": "0.30",
+      "activo": true
+    }
+  }
+]

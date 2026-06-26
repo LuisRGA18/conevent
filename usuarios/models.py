@@ -295,4 +295,33 @@ class EvaluacionExterna(models.Model):
         ordering = ['-fecha']
 
     def get_valor_numerico(self):
-        return {'AU': 10, 'DE': 9, 'SA': 8, 'NA': 6}.get(self.calificacion, 0)
+        return {'AU': 10, 'DE': 9, 'SA': 8, 'NA': 6}.get(self.calificacion, 0)
+
+
+class LogActividad(models.Model):
+    TIPO_CHOICES = [
+        ('login', 'Inicio de sesión'),
+        ('logout', 'Cierre de sesión'),
+        ('login_fallido', 'Intento fallido de login'),
+        ('2fa_exitoso', 'Verificación 2FA exitosa'),
+        ('2fa_fallido', 'Verificación 2FA fallida'),
+        ('registro', 'Registro de usuario'),
+        ('cambio_estatus', 'Cambio de estatus de proyecto'),
+        ('evaluacion', 'Evaluación registrada'),
+        ('evaluacion_externa', 'Evaluación externa registrada'),
+        ('resolucion_incidencia', 'Incidencia resuelta'),
+    ]
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs')
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    descripcion = models.TextField(blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha']
+        verbose_name = "Log de actividad"
+        verbose_name_plural = "Logs de actividad"
+
+    def __str__(self):
+        user_str = self.usuario.username if self.usuario else "Anónimo/Visitante"
+        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.get_tipo_display()} | {user_str}"

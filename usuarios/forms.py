@@ -78,26 +78,16 @@ class EvaluacionForm(forms.ModelForm):
     """Formulario para que el evaluador califique y comente un proyecto."""
     class Meta:
         model = Evaluacion
-        fields = ['calificacion', 'comentarios_evaluador', 'estatus_sugerido']
+        fields = ['comentarios_evaluador']
         widgets = {
-            'calificacion': forms.NumberInput(attrs={
-                'class': INPUT_CLASS,
-                'step': '0.01',
-                'min': '0',
-                'max': '10',
-                'placeholder': 'Ej. 8.50'
-            }),
             'comentarios_evaluador': forms.Textarea(attrs={
                 'class': TEXTAREA_CLASS,
                 'rows': 4,
                 'placeholder': 'Observaciones sobre el proyecto...'
             }),
-            'estatus_sugerido': forms.Select(attrs={'class': SELECT_CLASS}),
         }
         labels = {
-            'calificacion': 'Calificación (0 - 10)',
-            'comentarios_evaluador': 'Comentarios',
-            'estatus_sugerido': 'Estatus del Proyecto',
+            'comentarios_evaluador': 'Comentarios generales / observaciones',
         }
 
 

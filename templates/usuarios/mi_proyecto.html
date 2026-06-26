@@ -45,7 +45,9 @@
             <td>
               <div class="d-flex align-items-center">
                 {% if p.logo %}
-                  <img src="{{ p.logo.url }}" alt="Logo {{ p.titulo }}" style="height:48px; border-radius:4px; margin-right: 10px;">
+                  <img src="{{ p.logo.url }}" alt="Logo {{ p.titulo }}" style="height:48px; border-radius:6px; object-fit:contain;">
+                {% else %}
+                  <span style="color:#aaa; font-size:12px;">Sin logo</span>
                 {% endif %}
                 <div>
                   <span class="fw-semibold text-white d-block mb-1">{{ p.titulo }}</span>

@@ -88,22 +88,19 @@
             </div>
           </div>
         {% else %}
-          <!-- CALIFICACIÓN DIRECTA (Fallback) -->
-          <div class="mb-3">
-            <label class="form-label text-white">{{ form.calificacion.label }}</label>
-            {{ form.calificacion }}
-            {% if form.calificacion.errors %}<div class="text-danger small mt-1">{{ form.calificacion.errors.0 }}</div>{% endif %}
+          <!-- AVISO DE CONFIGURACIÓN INCOMPLETA -->
+          <div class="alert bg-black bg-opacity-40 border-warning p-3 mb-4 d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle text-warning me-3 fs-4"></i>
+            <div>
+              <h6 class="m-0 text-white fw-bold">Rúbrica de evaluación no configurada</h6>
+              <span class="small text-muted">No se han registrado criterios de evaluación activos. Por favor, solicita al administrador del sistema cargar la fixture de criterios iniciales (`python manage.py loaddata criterios_iniciales`).</span>
+            </div>
           </div>
         {% endif %}
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label text-white">{{ form.comentarios_evaluador.label }}</label>
           {{ form.comentarios_evaluador }}
-        </div>
-        
-        <div class="mb-4">
-          <label class="form-label text-white">{{ form.estatus_sugerido.label }}</label>
-          {{ form.estatus_sugerido }}
         </div>
 
         <div class="d-flex justify-content-end gap-2">

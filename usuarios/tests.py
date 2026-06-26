@@ -390,3 +390,46 @@ class EvaluacionExternaTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Este correo electrónico ya ha registrado una evaluación para este proyecto.")
 
+
+class LogActividadTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='admin.log',
+            email='admin.log@uteq.edu.mx',
+            password='Password123!',
+            rol='ADMIN'
+        )
+
+    def test_log_creation(self):
+        from .models import LogActividad
+        log = LogActividad.objects.create(
+            usuario=self.user,
+            tipo='login',
+            descripcion='Prueba de inicio de sesión',
+            ip='127.0.0.1'
+        )
+        self.assertEqual(log.usuario, self.user)
+        self.assertEqual(log.tipo, 'login')
+        self.assertEqual(log.ip, '127.0.0.1')
+        self.assertTrue("Inicio de sesión" in str(log))
+
+    def test_admin_logs_view_restricted(self):
+        from django.urls import reverse
+        # Alumno no debe poder entrar
+        alumno = User.objects.create_user(
+            username='alumno.log',
+            email='alumno.log@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+        self.client.login(username='alumno.log', password='Password123!')
+        response = self.client.get(reverse('admin_logs'))
+        self.assertEqual(response.status_code, 302) # Redirect to index
+
+    def test_admin_logs_view_allowed(self):
+        from django.urls import reverse
+        self.client.login(username='admin.log', password='Password123!')
+        response = self.client.get(reverse('admin_logs'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'usuarios/admin_logs.html')
+

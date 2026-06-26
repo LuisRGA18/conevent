@@ -8,12 +8,42 @@ import unicodedata
 import random
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+
+# Imports de ReportLab y QRCode
+import qrcode
+from io import BytesIO
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 # 🟢 Aseguramos todos los modelos importados correctamente
-from .models import Proyecto, Usuario, Integrante, Evaluacion, Carrera, CriterioEvaluacion, EvaluacionExterna 
+from .models import (
+    Usuario,
+    Proyecto,
+    Carrera,
+    Integrante,
+    CriterioEvaluacion,
+    Evaluacion,
+    DetalleEvaluacion,
+    EvaluacionExterna,
+    LogActividad,
+)
 from .forms import (
     ProyectoForm, RegistroForm,
     IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
 )
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 # ──────────────────────────────────────────────────────────────
 # AUTENTICACIÓN
@@ -33,6 +63,12 @@ def login_view(request):
                 if request.COOKIES.get(f'dispositivo_seguro_{user.id}') == 'true':
                     login(request, user)
                     request.session['mostrar_bienvenida'] = True
+                    LogActividad.objects.create(
+                        usuario=user,
+                        tipo='login',
+                        descripcion="Inicio de sesión directo (dispositivo seguro)",
+                        ip=get_client_ip(request)
+                    )
                     return redirect('index')
 
                 codigo_generado = str(random.randint(100000, 999999))
@@ -50,8 +86,20 @@ def login_view(request):
                 return redirect('verificar_2fa')
             else:
                 messages.error(request, "Esta cuenta se encuentra desactivada.")
+                LogActividad.objects.create(
+                    usuario=user,
+                    tipo='login_fallido',
+                    descripcion="Intento de inicio de sesión fallido: cuenta desactivada",
+                    ip=get_client_ip(request)
+                )
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
+            LogActividad.objects.create(
+                usuario=None,
+                tipo='login_fallido',
+                descripcion=f"Intento de inicio de sesión fallido para el usuario/correo: '{usuario}'",
+                ip=get_client_ip(request)
+            )
 
     return render(request, 'usuarios/login.html')
 
@@ -76,6 +124,19 @@ def verificar_2fa_view(request):
             login(request, user, backend='usuarios.backends.EmailOrUsernameBackend')
             request.session['mostrar_bienvenida'] = True
 
+            LogActividad.objects.create(
+                usuario=user,
+                tipo='2fa_exitoso',
+                descripcion="Verificación 2FA exitosa",
+                ip=get_client_ip(request)
+            )
+            LogActividad.objects.create(
+                usuario=user,
+                tipo='login',
+                descripcion="Inicio de sesión completado tras 2FA",
+                ip=get_client_ip(request)
+            )
+
             response = redirect('index')
             if recordar == 'si':
                 response.set_cookie(
@@ -85,6 +146,12 @@ def verificar_2fa_view(request):
             return response
         else:
             messages.error(request, "Código de verificación incorrecto.")
+            LogActividad.objects.create(
+                usuario=user,
+                tipo='2fa_fallido',
+                descripcion="Código 2FA incorrecto ingresado",
+                ip=get_client_ip(request)
+            )
 
     return render(request, 'usuarios/verificar_2fa.html')
 
@@ -126,6 +193,13 @@ def registro_view(request):
             user.set_password(form.cleaned_data['password'])
             user.is_active  = False   
             user.save()
+
+            LogActividad.objects.create(
+                usuario=user,
+                tipo='registro',
+                descripcion=f"Registro de nuevo usuario creado (pendiente activación): {user.username} (rol: {user.rol})",
+                ip=get_client_ip(request)
+            )
 
             codigo_activacion = str(random.randint(100000, 999999))
             request.session['id_usuario_pendiente']     = user.id
@@ -435,9 +509,14 @@ def evaluar_proyecto_view(request, pk):
                         proyecto.calificacion = evaluacion.calificacion
                         proyecto.save(update_fields=['calificacion'])
 
-                    # 3. Guardar estatus sugerido en el proyecto
-                    proyecto.estatus = evaluacion.estatus_sugerido
-                    proyecto.save(update_fields=['estatus'])
+                    # 🟢 Registrar log de auditoría
+                    evaluacion.refresh_from_db()
+                    LogActividad.objects.create(
+                        usuario=request.user,
+                        tipo='evaluacion',
+                        descripcion=f"Evaluación registrada/actualizada para proyecto '{proyecto.titulo}' (Código: {proyecto.codigo}) con calificación: {evaluacion.calificacion}",
+                        ip=get_client_ip(request)
+                    )
 
                 messages.success(request, f'Evaluación guardada con éxito para "{proyecto.titulo}".')
                 return redirect('proyectos_asignados')
@@ -516,6 +595,12 @@ def cambiar_estatus_proyecto_view(request, pk):
         if nuevo_estatus in ['revision', 'aprobado', 'rechazado']:
             proyecto.estatus = nuevo_estatus
             proyecto.save(update_fields=['estatus'])
+            LogActividad.objects.create(
+                usuario=request.user,
+                tipo='cambio_estatus',
+                descripcion=f"Estatus del proyecto '{proyecto.titulo}' cambiado a: {proyecto.get_estatus_display()}",
+                ip=get_client_ip(request)
+            )
             messages.success(request, f'Estatus del proyecto "{proyecto.titulo}" cambiado a: {proyecto.get_estatus_display()}.')
     return redirect('panel_admin')
 
@@ -631,6 +716,12 @@ def evaluar_externo_view(request, proyecto_id):
                 comentario=comentario,
                 codigo_acceso_usado=codigo_acceso
             )
+            LogActividad.objects.create(
+                usuario=None,
+                tipo='evaluacion_externa',
+                descripcion=f"Evaluación externa registrada por '{nombre_visitante}' ({empresa_procedencia}) para proyecto '{proyecto.titulo}' con calificación: {calificacion}",
+                ip=get_client_ip(request)
+            )
             exito = True
 
     return render(request, 'usuarios/evaluar_externo.html', {
@@ -648,13 +739,11 @@ def qr_externo_view(request, proyecto_id):
     proyecto = get_object_or_404(Proyecto, id=proyecto_id)
     url = request.build_absolute_uri(f"/proyectos/{proyecto.id}/evaluar-externo/")
     
-    import qrcode
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(url)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     
-    from io import BytesIO
     response = HttpResponse(content_type="image/png")
     img.save(response, "PNG")
     return response
@@ -666,14 +755,6 @@ def qr_externo_lote_view(request):
         return HttpResponse("Acceso denegado", status=403)
         
     proyectos = Proyecto.objects.all().exclude(estatus='rechazado').order_by('titulo')
-    
-    from io import BytesIO
-    import qrcode
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.platypus import Image as RLImage
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
     
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="qr_externos_lote.pdf"'
@@ -760,3 +841,27 @@ def qr_externo_lote_view(request):
         
     doc.build(story)
     return response
+
+
+@login_required(login_url='login')
+def admin_logs_view(request):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        messages.error(request, "No tienes permiso.")
+        return redirect('index')
+
+    tipo_filtro = request.GET.get('tipo', '').strip()
+    logs = LogActividad.objects.all().select_related('usuario')
+
+    if tipo_filtro:
+        logs = logs.filter(tipo=tipo_filtro)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'usuarios/admin_logs.html', {
+        'page_obj': page_obj,
+        'tipo_filtro': tipo_filtro,
+        'tipo_choices': LogActividad.TIPO_CHOICES,
+    })

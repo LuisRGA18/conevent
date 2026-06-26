@@ -46,8 +46,10 @@
             <label class="form-label text-white">Logotipo del Proyecto</label>
             {% if proyecto.logo %}
               <div class="mb-2">
-                <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:48px; border-radius:4px;">
+                <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:48px; border-radius:6px; object-fit:contain;">
               </div>
+            {% else %}
+              <span style="color:#aaa; font-size:12px;">Sin logo</span>
             {% endif %}
             <div class="input-group">
               <span class="input-group-text bg-secondary text-white border-secondary"><i class="bi bi-image"></i></span>

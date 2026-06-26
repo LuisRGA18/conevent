@@ -49,6 +49,14 @@ def detalle_item_view(request, item_uuid):
         'incidencias_resueltas': incidencias_resueltas,
     })
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 @login_required(login_url='/auth/login/')
 def incidencias_activas_view(request):
     """
@@ -68,6 +76,14 @@ def incidencias_activas_view(request):
         incidencia.comentarios_resolucion = comentario
         incidencia.fecha_resolucion = timezone.now()
         incidencia.save()
+        
+        from usuarios.models import LogActividad
+        LogActividad.objects.create(
+            usuario=request.user,
+            tipo='resolucion_incidencia',
+            descripcion=f"Incidencia '{incidencia.titulo}' (ID: {incidencia.id}) en ítem '{incidencia.item.nombre}' resuelta. Comentario: {comentario}",
+            ip=get_client_ip(request)
+        )
         
         messages.success(request, f"La incidencia '{incidencia.titulo}' ha sido marcada como resuelta.")
         return redirect('inventario:incidencias_activas')

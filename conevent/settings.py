@@ -147,7 +147,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@conevent.com
 # ─── Archivos de Media ────────────────────────────────────────
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR
 
 # ─── Headers de Seguridad HTTP ────────────────────────────────
 if not DEBUG:
