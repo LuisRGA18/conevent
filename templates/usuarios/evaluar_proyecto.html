@@ -36,12 +36,36 @@
     </div>
   </div>
 
+  <style>
+    @keyframes soft-pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.02); opacity: 0.85; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes fast-pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.04); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .pulse-soft {
+        animation: soft-pulse 1.5s infinite ease-in-out;
+    }
+    .pulse-fast {
+        animation: fast-pulse 0.8s infinite ease-in-out;
+    }
+  </style>
+
   <!-- Formulario de evaluación -->
   <div class="card bg-dark border-secondary">
     <div class="card-header text-secondary fw-semibold">
       <i class="bi bi-clipboard-check me-2"></i>Capturar Evaluación
     </div>
     <div class="card-body">
+      <!-- Cronómetro regresivo -->
+      <div id="evaluation-timer" class="mb-3 text-center p-3 rounded bg-black bg-opacity-40 border border-secondary" style="font-size: 1.5rem; font-weight: bold; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; color: #28a745; border-color: #28a745;">
+          <i class="bi bi-alarm-fill"></i> Tiempo restante: <span id="timer-display">10:00</span>
+      </div>
+
       <form method="post" novalidate id="evaluation-form">
         {% csrf_token %}
 
@@ -115,7 +139,7 @@
 
 </div>
 
-<!-- JS para calcular el promedio ponderado en tiempo real -->
+<!-- JS para calcular el promedio ponderado en tiempo real y manejar el temporizador -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const radioButtons = document.querySelectorAll('.rating-radio');
@@ -154,6 +178,78 @@
     });
 
     calcularPromedio();
+
+    // ──────────────────────────────────────────────────────────
+    // LÓGICA DEL CRONÓMETRO REGRESIVO (10 MINUTOS)
+    // ──────────────────────────────────────────────────────────
+    let timeLeft = 600; // 10 minutos en segundos
+    const timerDisplay = document.getElementById('timer-display');
+    const timerContainer = document.getElementById('evaluation-timer');
+    const form = document.getElementById('evaluation-form');
+
+    let timerInterval = setInterval(updateTimer, 1000);
+
+    function updateTimer() {
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timeLeft = 0;
+        timerDisplay.textContent = "00:00";
+        timerContainer.style.color = "#dc3545";
+        timerContainer.style.borderColor = "#dc3545";
+        timerContainer.classList.remove('pulse-soft');
+        timerContainer.classList.remove('pulse-fast');
+
+        // Pre-seleccionar SA en todos los criterios
+        criterionRows.forEach(row => {
+          const radioSA = row.querySelector('.rating-radio[value="SA"]');
+          if (radioSA) {
+            radioSA.checked = true;
+          }
+        });
+
+        // Recalcular el promedio en vivo
+        calcularPromedio();
+
+        // Mostrar el banner de advertencia
+        if (!document.getElementById('timeout-banner')) {
+          const banner = document.createElement('div');
+          banner.id = 'timeout-banner';
+          banner.className = 'alert alert-warning border-warning bg-dark text-warning my-3 d-flex align-items-center';
+          banner.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i><div><strong>Tiempo agotado.</strong> Se ha pre-seleccionado SA en todos los criterios. Puedes modificar y confirmar antes de enviar.</div>';
+          form.insertBefore(banner, form.firstChild);
+        }
+        return;
+      }
+
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      // Clases de color y animación por rangos
+      if (timeLeft >= 300) {
+        timerContainer.style.color = "#28a745"; // Verde
+        timerContainer.style.borderColor = "#28a745";
+      } else if (timeLeft >= 120) {
+        timerContainer.style.color = "#fd7e14"; // Naranja
+        timerContainer.style.borderColor = "#fd7e14";
+        if (!timerContainer.classList.contains('pulse-soft')) {
+          timerContainer.classList.add('pulse-soft');
+        }
+      } else {
+        timerContainer.style.color = "#dc3545"; // Rojo
+        timerContainer.style.borderColor = "#dc3545";
+        timerContainer.classList.remove('pulse-soft');
+        if (!timerContainer.classList.contains('pulse-fast')) {
+          timerContainer.classList.add('pulse-fast');
+        }
+      }
+
+      timeLeft--;
+    }
+
+    form.addEventListener('submit', function() {
+      clearInterval(timerInterval);
+    });
   });
 </script>
 {% endblock %}

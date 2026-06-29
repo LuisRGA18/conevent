@@ -167,6 +167,22 @@
             color: #10b981;
             margin-bottom: 20px;
         }
+        @keyframes soft-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.85; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fast-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.04); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pulse-soft {
+            animation: soft-pulse 1.5s infinite ease-in-out;
+        }
+        .pulse-fast {
+            animation: fast-pulse 0.8s infinite ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -184,6 +200,11 @@
             </div>
         {% else %}
             <h2 class="header-title"><i class="fas fa-qrcode"></i> Evaluar Proyecto</h2>
+
+            <!-- Cronómetro regresivo -->
+            <div id="evaluation-timer" class="mb-3 text-center p-3 rounded bg-black bg-opacity-40 border border-secondary" style="font-size: 1.5rem; font-weight: bold; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; color: #28a745; border-color: #28a745;">
+                <i class="fas fa-clock"></i> Tiempo restante: <span id="timer-display">10:00</span>
+            </div>
 
             <!-- Ficha del Proyecto -->
             <div class="project-card d-flex align-items-center gap-3">
@@ -205,7 +226,7 @@
                 </div>
             {% endif %}
 
-            <form method="POST">
+            <form method="POST" id="evaluation-form">
                 {% csrf_token %}
 
                 <div class="mb-3">
@@ -233,28 +254,28 @@
                     <label class="form-label">Calificación del Proyecto *</label>
                     <div class="rubrica-selector">
                         <div class="rubrica-option">
-                            <input type="radio" id="calif_au" name="calificacion" value="AU" required>
+                            <input type="radio" id="calif_au" name="calificacion" value="AU" class="rating-radio" required>
                             <label for="calif_au" class="rubrica-label">
                                 <span class="rubrica-label-title">AU</span>
                                 <span class="rubrica-label-desc">Autónomo (10)</span>
                             </label>
                         </div>
                         <div class="rubrica-option">
-                            <input type="radio" id="calif_de" name="calificacion" value="DE">
+                            <input type="radio" id="calif_de" name="calificacion" value="DE" class="rating-radio">
                             <label for="calif_de" class="rubrica-label">
                                 <span class="rubrica-label-title">DE</span>
                                 <span class="rubrica-label-desc">Destacado (9)</span>
                             </label>
                         </div>
                         <div class="rubrica-option">
-                            <input type="radio" id="calif_sa" name="calificacion" value="SA">
+                            <input type="radio" id="calif_sa" name="calificacion" value="SA" class="rating-radio">
                             <label for="calif_sa" class="rubrica-label">
                                 <span class="rubrica-label-title">SA</span>
                                 <span class="rubrica-label-desc">Satisfactorio (8)</span>
                             </label>
                         </div>
                         <div class="rubrica-option">
-                            <input type="radio" id="calif_na" name="calificacion" value="NA">
+                            <input type="radio" id="calif_na" name="calificacion" value="NA" class="rating-radio">
                             <label for="calif_na" class="rubrica-label">
                                 <span class="rubrica-label-title">NA</span>
                                 <span class="rubrica-label-desc">No Acreditado</span>
@@ -278,5 +299,79 @@
         {% endif %}
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let timeLeft = 600; // 10 minutos en segundos
+            const timerDisplay = document.getElementById('timer-display');
+            const timerContainer = document.getElementById('evaluation-timer');
+            const form = document.getElementById('evaluation-form');
+
+            // Solo ejecutar el cronómetro si el formulario está presente
+            if (!form) return;
+
+            let timerInterval = setInterval(updateTimer, 1000);
+
+            function updateTimer() {
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timeLeft = 0;
+                    timerDisplay.textContent = "00:00";
+                    timerContainer.style.color = "#dc3545";
+                    timerContainer.style.borderColor = "#dc3545";
+                    timerContainer.classList.remove('pulse-soft');
+                    timerContainer.classList.remove('pulse-fast');
+
+                    // Pre-seleccionar SA
+                    const radioSA = document.querySelector('.rating-radio[value="SA"]');
+                    if (radioSA) {
+                        radioSA.checked = true;
+                    }
+
+                    // Mostrar banner de aviso
+                    if (!document.getElementById('timeout-banner')) {
+                        const banner = document.createElement('div');
+                        banner.id = 'timeout-banner';
+                        banner.className = 'alert alert-warning border-warning bg-dark text-warning my-3 d-flex align-items-center';
+                        banner.style.padding = '12px';
+                        banner.style.borderRadius = '6px';
+                        banner.style.border = '1px solid #ffc107';
+                        banner.style.color = '#ffc107';
+                        banner.style.marginBottom = '20px';
+                        banner.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Tiempo agotado.</strong> Se ha pre-seleccionado SA en todos los criterios. Puedes modificar y confirmar antes de enviar.';
+                        form.insertBefore(banner, form.firstChild);
+                    }
+                    return;
+                }
+
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeLeft >= 300) {
+                    timerContainer.style.color = "#28a745"; // Verde
+                    timerContainer.style.borderColor = "#28a745";
+                } else if (timeLeft >= 120) {
+                    timerContainer.style.color = "#fd7e14"; // Naranja
+                    timerContainer.style.borderColor = "#fd7e14";
+                    if (!timerContainer.classList.contains('pulse-soft')) {
+                        timerContainer.classList.add('pulse-soft');
+                    }
+                } else {
+                    timerContainer.style.color = "#dc3545"; // Rojo
+                    timerContainer.style.borderColor = "#dc3545";
+                    timerContainer.classList.remove('pulse-soft');
+                    if (!timerContainer.classList.contains('pulse-fast')) {
+                        timerContainer.classList.add('pulse-fast');
+                    }
+                }
+
+                timeLeft--;
+            }
+
+            form.addEventListener('submit', function() {
+                clearInterval(timerInterval);
+            });
+        });
+    </script>
 </body>
 </html>

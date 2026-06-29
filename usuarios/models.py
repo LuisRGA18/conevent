@@ -99,6 +99,11 @@ class Proyecto(models.Model):
         verbose_name="Calificación Final"
     )
     comentarios_evaluador = models.TextField(blank=True, default='')
+    qr_evaluacion_externa = models.ImageField(
+        upload_to='qr_proyectos/',
+        null=True, blank=True,
+        verbose_name="QR de evaluación externa"
+    )
 
     fecha_registro      = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)

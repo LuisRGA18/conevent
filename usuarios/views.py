@@ -14,6 +14,7 @@ from django.utils import timezone
 # Imports de ReportLab y QRCode
 import qrcode
 from io import BytesIO
+from django.core.files.base import ContentFile
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.platypus import Image as RLImage
@@ -276,6 +277,20 @@ def index_view(request):
 # VISTAS ALUMNO (REGISTRO, PANEL Y CONTROL TOTAL)
 # ──────────────────────────────────────────────────────────────
 
+def generar_qr_externo_proyecto(proyecto, base_url):
+    qr_url = f"{base_url.rstrip('/')}/proyectos/{proyecto.id}/evaluar-externo/"
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    
+    filename = f"qr_{proyecto.id}.png"
+    proyecto.qr_evaluacion_externa.save(filename, ContentFile(buffer.getvalue()), save=True)
+
+
 @login_required(login_url='login')
 def panel_alumno_view(request):
     """🟢 Home/Dashboard del Alumno: Resuelve el bug del POST y envía variables exactas."""
@@ -289,11 +304,16 @@ def panel_alumno_view(request):
     proyecto = Proyecto.objects.filter(creado_por=request.user).prefetch_related('miembros').first()
     carreras = Carrera.objects.all()
     
+    form = ProyectoForm(instance=proyecto) if proyecto else None
+    formset = IntegranteFormSet(instance=proyecto) if proyecto else None
+    
     return render(request, 'usuarios/registrar_proyecto.html', {
         'proyecto': proyecto,
         'proyecto_registrado': proyecto,
         'miembros': proyecto.miembros.all() if proyecto else [],
         'carreras': carreras,
+        'form': form,
+        'formset': formset,
     })
 
 
@@ -311,25 +331,24 @@ def registrar_proyecto_view(request):
     proyecto = Proyecto.objects.filter(creado_por=request.user).first()
 
     if request.method == 'POST':
-        # Caso A: El proyecto ya existe y se está editando desde el Modal
+        # Caso A: El proyecto ya existe y se está editando
         if proyecto:
-            titulo = request.POST.get('titulo')
-            descripcion = request.POST.get('descripcion')
-            carrera_id = request.POST.get('carrera')
-            grupo = request.POST.get('grupo', '').strip().upper()
-            categoria = request.POST.get('categoria')
-            
-            if titulo and descripcion and carrera_id and grupo:
-                proyecto.titulo = titulo
-                proyecto.descripcion = descripcion
-                proyecto.carrera = Carrera.objects.get(id=carrera_id)
-                proyecto.grupo = grupo
-                proyecto.categoria = categoria
-                if request.FILES.get('logo'):
-                    proyecto.logo = request.FILES.get('logo')
-                proyecto.save()
+            form = ProyectoForm(request.POST, request.FILES, instance=proyecto)
+            formset = IntegranteFormSet(request.POST, instance=proyecto)
+            if form.is_valid() and formset.is_valid():
+                # Enforce that the leader is NOT deleted and es_lider remains True
+                for f in formset.forms:
+                    if f.instance.pk and f.instance.es_lider:
+                        f.cleaned_data['DELETE'] = False
+                        f.cleaned_data['es_lider'] = True
+                        
+                with transaction.atomic():
+                    form.save()
+                    formset.save()
                 messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
                 return redirect('mi_proyecto')
+            else:
+                messages.error(request, "Por favor, corrige los errores en el formulario.")
         
         # Caso B: El proyecto no existe y se está creando desde cero
         else:
@@ -384,16 +403,30 @@ def registrar_proyecto_view(request):
                                 es_lider=False
                             )
 
+                    # 4. Generación automática de QR para evaluación externa
+                    base_url = request.build_absolute_uri('/')
+                    generar_qr_externo_proyecto(nuevo_proyecto, base_url)
+
                 messages.success(request, "¡Proyecto registrado con éxito! Te hemos asignado automáticamente como líder de equipo.")
                 return redirect('mi_proyecto')
             else:
                 messages.error(request, "Por favor, completa todos los campos obligatorios.")
 
+    # GET response (or invalid POST)
     carreras = Carrera.objects.all()
+    if request.method == 'POST' and proyecto:
+        # form and formset are already bound with errors
+        pass
+    else:
+        form = ProyectoForm(instance=proyecto) if proyecto else None
+        formset = IntegranteFormSet(instance=proyecto) if proyecto else None
+
     return render(request, 'usuarios/registrar_proyecto.html', {
         'proyecto_registrado': proyecto,
         'proyecto': proyecto,
         'carreras': carreras,
+        'form': form,
+        'formset': formset,
     })
 
 
@@ -661,6 +694,11 @@ def editar_proyecto_view(request, pk):
         form = ProyectoForm(request.POST, request.FILES, instance=proyecto)
         formset = IntegranteFormSet(request.POST, instance=proyecto)
         if form.is_valid() and formset.is_valid():
+            # Enforce that the leader is NOT deleted and es_lider remains True
+            for f in formset.forms:
+                if f.instance.pk and f.instance.es_lider:
+                    f.cleaned_data['DELETE'] = False
+                    f.cleaned_data['es_lider'] = True
             form.save()
             formset.save()
             messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
