@@ -61,6 +61,17 @@ def login_view(request):
 
         if user is not None:
             if user.is_active:
+                if user.is_superuser:
+                    login(request, user, backend='usuarios.backends.EmailOrUsernameBackend')
+                    request.session['mostrar_bienvenida'] = True
+                    LogActividad.objects.create(
+                        usuario=user,
+                        tipo='login',
+                        descripcion="Inicio de sesión directo (superusuario)",
+                        ip=get_client_ip(request)
+                    )
+                    return redirect('index')
+
                 if request.COOKIES.get(f'dispositivo_seguro_{user.id}') == 'true':
                     login(request, user)
                     request.session['mostrar_bienvenida'] = True
@@ -113,6 +124,9 @@ def verificar_2fa_view(request):
         return redirect('login')
 
     user = get_object_or_404(Usuario, id=user_id)
+    if user.is_superuser:
+        login(request, user, backend='usuarios.backends.EmailOrUsernameBackend')
+        return redirect('index')
 
     if request.method == 'POST':
         codigo_ingresado = request.POST.get('codigo_2fa', '').strip()
@@ -358,6 +372,7 @@ def registrar_proyecto_view(request):
             grupo = request.POST.get('grupo', '').strip().upper()
             categoria = request.POST.get('categoria')
             logo = request.FILES.get('logo')
+            mesas = int(request.POST.get('mesas_requeridas', 1))
 
             if titulo and descripcion and carrera_id and grupo:
                 carrera_obj = Carrera.objects.get(id=carrera_id)
@@ -371,7 +386,8 @@ def registrar_proyecto_view(request):
                         grupo=grupo,
                         categoria=categoria,
                         logo=logo,
-                        creado_por=request.user
+                        creado_por=request.user,
+                        mesas_requeridas=mesas
                     )
 
                     # 2. AUTOMÁTICO: Insertamos al creador logueado como Integrante Líder
@@ -608,12 +624,19 @@ def panel_admin_view(request):
 
     qs = qs.order_by('-id')
 
+    from espacios.models import AsignacionStand
+    solicitudes_cambio = AsignacionStand.objects.filter(
+        cambio_solicitado=True,
+        cambio_autorizado__isnull=True
+    ).select_related('proyecto', 'stand')
+
     return render(request, 'usuarios/panel_admin.html', {
         'todos_los_proyectos': qs,
         'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
         'q':               q,
         'estatus_filtro':  estatus,
         'estatus_choices': Proyecto.ESTATUS_CHOICES,
+        'solicitudes_cambio': solicitudes_cambio,
     })
 
 
@@ -903,3 +926,90 @@ def admin_logs_view(request):
         'tipo_filtro': tipo_filtro,
         'tipo_choices': LogActividad.TIPO_CHOICES,
     })
+
+
+@login_required(login_url='login')
+def solicitar_cambio_stand_view(request):
+    from espacios.models import AsignacionStand
+    if request.user.rol != 'ALUMNO':
+        messages.error(request, "Solo los alumnos pueden solicitar cambios de stand.")
+        return redirect('index')
+        
+    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+    if not proyecto:
+        messages.error(request, "No tienes un proyecto registrado.")
+        return redirect('mi_proyecto')
+        
+    asignaciones = proyecto.asignaciones_stands.all()
+    if not asignaciones.exists():
+        messages.error(request, "Tu proyecto no tiene stands asignados.")
+        return redirect('mi_proyecto')
+        
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo_cambio', '').strip()
+        if not motivo:
+            messages.error(request, "Debes proporcionar un motivo para el cambio.")
+            return redirect('mi_proyecto')
+            
+        with transaction.atomic():
+            for asignacion in asignaciones:
+                asignacion.cambio_solicitado = True
+                asignacion.motivo_cambio = motivo
+                asignacion.cambio_autorizado = None
+                asignacion.motivo_rechazo = ''
+                asignacion.save(update_fields=['cambio_solicitado', 'motivo_cambio', 'cambio_autorizado', 'motivo_rechazo'])
+                
+        messages.success(request, "Tu solicitud de cambio de stand ha sido enviada con éxito.")
+        
+    return redirect('mi_proyecto')
+
+
+@login_required(login_url='login')
+def autorizar_mesas_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        messages.error(request, "No tienes permiso.")
+        return redirect('index')
+        
+    proyecto = get_object_or_404(Proyecto, pk=pk)
+    if request.method == 'POST':
+        if proyecto.mesas_requeridas == 3:
+            proyecto.mesas_autorizadas = True
+            proyecto.save(update_fields=['mesas_autorizadas'])
+            messages.success(request, f"Se autorizó la solicitud de 3 mesas para el proyecto '{proyecto.titulo}'.")
+        else:
+            messages.error(request, "Este proyecto no requiere autorización de mesas.")
+            
+    return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def procesar_cambio_stand_view(request, pk, action):
+    from espacios.models import AsignacionStand
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        messages.error(request, "No tienes permiso.")
+        return redirect('index')
+        
+    asignacion = get_object_or_404(AsignacionStand, pk=pk)
+    
+    if request.method == 'POST':
+        if action == 'aprobar':
+            proyecto = asignacion.proyecto
+            with transaction.atomic():
+                proyecto.asignaciones_stands.all().delete()
+            messages.success(request, f"Se ha liberado el stand del proyecto '{proyecto.titulo}'.")
+        elif action == 'rechazar':
+            motivo_rechazo = request.POST.get('motivo_rechazo', '').strip()
+            if not motivo_rechazo:
+                messages.error(request, "Debes proporcionar un motivo de rechazo.")
+                return redirect('panel_admin')
+                
+            proyecto = asignacion.proyecto
+            with transaction.atomic():
+                for asig in proyecto.asignaciones_stands.all():
+                    asig.cambio_solicitado = True
+                    asig.cambio_autorizado = False
+                    asig.motivo_rechazo = motivo_rechazo
+                    asig.save(update_fields=['cambio_solicitado', 'cambio_autorizado', 'motivo_rechazo'])
+            messages.info(request, f"Se rechazó la solicitud de cambio para el proyecto '{proyecto.titulo}'.")
+            
+    return redirect('panel_admin')

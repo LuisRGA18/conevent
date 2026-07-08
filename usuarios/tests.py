@@ -433,3 +433,37 @@ class LogActividadTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'usuarios/admin_logs.html')
 
+
+class Superuser2FABypassTestCase(TestCase):
+    def setUp(self):
+        self.superuser = User.objects.create_superuser(
+            username='superadmin',
+            email='',
+            password='Password123!'
+        )
+
+    def test_superuser_login_bypasses_2fa(self):
+        from django.urls import reverse
+        response = self.client.post(reverse('login'), {
+            'username': 'superadmin',
+            'password': 'Password123!'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('index'))
+        self.assertIn('_auth_user_id', self.client.session)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.superuser.id)
+
+    def test_superuser_verificar_2fa_safeguard(self):
+        from django.urls import reverse
+        session = self.client.session
+        session['pre_auth_user_id'] = self.superuser.id
+        session['codigo_2fa_correcto'] = '123456'
+        session.save()
+
+        response = self.client.get(reverse('verificar_2fa'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('index'))
+        self.assertIn('_auth_user_id', self.client.session)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.superuser.id)
+
+

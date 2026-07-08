@@ -105,6 +105,76 @@
         </div>
     </div>
 
+    <!-- Ubicación de Stands Asignados -->
+    {% if proyecto_registrado.asignaciones_stands.all %}
+    <div class="card bg-dark border-secondary text-white mb-4 shadow-lg">
+        <div class="card-header border-secondary bg-black bg-opacity-30 py-3">
+            <h5 class="mb-0 text-info fw-semibold"><i class="fas fa-map-marker-alt me-2"></i>Ubicación de Stands Asignados</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-white-50">Se te han asignado los siguientes espacios físicos para la exhibición de tu proyecto:</p>
+            <div class="d-flex flex-wrap gap-3 mb-4">
+                {% for asignacion in proyecto_registrado.asignaciones_stands.all %}
+                    <div class="p-3 rounded bg-black bg-opacity-20 border border-secondary d-flex align-items-center gap-3">
+                        <i class="fas fa-store-alt text-info fs-3"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Stand {{ asignacion.stand.numero }}</h6>
+                            <span class="small text-muted">{{ asignacion.stand.get_zona_display }} (Fila: {{ asignacion.stand.pos_fila }}, Col: {{ asignacion.stand.pos_col }})</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Sección de solicitud de cambio de stand (RF6) -->
+            <div class="border-top border-secondary pt-3">
+                {% with first_asignacion=proyecto_registrado.asignaciones_stands.first %}
+                    {% if first_asignacion.cambio_solicitado and first_asignacion.cambio_autorizado is None %}
+                        <div class="alert alert-info border-info bg-dark text-info mb-0 py-2 px-3 d-flex align-items-center">
+                            <i class="fas fa-clock me-2"></i><span>Tu solicitud de cambio está siendo revisada por el administrador.</span>
+                        </div>
+                    {% elif first_asignacion.cambio_autorizado == False %}
+                        <div class="alert alert-danger border-danger bg-dark text-danger mb-3 py-2 px-3 d-flex align-items-center">
+                            <i class="fas fa-times-circle me-2"></i><span><strong>Solicitud de cambio rechazada:</strong> {{ first_asignacion.motivo_rechazo }}</span>
+                        </div>
+                        
+                        <!-- Permitir volver a solicitar cambio -->
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('form-cambio-stand').classList.toggle('d-none')">
+                            <i class="fas fa-redo me-1"></i>Solicitar cambio de lugar nuevamente
+                        </button>
+                        
+                        <div id="form-cambio-stand" class="d-none mt-3">
+                            <form action="{% url 'solicitar_cambio_stand' %}" method="post" style="max-width: 500px;">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label text-white-50 small">Explica el motivo de cambio solicitado *</label>
+                                    <textarea name="motivo_cambio" rows="3" class="form-control bg-black text-white border-secondary" placeholder="Especifica las razones técnicas o de espacio..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm"><i class="fas fa-paper-plane me-1"></i>Enviar Nueva Solicitud</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <!-- Botón para solicitar cambio por primera vez -->
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('form-cambio-stand').classList.toggle('d-none')">
+                            <i class="fas fa-exchange-alt me-1"></i>Solicitar cambio de lugar
+                        </button>
+                        
+                        <div id="form-cambio-stand" class="d-none mt-3">
+                            <form action="{% url 'solicitar_cambio_stand' %}" method="post" style="max-width: 500px;">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label text-white-50 small">Explica el motivo de cambio solicitado *</label>
+                                    <textarea name="motivo_cambio" rows="3" class="form-control bg-black text-white border-secondary" placeholder="Especifica las razones técnicas o de espacio..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm"><i class="fas fa-paper-plane me-1"></i>Enviar Solicitud</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row mt-4">
         <!-- Columna de QR -->
         <div class="col-lg-4 mb-4">
@@ -165,6 +235,33 @@
                             <label class="form-label text-white-50 small">Categoría *</label>
                             {{ form.categoria }}
                             {% if form.categoria.errors %}<div class="text-danger small mt-1">{{ form.categoria.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-12 form-group mb-3 mt-2">
+                            <label class="form-label text-white-50 small d-block">¿Cuántas mesas necesita tu equipo para exhibir su proyecto? *</label>
+                            <div class="d-flex flex-column gap-2 mt-2">
+                                <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                                    <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="edit_mesas_1" value="1" {% if form.mesas_requeridas.value|add:"0" == 1 or not form.instance.pk %}checked{% endif %} required>
+                                    <label class="form-check-label text-white cursor-pointer" for="edit_mesas_1">
+                                        <strong>1 mesa (estándar)</strong>
+                                    </label>
+                                </div>
+                                <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                                    <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="edit_mesas_2" value="2" {% if form.mesas_requeridas.value|add:"0" == 2 %}checked{% endif %}>
+                                    <label class="form-check-label text-white cursor-pointer" for="edit_mesas_2">
+                                        <strong>2 mesas (proyecto con equipo grande o prototipo físico)</strong>
+                                    </label>
+                                </div>
+                                <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                                    <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="edit_mesas_3" value="3" {% if form.mesas_requeridas.value|add:"0" == 3 %}checked{% endif %}>
+                                    <label class="form-check-label text-white cursor-pointer" for="edit_mesas_3">
+                                        <strong>3 mesas (instalación especial — requiere autorización del admin)</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- Aviso visible para 3 mesas -->
+                            <div class="alert alert-warning border-warning bg-dark text-warning mt-2 aviso-mesas-3 d-none">
+                                <i class="fas fa-exclamation-triangle me-2"></i>La solicitud de 3 mesas requiere autorización del administrador del evento.
+                            </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white-50 small">Logotipo del Proyecto</label>
@@ -296,6 +393,34 @@
                     </select>
                 </div>
 
+                <div class="form-group mb-3">
+                    <label class="form-label text-white-50 small d-block">¿Cuántas mesas necesita tu equipo para exhibir su proyecto? *</label>
+                    <div class="d-flex flex-column gap-2 mt-2">
+                        <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                            <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="wizard_mesas_1" value="1" checked required>
+                            <label class="form-check-label text-white cursor-pointer" for="wizard_mesas_1">
+                                <strong>1 mesa (estándar)</strong>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                            <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="wizard_mesas_2" value="2">
+                            <label class="form-check-label text-white cursor-pointer" for="wizard_mesas_2">
+                                <strong>2 mesas (proyecto con equipo grande o prototipo físico)</strong>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 rounded bg-black bg-opacity-20 border border-secondary transition-row">
+                            <input class="form-check-input ms-0 me-2 mesas-radio-input" type="radio" name="mesas_requeridas" id="wizard_mesas_3" value="3">
+                            <label class="form-check-label text-white cursor-pointer" for="wizard_mesas_3">
+                                <strong>3 mesas (instalación especial — requiere autorización del admin)</strong>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Aviso visible para 3 mesas -->
+                    <div class="alert alert-warning border-warning bg-dark text-warning mt-2 aviso-mesas-3 d-none">
+                        <i class="fas fa-exclamation-triangle me-2"></i>La solicitud de 3 mesas requiere autorización del administrador del evento.
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="logo_empresa">Logotipo del Proyecto</label>
                     <div class="file-drop-area">
@@ -408,5 +533,33 @@
         const fila = document.getElementById(`integrante-extra-${id}`);
         if(fila) fila.remove();
     }
+
+    // Lógica para mostrar advertencia de 3 mesas (RF2)
+    const radioInputs = document.querySelectorAll(".mesas-radio-input");
+    
+    function updateWarnings() {
+        radioInputs.forEach(radio => {
+            if (radio.checked) {
+                const container = radio.closest("form");
+                if (container) {
+                    const warning = container.querySelector(".aviso-mesas-3");
+                    if (warning) {
+                        if (radio.value === "3") {
+                            warning.classList.remove("d-none");
+                        } else {
+                            warning.classList.add("d-none");
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    radioInputs.forEach(radio => {
+        radio.addEventListener("change", updateWarnings);
+    });
+    
+    // Ejecutar al cargar la página
+    updateWarnings();
 </script>
 {% endblock %}

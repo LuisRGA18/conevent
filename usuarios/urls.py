@@ -16,6 +16,7 @@ urlpatterns = [
     path('proyecto/eliminar/<int:pk>/', views.eliminar_proyecto_view, name='eliminar_proyecto'),
     # 🟢 NUEVA RUTA AGREGADA:
     path('mis-calificaciones/', views.ver_calificacion_view, name='ver_calificacion'),
+    path('mi-proyecto/solicitar-cambio-stand/', views.solicitar_cambio_stand_view, name='solicitar_cambio_stand'),
 
     # ── Evaluador ──────────────────────────────
     path('mis-evaluaciones/', views.proyectos_asignados_view, name='proyectos_asignados'),
@@ -26,5 +27,7 @@ urlpatterns = [
     path('panel-admin/estatus/<int:pk>/', views.cambiar_estatus_proyecto_view, name='cambiar_estatus_proyecto'),
     path('panel-admin/asignar/<int:pk>/', views.asignar_evaluador_view, name='asignar_evaluador'),
     path('panel-admin/comentario/<int:pk>/', views.guardar_comentario_admin_view, name='guardar_comentario_admin'),
+    path('panel-admin/autorizar-mesas/<int:pk>/', views.autorizar_mesas_view, name='autorizar_mesas'),
+    path('panel-admin/procesar-cambio-stand/<int:pk>/<str:action>/', views.procesar_cambio_stand_view, name='procesar_cambio_stand'),
     path('admin-logs/', views.admin_logs_view, name='admin_logs'),
 ]

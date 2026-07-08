@@ -47,6 +47,10 @@ class AsignacionStand(models.Model):
     )
     fecha_asignacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de asignación")
     comentarios = models.TextField(blank=True, verbose_name="Comentarios de asignación")
+    cambio_solicitado = models.BooleanField(default=False, verbose_name="Cambio solicitado por alumno")
+    motivo_cambio = models.TextField(blank=True, verbose_name="Motivo de solicitud de cambio")
+    cambio_autorizado = models.BooleanField(null=True, blank=True, verbose_name="Cambio autorizado por admin")
+    motivo_rechazo = models.TextField(blank=True, verbose_name="Motivo de rechazo de cambio")
 
     class Meta:
         verbose_name = "Asignación de Stand"

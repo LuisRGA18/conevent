@@ -105,6 +105,21 @@ class Proyecto(models.Model):
         verbose_name="QR de evaluación externa"
     )
 
+    MESAS_CHOICES = [
+        (1, '1 mesa (estándar)'),
+        (2, '2 mesas (proyecto con equipo grande o prototipo físico)'),
+        (3, '3 mesas (instalación especial — requiere autorización del admin)'),
+    ]
+    mesas_requeridas = models.PositiveIntegerField(
+        choices=MESAS_CHOICES,
+        default=1,
+        verbose_name="Mesas requeridas para exhibición"
+    )
+    mesas_autorizadas = models.BooleanField(
+        default=False,
+        verbose_name="Mesas extra autorizadas por admin"
+    )
+
     fecha_registro      = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 

@@ -190,3 +190,144 @@ class StandsGestionTestCase(TestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 302)
 
+
+class EspaciosMejorasTestCase(TestCase):
+    def setUp(self):
+        # Crear usuarios
+        self.admin = User.objects.create_user(
+            username='admin.mejoras', password='Password123!', rol='ADMIN'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.mejoras', password='Password123!', rol='ALUMNO'
+        )
+        self.alumno2 = User.objects.create_user(
+            username='alumno2.mejoras', password='Password123!', rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(nombre='ISC', clave='ISC')
+
+        # Proyectos
+        self.p_2mesas = Proyecto.objects.create(
+            titulo='Proyecto 2 Mesas',
+            carrera=self.carrera,
+            creado_por=self.alumno,
+            estatus='aprobado',
+            mesas_requeridas=2
+        )
+        self.p_3mesas_unauth = Proyecto.objects.create(
+            titulo='Proyecto 3 Mesas Unauth',
+            carrera=self.carrera,
+            creado_por=self.alumno2,
+            estatus='aprobado',
+            mesas_requeridas=3,
+            mesas_autorizadas=False
+        )
+        self.p_3mesas_auth = Proyecto.objects.create(
+            titulo='Proyecto 3 Mesas Auth',
+            carrera=self.carrera,
+            creado_por=self.admin, # just a different user
+            estatus='aprobado',
+            mesas_requeridas=3,
+            mesas_autorizadas=True
+        )
+
+    def test_poblar_auditorio_command(self):
+        # Eliminar stands previos para verificar conteo exacto
+        Stand.objects.filter(zona='auditorio').delete()
+        call_command('poblar_auditorio')
+        
+        self.assertEqual(Stand.objects.filter(zona='auditorio').count(), 70)
+        
+        # Verificar coordenadas y nombres de los extremos
+        s_a01 = Stand.objects.get(numero='A-01')
+        self.assertEqual(s_a01.pos_fila, 1)
+        self.assertEqual(s_a01.pos_col, 1)
+        
+        s_c14 = Stand.objects.get(numero='C-14')
+        self.assertEqual(s_c14.pos_fila, 10)
+        self.assertEqual(s_c14.pos_col, 7)
+
+    def test_asignar_stands_multimesas_contiguas(self):
+        # Crear stands libres consecutivos
+        Stand.objects.all().delete()
+        stands = []
+        for col in range(1, 8):
+            stands.append(Stand.objects.create(
+                numero=f"M-{col:02d}",
+                pos_fila=1,
+                pos_col=col,
+                zona='auditorio',
+                esta_activo=True
+            ))
+
+        # Ejecutar asignación
+        call_command('asignar_stands')
+
+        # 1. Proyecto 3 mesas sin autorización: omitido, no tiene stands asignados
+        self.assertEqual(self.p_3mesas_unauth.asignaciones_stands.count(), 0)
+
+        # 2. Proyecto 2 mesas: recibe 2 stands contiguos (M-01, M-02)
+        asigs_2mesas = list(self.p_2mesas.asignaciones_stands.all().order_by('stand__pos_col'))
+        self.assertEqual(len(asigs_2mesas), 2)
+        self.assertEqual(asigs_2mesas[0].stand.numero, 'M-01')
+        self.assertEqual(asigs_2mesas[1].stand.numero, 'M-02')
+
+        # 3. Proyecto 3 mesas con autorización: recibe 3 stands contiguos (M-03, M-04, M-05)
+        asigs_3mesas = list(self.p_3mesas_auth.asignaciones_stands.all().order_by('stand__pos_col'))
+        self.assertEqual(len(asigs_3mesas), 3)
+        self.assertEqual(asigs_3mesas[0].stand.numero, 'M-03')
+        self.assertEqual(asigs_3mesas[1].stand.numero, 'M-04')
+        self.assertEqual(asigs_3mesas[2].stand.numero, 'M-05')
+
+    def test_solicitud_cambio_stand_alumno(self):
+        # Asignar un stand de prueba
+        stand = Stand.objects.create(numero='X-01', pos_fila=1, pos_col=1, zona='gimnasio')
+        asig = AsignacionStand.objects.create(stand=stand, proyecto=self.p_2mesas)
+
+        # Iniciar sesión alumno
+        self.client.login(username='alumno.mejoras', password='Password123!')
+        
+        # Hacer POST a la vista de solicitar cambio
+        url = reverse('solicitar_cambio_stand')
+        response = self.client.post(url, {'motivo_cambio': 'Requerimos más flujo de personas.'})
+        
+        self.assertEqual(response.status_code, 302)
+        
+        asig.refresh_from_db()
+        self.assertTrue(asig.cambio_solicitado)
+        self.assertEqual(asig.motivo_cambio, 'Requerimos más flujo de personas.')
+
+    def test_procesar_cambio_stand_admin_aprobar(self):
+        # Asignar un stand
+        stand = Stand.objects.create(numero='X-02', pos_fila=1, pos_col=1, zona='gimnasio')
+        asig = AsignacionStand.objects.create(stand=stand, proyecto=self.p_2mesas, cambio_solicitado=True, motivo_cambio='Test')
+
+        # Login admin
+        self.client.login(username='admin.mejoras', password='Password123!')
+
+        # Aprobar
+        url = reverse('procesar_cambio_stand', args=[asig.id, 'aprobar'])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+
+        # El stand debe quedar libre (la asignación se elimina)
+        self.assertEqual(self.p_2mesas.asignaciones_stands.count(), 0)
+
+    def test_procesar_cambio_stand_admin_rechazar(self):
+        # Asignar un stand
+        stand = Stand.objects.create(numero='X-03', pos_fila=1, pos_col=1, zona='gimnasio')
+        asig = AsignacionStand.objects.create(stand=stand, proyecto=self.p_2mesas, cambio_solicitado=True, motivo_cambio='Test')
+
+        # Login admin
+        self.client.login(username='admin.mejoras', password='Password123!')
+
+        # Rechazar
+        url = reverse('procesar_cambio_stand', args=[asig.id, 'rechazar'])
+        response = self.client.post(url, {'motivo_rechazo': 'No hay más espacio disponible en esa fila.'})
+        self.assertEqual(response.status_code, 302)
+
+        asig.refresh_from_db()
+        self.assertTrue(asig.cambio_solicitado)
+        self.assertFalse(asig.cambio_autorizado)
+        self.assertEqual(asig.motivo_rechazo, 'No hay más espacio disponible en esa fila.')
+
+

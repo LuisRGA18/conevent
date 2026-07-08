@@ -66,6 +66,7 @@
         <th class="ps-3">Código</th>
         <th>Proyecto / Equipo</th>
         <th>Carrera y Grupo</th>
+        <th class="text-center">Mesas</th>
         <th class="text-center">Stand / Mesa (Fase 1)</th>
         <th class="text-center">Estatus Oficial</th>
         <th class="text-center">Eval. Externa</th>
@@ -97,6 +98,23 @@
         <td>
             <span class="text-white-50 small d-block">{{ proyecto.carrera.nombre|default:"Sin Carrera" }}</span>
             <small class="text-muted">Grupo: {{ proyecto.grupo|default:"N/A" }}</small>
+        </td>
+        <td class="text-center">
+            {% if proyecto.mesas_requeridas == 1 or proyecto.mesas_requeridas == 2 %}
+                <span class="badge bg-secondary">{{ proyecto.mesas_requeridas }}</span>
+            {% elif proyecto.mesas_requeridas == 3 %}
+                {% if proyecto.mesas_autorizadas %}
+                    <span class="badge bg-success">3 — Autorizado</span>
+                {% else %}
+                    <div class="d-flex flex-column align-items-center gap-1">
+                        <span class="badge bg-warning text-dark">3 — Pendiente auth.</span>
+                        <form action="{% url 'autorizar_mesas' proyecto.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-xs btn-outline-warning py-0 px-2 fw-semibold" style="font-size: 0.75rem;">Autorizar</button>
+                        </form>
+                    </div>
+                {% endif %}
+            {% endif %}
         </td>
         <td class="text-center">
             {% if proyecto.asignaciones_stands.all %}
@@ -148,7 +166,7 @@
         </td>
     </tr>
     <tr class="collapse" id="detalle-{{ proyecto.pk }}">
-        <td colspan="7" class="bg-black bg-opacity-30 p-3 border-secondary">
+        <td colspan="9" class="bg-black bg-opacity-30 p-3 border-secondary">
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <h6 class="text-warning small mb-1 fw-bold"><i class="fas fa-users me-1"></i>Integrantes Registrados:</h6>
@@ -175,13 +193,76 @@
     </tr>
     {% empty %}
     <tr>
-        <td colspan="7" class="text-center py-4 text-muted small">
+        <td colspan="9" class="text-center py-4 text-muted small">
             <i class="fas fa-folder-open me-2"></i>No hay proyectos con esos criterios en la plataforma.
         </td>
     </tr>
     {% endfor %}
 </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Sección de Solicitudes de Cambio de Stand (RF6) -->
+  <div class="card bg-dark border-secondary mt-5 shadow-lg">
+    <div class="card-header border-secondary bg-black bg-opacity-30 py-3 d-flex align-items-center">
+      <h5 class="mb-0 text-warning fw-semibold"><i class="fas fa-exchange-alt me-2"></i>Solicitudes de Cambio de Stand</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead class="text-muted small border-secondary">
+            <tr>
+              <th class="ps-3">Proyecto</th>
+              <th>Stand Actual</th>
+              <th>Motivo del Cambio</th>
+              <th class="text-center pe-3" style="width: 320px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="border-secondary">
+            {% for solicitud in solicitudes_cambio %}
+            <tr>
+              <td class="ps-3">
+                <span class="fw-semibold text-white d-block">{{ solicitud.proyecto.titulo }}</span>
+                <span class="badge bg-secondary">{{ solicitud.proyecto.codigo }}</span>
+              </td>
+              <td>
+                <span class="badge bg-outline-info" style="color: #3b82f6; border-color: #3b82f6;">{{ solicitud.stand.numero }} ({{ solicitud.stand.get_zona_display }})</span>
+              </td>
+              <td class="text-white-50 small">{{ solicitud.motivo_cambio }}</td>
+              <td class="text-center pe-3">
+                <div class="d-flex flex-column gap-2 align-items-center justify-content-center">
+                  <div class="d-flex gap-2">
+                    <form action="{% url 'procesar_cambio_stand' solicitud.pk 'aprobar' %}" method="post" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-success px-3"><i class="fas fa-check me-1"></i>Aprobar</button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-danger px-3" data-bs-toggle="collapse" data-bs-target="#rechazar-solicitud-{{ solicitud.pk }}">
+                      <i class="fas fa-times me-1"></i>Rechazar
+                    </button>
+                  </div>
+
+                  <!-- Campo de Motivo de Rechazo Colapsable -->
+                  <div class="collapse w-100" id="rechazar-solicitud-{{ solicitud.pk }}">
+                    <form action="{% url 'procesar_cambio_stand' solicitud.pk 'rechazar' %}" method="post" class="d-flex gap-2 mt-2">
+                      {% csrf_token %}
+                      <input type="text" name="motivo_rechazo" placeholder="Motivo de rechazo..." class="form-control form-control-sm bg-dark text-white border-secondary" required>
+                      <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-paper-plane"></i></button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted small">
+                <i class="fas fa-check-circle text-success me-2"></i>No hay solicitudes de cambio de stand pendientes.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

@@ -224,45 +224,127 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Calcular dimensiones dinámicamente basadas en coordenadas
-    let maxFila = 0;
-    let maxCol = 0;
-    stands.forEach(s => {
-      if (s.pos_fila > maxFila) maxFila = s.pos_fila;
-      if (s.pos_col > maxCol) maxCol = s.pos_col;
-    });
+    // Configuración de la cuadrícula horizontal (RF5 corregido)
+    const nodeWidth = 100;
+    const nodeHeight = 18;
+    const gapX = 36;
+    const gapY = 10;
+    const marginX = 40;
+    const marginY = 70;
 
-    // Asegurar tamaño mínimo de grilla
-    maxFila = Math.max(maxFila, 5);
-    maxCol = Math.max(maxCol, 8);
-
-    // Configuración de la cuadrícula
-    const nodeWidth = 60;
-    const nodeHeight = 50;
-    const gapX = 25;
-    const gapY = 25;
-    const padding = 30;
-
-    const svgWidth = (maxCol + 1) * (nodeWidth + gapX) + padding * 2;
-    const svgHeight = (maxFila + 1) * (nodeHeight + gapY) + padding * 2;
+    const svgWidth = 1000;
+    const svgHeight = 400;
 
     let svgHTML = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 520px;" xmlns="http://www.w3.org/2000/svg">`;
 
+    // 1. Dibujar escenario en la parte superior
+    svgHTML += `
+      <g id="escenario-decorativo">
+        <rect x="40" y="10" width="920" height="35" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+        <text x="500" y="32" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle" letter-spacing="2">ESCENARIO / PRESENTACIONES</text>
+      </g>
+    `;
+
+    // 2. Dibujar entradas laterales a la altura de fila 8 (tercera desde la base)
+    const yFila8 = marginY + (8 - 1) * (nodeHeight + gapY);
+    svgHTML += `
+      <g id="entradas-laterales">
+        <!-- Entrada Izquierda -->
+        <rect x="5" y="${yFila8 - 6}" width="30" height="30" rx="4" fill="#10b981" fill-opacity="0.8" stroke="#059669" stroke-width="1" />
+        <text x="20" y="${yFila8 + 12}" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">🚪</text>
+        <text x="20" y="${yFila8 + 32}" fill="#10b981" font-size="7" font-weight="bold" text-anchor="middle">ENTRADA</text>
+
+        <!-- Entrada Derecha -->
+        <rect x="965" y="${yFila8 - 6}" width="30" height="30" rx="4" fill="#10b981" fill-opacity="0.8" stroke="#059669" stroke-width="1" />
+        <text x="980" y="${yFila8 + 12}" fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">🚪</text>
+        <text x="980" y="${yFila8 + 32}" fill="#10b981" font-size="7" font-weight="bold" text-anchor="middle">ENTRADA</text>
+      </g>
+    `;
+
+    // 3. Dibujar entradas inferiores (base)
+    svgHTML += `
+      <g id="entradas-inferiores">
+        <!-- Entrada Inferior Izquierda -->
+        <rect x="302" y="360" width="120" height="25" rx="4" fill="#10b981" fill-opacity="0.8" stroke="#059669" stroke-width="1" />
+        <text x="362" y="376" fill="#ffffff" font-size="9" font-weight="bold" text-anchor="middle">⬆ ENTRADA IZQUIERDA</text>
+
+        <!-- Entrada Inferior Derecha -->
+        <rect x="574" y="360" width="120" height="25" rx="4" fill="#10b981" fill-opacity="0.8" stroke="#059669" stroke-width="1" />
+        <text x="634" y="376" fill="#ffffff" font-size="9" font-weight="bold" text-anchor="middle">⬆ ENTRADA DERECHA</text>
+      </g>
+    `;
+
     // Dibujar fondo de grilla decorativo
-    for (let f = 0; f <= maxFila + 1; f++) {
-      const y = padding + f * (nodeHeight + gapY) + nodeHeight / 2;
-      svgHTML += `<line x1="0" y1="${y}" x2="${svgWidth}" y2="${y}" stroke="#1e293b" stroke-dasharray="4 8" stroke-width="1" />`;
+    for (let f = 1; f <= 10; f++) {
+      const y = marginY + (f - 1) * (nodeHeight + gapY) + nodeHeight / 2;
+      svgHTML += `<line x1="40" y1="${y}" x2="960" y2="${y}" stroke="#1e293b" stroke-dasharray="2 4" stroke-width="0.5" />`;
     }
-    for (let c = 0; c <= maxCol + 1; c++) {
-      const x = padding + c * (nodeWidth + gapX) + nodeWidth / 2;
-      svgHTML += `<line x1="${x}" y1="0" x2="${x}" y2="${svgHeight}" stroke="#1e293b" stroke-dasharray="4 8" stroke-width="1" />`;
+
+    // Dibujar Bordes Compartidos para Proyectos con Múltiples Mesas Contiguas (RF5)
+    const projectGroups = {};
+    stands.forEach(s => {
+      if (s.proyecto_asignado) {
+        const pid = s.proyecto_asignado.id;
+        if (!projectGroups[pid]) projectGroups[pid] = [];
+        projectGroups[pid].push(s);
+      }
+    });
+
+    Object.keys(projectGroups).forEach(pid => {
+      const groupStands = projectGroups[pid];
+      if (groupStands.length > 1) {
+        // Agrupar por zona y fila
+        const rowGroups = {};
+        groupStands.forEach(s => {
+          const key = `${s.zona}-${s.pos_fila}`;
+          if (!rowGroups[key]) rowGroups[key] = [];
+          rowGroups[key].push(s);
+        });
+
+        Object.keys(rowGroups).forEach(key => {
+          const subStands = rowGroups[key].sort((a, b) => a.pos_col - b.pos_col);
+          
+          // Buscar bloques consecutivos
+          let block = [subStands[0]];
+          for (let idx = 1; idx < subStands.length; idx++) {
+            const prev = subStands[idx - 1];
+            const curr = subStands[idx];
+            if (curr.pos_col === prev.pos_col + 1) {
+              block.push(curr);
+            } else {
+              drawBlockBorder(block);
+              block = [curr];
+            }
+          }
+          drawBlockBorder(block);
+        });
+      }
+    });
+
+    function drawBlockBorder(block) {
+      if (block.length <= 1) return;
+      const s_first = block[0];
+      const s_last = block[block.length - 1];
+      const x_min = marginX + (s_first.pos_col - 1) * (nodeWidth + gapX) - 4;
+      const y_min = marginY + (s_first.pos_fila - 1) * (nodeHeight + gapY) - 4;
+      const w = (s_last.pos_col - s_first.pos_col) * (nodeWidth + gapX) + nodeWidth + 8;
+      const h = nodeHeight + 8;
+      
+      const careerKey = s_first.proyecto_asignado.carrera_clave.toUpperCase();
+      const color = careerColors[careerKey] || careerColors.ISC;
+
+      svgHTML += `
+        <rect x="${x_min}" y="${y_min}" width="${w}" height="${h}" rx="6" 
+              fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="6 4"
+              style="filter: drop-shadow(0px 0px 6px ${color}); pointer-events: none;" />
+      `;
     }
 
     // Dibujar Stands
     stands.forEach(s => {
       // Coordenadas en SVG
-      const x = padding + s.pos_col * (nodeWidth + gapX);
-      const y = padding + s.pos_fila * (nodeHeight + gapY);
+      const x = marginX + (s.pos_col - 1) * (nodeWidth + gapX);
+      const y = marginY + (s.pos_fila - 1) * (nodeHeight + gapY);
 
       let color = careerColors.free;
       let careerKey = "free";
@@ -275,10 +357,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       svgHTML += `
         <g class="stand-node" id="node-${s.id}" data-id="${s.id}" data-carrera="${careerKey}">
-          <rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="8" 
+          <rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="4" 
                 fill="${color}" fill-opacity="0.8" stroke="${color}" stroke-width="1.5" />
-          <text x="${x + nodeWidth/2}" y="${y + nodeHeight/2 + 5}" 
-                fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">${s.numero}</text>
+          <text x="${x + nodeWidth/2}" y="${y + nodeHeight/2 + 4}" 
+                fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">${s.numero}</text>
         </g>
       `;
     });

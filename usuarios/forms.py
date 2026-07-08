@@ -13,7 +13,7 @@ TEXTAREA_CLASS = 'form-control bg-dark text-white border-secondary'
 class ProyectoForm(forms.ModelForm):
     class Meta:
         model = Proyecto
-        fields = ['titulo', 'descripcion', 'carrera', 'grupo', 'categoria', 'logo']
+        fields = ['titulo', 'descripcion', 'carrera', 'grupo', 'categoria', 'logo', 'mesas_requeridas']
         widgets = {
             'titulo': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
@@ -31,6 +31,7 @@ class ProyectoForm(forms.ModelForm):
             }),
             'categoria': forms.Select(attrs={'class': SELECT_CLASS}),
             'logo': forms.ClearableFileInput(attrs={'class': INPUT_CLASS}),
+            'mesas_requeridas': forms.RadioSelect(attrs={'class': 'mesas-radio-input form-check-input'}),
         }
         labels = {
             'titulo': 'Título del Proyecto',
@@ -39,6 +40,7 @@ class ProyectoForm(forms.ModelForm):
             'grupo': 'Grupo / Paralelo',
             'categoria': 'Categoría',
             'logo': 'Logotipo del Proyecto',
+            'mesas_requeridas': 'Mesas requeridas para exhibición',
         }
 
 
