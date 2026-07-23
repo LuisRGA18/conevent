@@ -1,0 +1,187 @@
+DOCUMENTACIÓN DEL SISTEMA - CONEVENT
+===================================
+
+SECCIÓN 1 — DESCRIPCIÓN GENERAL
+-------------------------------
+ConEvent es un sistema web integral para la gestión, organización y evaluación de ferias académicas y exposiciones de proyectos universitarios. Ha sido diseñado específicamente para responder a las necesidades operativas de la Universidad Tecnológica de Querétaro (UTEQ).
+
+¿Para qué sirve?
+Centraliza y automatiza los flujos logísticos tradicionales que suelen provocar retrasos o errores humanos en ferias de gran escala:
+- El registro autónomo de los equipos estudiantiles, detallando integrantes, carrera, grupo y recursos de infraestructura (mesas).
+- La distribución geométrica automática de stands en el mapa real del auditorio de la UTEQ, optimizando el espacio y agrupando proyectos de forma contigua según su carrera.
+- El control de inventario de mobiliario mediante códigos QR físicos asignados a cada mesa, permitiendo reportar incidencias (pérdidas o daños) en tiempo real.
+- La evaluación de proyectos por parte de jueces (docentes y evaluadores externos) usando la rúbrica oficial ponderada de la UTEQ con un cronómetro de exposición digital incorporado.
+
+¿Quiénes lo usan?
+1. Alumnos Participantes: Registran su equipo, cargan su logo, seleccionan la carrera/categoría, solicitan stands, descargan el código QR de evaluación externa y reportan incidencias de mobiliario asignado.
+2. Docentes Evaluadores: Acceden al listado de proyectos asignados, inician la evaluación digital con cronómetro integrado (10 minutos) y guardan las notas parciales cuantitativas/cualitativas.
+3. Administradores del Evento: Tienen control total sobre los criterios de evaluación, administran el mapa físico del auditorio, autorizan solicitudes de múltiples mesas, ejecutan el algoritmo de asignación automática de stands, gestionan el inventario de mobiliario y revisan logs de auditoría y reportes estadísticos finales.
+4. Visitantes y Evaluadores Externos: Escanean los códigos QR exhibidos en los stands para emitir votos u opiniones que nutren el ranking de proyección social.
+
+Contexto de despliegue:
+Se despliega como una aplicación web optimizada para dispositivos móviles (diseño responsive), permitiendo que los jueces y personal de inventario realicen todas sus actividades directamente desde sus celulares mientras recorren los pasillos de la feria académica.
+
+
+SECCIÓN 2 — ARQUITECTURA DEL SISTEMA
+------------------------------------
+1. ¿El sistema es monolítico o distribuido? ¿Por qué?
+El sistema es monolítico. Se optó por esta arquitectura debido a que simplifica de gran manera el despliegue local (en servidores de la universidad o laboratorios de desarrollo), reduce la latencia en las consultas cruzadas del ORM y facilita el mantenimiento en el contexto de proyectos académicos. Un monolito en Django permite unificar en un solo codebase el sistema de plantillas HTML dinámicas (frontend), la API REST (backend), el motor de tareas/comandos personalizados y la base de datos central.
+
+2. ¿Sigue el patrón MVC o MTV? Explicar cómo lo implementa Django
+Implementa el patrón MTV (Model-Template-View), que es la interpretación propia de Django del clásico MVC:
+- Modelo (Model): Define la estructura de datos y las reglas del negocio en Python (por ejemplo, `Proyecto` o `AsignacionStand`). Representa la capa de datos.
+- Template (Plantilla): La capa de presentación en archivos HTML con la sintaxis del motor de plantillas de Django (Jinja-style), que genera el frontend de forma dinámica en el servidor.
+- Vista (View): La lógica de control que recibe peticiones HTTP, interactúa con los modelos y retorna una respuesta (renderizando un template o retornando JSON). Equivale al Controlador en el MVC tradicional.
+
+3. ¿Tiene separación frontend/backend o están acoplados?
+Están acoplados mediante arquitectura híbrida. La mayor parte de la interfaz administrativa y estudiantil se renderiza directamente en el servidor utilizando Django Templates tradicionales (con estilos CSS puros y Bootstrap). Sin embargo, ciertos componentes críticos del sistema (como el mapa interactivo del auditorio en SVG y el panel dinámico de rúbrica) se comportan como Single Page Components desacoplados, consumiendo la API REST mediante llamadas asíncronas con JavaScript (fetch/fetch API) en el lado del cliente.
+
+4. ¿Qué rol juega la API REST (DRF) dentro del sistema?
+Django REST Framework (DRF) expone un conjunto de endpoints RESTful seguros. Estos endpoints permiten:
+- Alimentar con datos JSON dinámicos al mapa SVG en tiempo real.
+- Permitir que aplicaciones o scripts de inventario consuman o actualicen estados de mobiliario sin recargar la página.
+- Facilitar la comunicación y el envío asíncrono de calificaciones desde el formulario del juez (sin interrupciones ni recargas de página que reinicien el cronómetro).
+- Dejar el backend listo para una posible futura migración hacia una app móvil nativa en iOS o Android.
+
+5. ¿Cómo conviven las vistas Django tradicionales (templates) con los endpoints DRF?
+Conviven en armonía mediante la separación de rutas y responsabilidades:
+- Vistas tradicionales (`views.py`): Registradas en rutas HTML estándar (por ejemplo, `/dashboard/` o `/auth/login/`), retornan una respuesta renderizada (`HttpResponse`) con HTML plano y son responsables de la interacción básica del usuario.
+- Vistas REST (`api_views.py` o `api_urls.py`): Registradas bajo el prefijo `/api/` (por ejemplo, `/api/stands/mapa/`), retornan objetos JSON estructurados (`Response` de DRF). La plantilla HTML tradicional se carga primero y luego usa JavaScript para consultar los endpoints `/api/` asíncronamente y actualizar fragmentos de la UI de forma interactiva.
+
+
+SECCIÓN 3 — BASE DE DATOS
+--------------------------
+1. ¿La base de datos es relacional o no relacional? ¿Por qué?
+Es relacional. La naturaleza del dominio de negocio de ConEvent requiere una consistencia referencial estricta (ACID). Conceptos como la asignación de stands a proyectos, la relación de integrantes con un líder único y el cálculo exacto de promedios de calificaciones a partir de criterios específicos requieren llaves foráneas y restricciones de integridad que las bases de datos no relacionales (NoSQL) no garantizan de forma nativa.
+
+2. ¿Qué motor de base de datos se usa actualmente y cuál está planeado para producción?
+Actualmente se utiliza SQLite en entornos de desarrollo local debido a su portabilidad, nula necesidad de configuración y almacenamiento en un solo archivo dentro del proyecto. Para el entorno de producción real, el sistema está configurado y preparado para migrar a PostgreSQL (o MySQL/MariaDB), garantizando soporte para múltiples conexiones concurrentes de jueces y alumnos el día de la feria académica.
+
+3. ¿Cómo maneja Django las relaciones entre tablas (ORM)?
+Django maneja las relaciones mediante abstracciones de alto nivel en su ORM:
+- Relaciones 1-a-Muchos (`ForeignKey`): Representa que un registro puede estar asociado a varios de otra tabla (por ejemplo, un `Proyecto` pertenece a una `Carrera`).
+- Relaciones 1-a-1 (`OneToOneField`): Restringe que un registro esté asociado a un único registro de la tabla destino (por ejemplo, una `AsignacionStand` se asocia a un único `Stand` físico).
+- Relaciones Muchos-a-Muchos (`ManyToManyField`): Crea una tabla intermedia (de unión) de forma transparente para relacionar múltiples registros entre sí (por ejemplo, los grupos de permisos de los usuarios).
+El ORM aplica políticas automáticas de integridad referencial como `on_delete=models.CASCADE` (borrado en cascada) o `models.SET_NULL` (poner en nulo al borrar el registro padre).
+
+4. ¿Qué tan normalizada está la base de datos? ¿Hay desnormalización intencional?
+La base de datos se encuentra normalizada hasta la Tercera Forma Normal (3FN), minimizando la redundancia de datos. Sin embargo, existe una desnormalización intencional por motivos de rendimiento en el modelo `Proyecto`: el campo `calificacion` almacena la nota final promedio de la rúbrica directamente en formato decimal. Aunque la calificación puede recalcularse en tiempo real consultando la sumatoria de las notas en `DetalleEvaluacion` de cada `Evaluacion`, almacenar el promedio final calculado en `Proyecto` evita realizar agregaciones pesadas en la base de datos cada vez que se carga el dashboard de métricas, el mapa de stands o el ranking general.
+
+
+SECCIÓN 4 — MÓDULOS DEL SISTEMA
+-------------------------------
+1. MÓDULO: USUARIOS
+- Qué resuelve: Controla el registro de estudiantes, creación de cuentas con verificación 2FA por correo, gestión de liderazgos de proyectos, administración de datos de carreras y el inicio de sesión de jueces, alumnos y administradores.
+- Modelos principales: `Usuario` (modelo personalizado), `Carrera`, `Proyecto`, `Integrante`.
+- Vistas principales: `/auth/login/`, `/auth/registro/`, `/auth/verificar-2fa/`, `/auth/mi-proyecto/`, `/panel-admin/`.
+- Dependencias: Es el módulo núcleo; todos los demás módulos dependen de `Usuario` y `Proyecto` para validar permisos y asignar recursos.
+
+2. MÓDULO: ESPACIOS
+- Qué resuelve: Administra el mapa del auditorio principal de la UTEQ, la creación de stands físicos y el flujo de asignación manual o automática. Permite a los alumnos solicitar cambios de stand y a los administradores procesarlos.
+- Modelos principales: `Stand`, `AsignacionStand`.
+- Vistas principales: `/espacios/mapa/`, `/api/stands/mapa/` (API REST), `/procesar-cambio-stand/`.
+- Dependencias: Depende de `Usuarios` (`Proyecto` y `Usuario`) para saber qué proyecto y carrera ocupan cada stand y quién es el administrador que procesa las solicitudes.
+
+3. MÓDULO: INVENTARIO
+- Qué resuelve: Controla el mobiliario físico del auditorio (mesas, sillas, mamparas) asignado a cada stand mediante códigos QR individuales. Permite reportar incidencias sobre daños o pérdidas de equipo de manera rápida.
+- Modelos principales: `ItemInventario`, `Incidencia`.
+- Vistas principales: `/inventario/incidencia/<uuid:item_uuid>/` (reportar desde QR), `/inventario/incidencias/activas/`, `/inventario/generar-qr-lote/`.
+- Dependencias: Depende de `Espacios` (`Stand`) para ubicar físicamente el mobiliario dañado y de `Usuarios` (`Usuario`) para registrar al responsable de la incidencia.
+
+4. MÓDULO: REPORTES
+- Qué resuelve: Proporciona la capa analítica de datos en tiempo real. Genera las métricas para el dashboard de administración, renderiza gráficas y compila reportes en formato PDF y CSV para descarga directa de directivos.
+- Modelos principales: No tiene modelos propios; consulta los modelos de los módulos `Usuarios` (`Proyecto`, `Evaluacion`) y `Espacios`.
+- Vistas principales: `/reportes/dashboard/`, `/reportes/api/datos-graficas/` (API REST), `/reportes/exportar/pdf/`, `/reportes/exportar/csv/`.
+- Dependencias: Consume datos directamente de `Usuarios` y `Espacios`.
+
+
+SECCIÓN 5 — FLUJOS PRINCIPALES
+------------------------------
+1. Registro de alumno y proyecto:
+   - El alumno crea una cuenta en `/auth/registro/` ingresando un correo `@uteq.edu.mx`.
+   - El sistema le envía un código 2FA de 6 dígitos a su correo y le presenta la pantalla de verificación.
+   - Tras ingresar el código correcto, el sistema inicia su sesión y lo redirige a `/auth/mi-proyecto/`.
+   - El alumno registra su proyecto ingresando el título, descripción, carrera, grupo, categoría, logo y añade los integrantes (matrícula y nombre). Además, declara cuántas mesas requiere (1, 2 o 3).
+   - Al guardar, el sistema autogenera el código QR de evaluación externa para el proyecto.
+
+2. Asignación automática de stands:
+   - El administrador accede a `/panel-admin/` y hace clic en "Ejecutar Asignación Automática".
+   - El algoritmo agrupa los proyectos aprobados por Carrera.
+   - Para cada proyecto, busca una secuencia de stands contiguos y vacíos en la misma fila y zona del auditorio que coincida con las mesas requeridas y autorizadas del proyecto.
+   - Asigna los stands físicamente registrando una `AsignacionStand` para cada mesa del proyecto, asegurando que los proyectos de la misma carrera queden juntos en el mapa.
+
+3. Evaluación docente con rúbrica UTEQ:
+   - El docente inicia sesión y accede a "Mis Evaluaciones", donde ve los proyectos que tiene asignados.
+   - Al seleccionar un proyecto, se abre la interfaz de rúbrica digital y se inicia automáticamente un cronómetro regresivo de 10 minutos (que cambia de verde a naranja y rojo según el tiempo restante).
+   - El docente evalúa 4 criterios ponderados (Exposición, Innovación, Viabilidad, Funcionalidad Técnica) seleccionando notas cualitativas (AU=10, DE=9, SA=8, NA=0).
+   - Si el cronómetro llega a cero y el docente no ha guardado, se autocompleta el formulario con la nota mínima ("SA" o "NA") por penalización de tiempo.
+   - Al guardar, el sistema calcula de forma ponderada la calificación final decimal, actualiza el campo en `Proyecto` y registra los logs.
+
+4. Evaluación externa por QR:
+   - Los visitantes de la feria escanean el código QR exhibido en el stand del proyecto (generado en `/proyectos/<id>/evaluar-externo/`).
+   - El sistema abre una interfaz simplificada desde el móvil del visitante pidiéndole su correo de contacto y una calificación cualitativa de estrellitas.
+   - El sistema procesa el voto asíncronamente y recalcula la calificación promedio externa del proyecto para el ranking de proyección social.
+
+5. Reporte de incidencia de inventario:
+   - Un alumno o personal de apoyo detecta una mesa rota y escanea el código QR de la mesa.
+   - El QR lo dirige a `/inventario/incidencia/<uuid_item>/`.
+   - Se le presenta un formulario sencillo para describir la falla y seleccionar la prioridad (baja, media, alta).
+   - Al guardar, la incidencia se registra en `Incidencia` vinculada al item, se levanta una alerta en el panel del administrador y se marca el color del stand en el mapa interactivo para su atención rápida.
+
+
+SECCIÓN 6 — SEGURIDAD IMPLEMENTADA
+----------------------------------
+1. Autenticación robusta:
+   - Autenticación híbrida: Inicio de sesión basado en sesiones tradicionales para la navegación web del sistema, y autenticación por tokens JWT (JSON Web Tokens) mediante Django REST Framework SimpleJWT para consumo seguro de la API desde el cliente JS.
+   - Verificación de Dos Factores (2FA): Cada inicio de sesión de usuario normal (no superusuario) genera un código de 6 dígitos aleatorio que es enviado al correo institucional y expira al ser usado. Cuenta con opción de "Recordar dispositivo por 1 día" para evitar pedir el código constantemente en el mismo navegador.
+   - Bypass de Superusuario: Los superusuarios creados por consola (sin correo) pueden iniciar sesión directamente sin pasar por el 2FA para evitar bloqueos administrativos.
+
+2. Control de acceso basado en roles:
+   - El modelo `Usuario` cuenta con el campo `rol` con tres perfiles: `ADMIN` (acceso a configuración, inventario total y asignación de stands), `EVALUADOR` (acceso exclusivo a rúbricas de proyectos asignados) y `ALUMNO` (acceso exclusivo al registro de su proyecto e incidencias).
+   - Se aplican decoradores de Django (`@user_passes_test`, `@login_required`) y permisos de ViewSets en DRF para evitar la escalada de privilegios en las vistas del panel de administración.
+
+3. Restricción de dominio institucional:
+   - El formulario de registro público valida mediante expresiones regulares y lógica de negocio que el correo ingresado pertenezca estrictamente al dominio oficial de la universidad (`@uteq.edu.mx` o subdominios autorizados como `@student.uteq.edu.mx`), rechazando correos públicos como Gmail o Outlook.
+
+4. Código de acceso para evaluadores:
+   - Para evitar que los alumnos se registren maliciosamente como docentes evaluadores, el formulario de registro exige un código de autorización secreto ("2011") si se selecciona el rol de evaluador, bloqueando cualquier intento no autorizado.
+
+5. Logs de auditoría permanente:
+   - Cada acción sensible dentro del sistema (inicios de sesión exitosos o fallidos, guardado de evaluaciones, aprobación o rechazo de cambios de stand, y reportes de incidencias) se registra de manera inmutable en el modelo `LogActividad`, guardando el usuario responsable, tipo de acción, descripción detallada, fecha exacta e IP de origen.
+
+6. Variables de entorno:
+   - Los datos sensibles del servidor (como `SECRET_KEY`, credenciales de bases de datos de producción y configuración de servidores de correo SMTP) se cargan dinámicamente desde variables de entorno locales, evitando la exposición de claves en repositorios de código.
+
+
+SECCIÓN 7 — TECNOLOGÍAS UTILIZADAS
+----------------------------------
+- Django (v4.2+ o v5.0): Framework de desarrollo web monolítico principal.
+- Django REST Framework (DRF): Extensiones para desarrollo de API RESTful.
+- django-rest-framework-simplejwt: Autenticación por tokens JSON Web Tokens para endpoints de la API.
+- Pillow: Biblioteca de procesamiento de imágenes para la carga y renderizado de logos de proyectos.
+- qrcode (Python): Generación dinámica en servidor de códigos QR para inventario y evaluación externa.
+- ReportLab: Generación en tiempo real y descarga de actas de evaluación y reportes estadísticos en formato PDF.
+- Bootstrap (v5.3): Framework CSS responsive para el diseño del Panel de Control de usuarios.
+- Chart.js (v4.0+): Librería de JavaScript en frontend para renderizado interactivo de gráficas estadísticas en el módulo de reportes.
+- SQLite: Motor de base de datos relacional para desarrollo local.
+
+
+SECCIÓN 8 — ESTADO ACTUAL DEL SISTEMA
+-------------------------------------
+1. Qué está completamente funcional:
+   - El registro de alumnos y la creación del perfil completo de sus proyectos (incluyendo edición de integrantes y subida de logos).
+   - El sistema de autenticación por roles con verificación 2FA y bypass de superusuarios.
+   - El algoritmo de asignación automática de stands contiguos y la gestión administrativa de solicitudes de cambio de espacio.
+   - La rúbrica digital con ponderación oficial UTEQ y temporizador regresivo de 10 minutos (con autoguardado en caso de expiración).
+   - El mapa dinámico e interactivo del auditorio en SVG con la orientación horizontal correcta y la indicación visual de stands.
+   - La generación y lectura de códigos QR para la evaluación de visitantes externos y asignación de incidencias de inventario.
+   - El dashboard de métricas con gráficas en Chart.js y exportación de reportes a PDF/CSV.
+   - La Landing Page completa con galería de imágenes contextuales, mapa de ubicación interactivo de la UTEQ, modales legales (Aviso de Privacidad, Términos y Condiciones, Usos y Aplicaciones) y formulario de contacto asíncrono.
+   - Envío de correos SMTP configurado con integración para servidores Gmail/Google.
+
+2. Qué está en desarrollo o tiene bugs conocidos:
+   - Ajustes menores en la consistencia de estilos en dispositivos móviles muy pequeños para el mapa del auditorio SVG (algunos nombres de stands pueden encimarse ligeramente en pantallas de menos de 360px de ancho).
+
+3. Qué falta implementar:
+   - Integración con un servidor SMTP real de la UTEQ para el envío de correos de producción (actualmente configurado con el backend de consola de Django).
+   - Despliegue en la infraestructura web oficial de la universidad (configuración de servidor Nginx/Gunicorn y base de datos PostgreSQL productiva).

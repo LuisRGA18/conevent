@@ -94,10 +94,7 @@ AUTH_USER_MODEL = 'usuarios.Usuario'  # REQUERIDO para que funcione todo
 
 # ─── Redirecciones de login ──────────────────────────────────
 LOGIN_URL = '/auth/login/'
-LOGIN_REDIRECT_URL = '/'
-
-# Correos en consola durante desarrollo
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+LOGIN_REDIRECT_URL = '/dashboard/'
 
 # ─── Backends de autenticación ──────────────────────────────
 # Permite login con username O correo institucional
@@ -137,13 +134,13 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_AGE = 86400
 
 # ─── Configuración de Correo SMTP ─────────────────────────────
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@conevent.com')
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='equipo.soporte.oasis@gmail.com')
 
 # ─── Archivos de Media ────────────────────────────────────────
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -202,8 +199,10 @@ urlpatterns = [
              template_name='usuarios/password_reset_complete.html',
          ), name='password_reset_complete'),
 
-    # Dashboard
-    path('', usuarios_views.index_view, name='index'),
+    # Landing Page y Dashboard
+    path('', usuarios_views.landing_view, name='landing'),
+    path('dashboard/', usuarios_views.index_view, name='index'),
+    path('contacto/enviar/', usuarios_views.contacto_view, name='contacto_enviar'),
 
     # Evaluación Externa y QRs por Proyecto
     path('proyectos/<int:proyecto_id>/evaluar-externo/', usuarios_views.evaluar_externo_view, name='evaluar_externo'),
@@ -831,11 +830,23 @@ def activar_cuenta_view(request):
 
 
 # ──────────────────────────────────────────────────────────────
+# LANDING PAGE DE BIENVENIDA (PÚBLICA)
+# ──────────────────────────────────────────────────────────────
+
+def landing_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+    return render(request, 'landing.html')
+
+
+# ──────────────────────────────────────────────────────────────
 # DASHBOARD PRINCIPAL (CON CONTADORES REALES)
 # ──────────────────────────────────────────────────────────────
 
-@login_required(login_url='login')
 def index_view(request):
+    if not request.user.is_authenticated:
+        return redirect('landing')
+
     if request.session.pop('mostrar_bienvenida', False):
         nombre = request.user.first_name or request.user.username
         messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
@@ -1580,6 +1591,28 @@ def procesar_cambio_stand_view(request, pk, action):
             messages.info(request, f"Se rechazó la solicitud de cambio para el proyecto '{proyecto.titulo}'.")
             
     return redirect('panel_admin')
+
+
+def contacto_view(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        correo = request.POST.get('correo', '').strip()
+        asunto = request.POST.get('asunto', '').strip()
+        mensaje = request.POST.get('mensaje', '').strip()
+        if nombre and correo and mensaje:
+            try:
+                send_mail(
+                    subject=f'[ConEvent] Contacto: {asunto}',
+                    message=f'De: {nombre} <{correo}>\n\n{mensaje}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=['equipo.soporte.oasis@gmail.com'],
+                    fail_silently=True,
+                )
+                return JsonResponse({'ok': True})
+            except Exception:
+                return JsonResponse({'ok': False, 'error': 'Error al enviar'})
+        return JsonResponse({'ok': False, 'error': 'Campos incompletos'})
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'})
 # ===== ARCHIVO: usuarios/urls.py =====
 from django.urls import path
 from . import views

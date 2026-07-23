@@ -1,0 +1,370 @@
+MAPA DE BASE DE DATOS - CONEVENT
+=================================
+
+============================================================
+APP: USUARIOS
+============================================================
+
+Nombre del Modelo: Usuario
+Tabla DB: usuarios_usuario
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - password: CharField (max_length=128)
+  - last_login: DateTimeField (null=True, blank=True)
+  - is_superuser: BooleanField (default=False)
+  - username: CharField (max_length=150)
+  - first_name: CharField (max_length=150, blank=True)
+  - last_name: CharField (max_length=150, blank=True)
+  - email: CharField (max_length=254, blank=True)
+  - is_staff: BooleanField (default=False)
+  - is_active: BooleanField (default=True)
+  - date_joined: DateTimeField (default=<function now at 0x000001626C214B80>)
+  - rol: CharField (max_length=15, default=ALUMNO, choices=[('ADMIN', 'Administrador de Evento'), ('EVALUADOR', 'Docente Evaluador'), ('ALUMNO', 'Alumno Participante')])
+  - matricula_empleado: CharField (max_length=20, null=True, blank=True)
+Relaciones ManyToMany:
+  - groups: ManyToManyField a Group (related_name=user_set)
+  - user_permissions: ManyToManyField a Permission (related_name=user_set)
+Meta Opciones:
+  - verbose_name: usuario
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - es_admin (propiedad)
+  - es_alumno (propiedad)
+  - es_evaluador (propiedad)
+  - get_next_by_date_joined()
+  - get_previous_by_date_joined()
+  - get_rol_display()
+  - is_anonymous (propiedad)
+  - is_authenticated (propiedad)
+  - pk (propiedad)
+
+Nombre del Modelo: Carrera
+Tabla DB: usuarios_carrera
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - nombre: CharField (max_length=100)
+  - clave: CharField (max_length=20)
+Meta Opciones:
+  - ordering: ['nombre']
+  - verbose_name: Carrera
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - pk (propiedad)
+
+Nombre del Modelo: Proyecto
+Tabla DB: usuarios_proyecto
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - titulo: CharField (max_length=200)
+  - descripcion: TextField
+  - carrera: ForeignKey (null=True, blank=True, to=Carrera, on_delete=models.SET_NULL, related_name='proyectos')
+  - grupo: CharField (max_length=10, blank=True)
+  - categoria: CharField (max_length=20, default=software, choices=[('software', 'Desarrollo de Software'), ('hardware', 'Hardware / Electrónica'), ('redes', 'Redes y Telecomunicaciones'), ('ia', 'Inteligencia Artificial'), ('otro', 'Otro')])
+  - logo: FileField (max_length=100, null=True, blank=True, upload_to='logos_proyectos/')
+  - creado_por: ForeignKey (to=Usuario, on_delete=models.CASCADE, related_name='proyectos')
+  - evaluador_asignado: ForeignKey (null=True, blank=True, to=Usuario, on_delete=models.SET_NULL, related_name='proyectos_a_evaluar')
+  - estatus: CharField (max_length=20, default=revision, choices=[('revision', 'En Revisión'), ('aprobado', 'Aprobado'), ('rechazado', 'Rechazado')])
+  - calificacion: DecimalField (null=True, blank=True)
+  - comentarios_evaluador: TextField (blank=True, default=)
+  - qr_evaluacion_externa: FileField (max_length=100, null=True, blank=True, upload_to='qr_proyectos/')
+  - mesas_requeridas: PositiveIntegerField (default=1, choices=[(1, '1 mesa (estándar)'), (2, '2 mesas (proyecto con equipo grande o prototipo físico)'), (3, '3 mesas (instalación especial — requiere autorización del admin)')])
+  - mesas_autorizadas: BooleanField (default=False)
+  - fecha_registro: DateTimeField (blank=True, auto_now_add=True)
+  - fecha_actualizacion: DateTimeField (blank=True, auto_now=True)
+Meta Opciones:
+  - ordering: ['-fecha_registro']
+  - verbose_name: Proyecto
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - codigo (propiedad)
+  - get_categoria_display()
+  - get_estatus_display()
+  - get_mesas_requeridas_display()
+  - get_next_by_fecha_actualizacion()
+  - get_next_by_fecha_registro()
+  - get_previous_by_fecha_actualizacion()
+  - get_previous_by_fecha_registro()
+  - num_integrantes (propiedad)
+  - pk (propiedad)
+
+Nombre del Modelo: Integrante
+Tabla DB: usuarios_integrante
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - proyecto: ForeignKey (to=Proyecto, on_delete=models.CASCADE, related_name='miembros')
+  - nombre_completo: CharField (max_length=150)
+  - matricula: CharField (max_length=20)
+  - correo: CharField (max_length=254)
+  - es_lider: BooleanField (default=False)
+Meta Opciones:
+  - ordering: ['-es_lider', 'nombre_completo']
+  - verbose_name: Integrante
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - pk (propiedad)
+
+Nombre del Modelo: CriterioEvaluacion
+Tabla DB: usuarios_criterioevaluacion
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - nombre: CharField (max_length=100)
+  - descripcion: TextField (blank=True)
+  - peso: DecimalField
+  - activo: BooleanField (default=True)
+Meta Opciones:
+  - ordering: ['nombre']
+  - verbose_name: Criterio de Evaluación
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - pk (propiedad)
+
+Nombre del Modelo: Evaluacion
+Tabla DB: usuarios_evaluacion
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - proyecto: ForeignKey (to=Proyecto, on_delete=models.CASCADE, related_name='evaluaciones')
+  - evaluador: ForeignKey (null=True, to=Usuario, on_delete=models.SET_NULL, related_name='evaluaciones_realizadas')
+  - calificacion: DecimalField (default=0.0)
+  - comentarios_evaluador: TextField (null=True, blank=True)
+  - estatus_sugerido: CharField (max_length=20, default=aprobado, choices=[('revision', 'En Revisión'), ('aprobado', 'Aprobado'), ('rechazado', 'Rechazado')])
+  - fecha_evaluacion: DateTimeField (blank=True, auto_now_add=True)
+Meta Opciones:
+  - verbose_name: Evaluación
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_estatus_sugerido_display()
+  - get_next_by_fecha_evaluacion()
+  - get_previous_by_fecha_evaluacion()
+  - pk (propiedad)
+  - recalcular_calificacion()
+
+Nombre del Modelo: DetalleEvaluacion
+Tabla DB: usuarios_detalleevaluacion
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - evaluacion: ForeignKey (to=Evaluacion, on_delete=models.CASCADE, related_name='detalles')
+  - criterio: ForeignKey (to=CriterioEvaluacion, on_delete=models.CASCADE, related_name='detalles_evaluacion')
+  - calificacion_cualitativa: CharField (max_length=2, choices=[('AU', 'Autónomo (10)'), ('DE', 'Destacado (9)'), ('SA', 'Satisfactorio (8)'), ('NA', 'No Aprobatorio (0)')])
+  - calificacion_numerica: DecimalField
+Meta Opciones:
+  - verbose_name: Detalle de Evaluación
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_calificacion_cualitativa_display()
+  - pk (propiedad)
+  - save()
+
+Nombre del Modelo: EvaluacionExterna
+Tabla DB: usuarios_evaluacionexterna
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - proyecto: ForeignKey (to=Proyecto, on_delete=models.CASCADE, related_name='evaluaciones_externas')
+  - nombre_visitante: CharField (max_length=150)
+  - empresa_procedencia: CharField (max_length=150)
+  - correo_contacto: CharField (max_length=254)
+  - telefono_contacto: CharField (max_length=20, blank=True)
+  - calificacion: CharField (max_length=2, choices=[('AU', 'AU - Autónomo (10)'), ('DE', 'DE - Destacado (9)'), ('SA', 'SA - Satisfactorio (8)'), ('NA', 'NA - No Acreditado')])
+  - comentario: TextField (blank=True)
+  - codigo_acceso_usado: CharField (max_length=20)
+  - fecha: DateTimeField (blank=True, auto_now_add=True)
+Meta Opciones:
+  - ordering: ['-fecha']
+  - verbose_name: evaluacion externa
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - get_calificacion_display()
+  - get_next_by_fecha()
+  - get_previous_by_fecha()
+  - get_valor_numerico()
+  - pk (propiedad)
+
+Nombre del Modelo: LogActividad
+Tabla DB: usuarios_logactividad
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - usuario: ForeignKey (null=True, blank=True, to=Usuario, on_delete=models.SET_NULL, related_name='logs')
+  - tipo: CharField (max_length=30, choices=[('login', 'Inicio de sesión'), ('logout', 'Cierre de sesión'), ('login_fallido', 'Intento fallido de login'), ('2fa_exitoso', 'Verificación 2FA exitosa'), ('2fa_fallido', 'Verificación 2FA fallida'), ('registro', 'Registro de usuario'), ('cambio_estatus', 'Cambio de estatus de proyecto'), ('evaluacion', 'Evaluación registrada'), ('evaluacion_externa', 'Evaluación externa registrada'), ('resolucion_incidencia', 'Incidencia resuelta')])
+  - descripcion: TextField (blank=True)
+  - ip: GenericIPAddressField (max_length=39, null=True, blank=True)
+  - fecha: DateTimeField (blank=True, auto_now_add=True)
+Meta Opciones:
+  - ordering: ['-fecha']
+  - verbose_name: Log de actividad
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_next_by_fecha()
+  - get_previous_by_fecha()
+  - get_tipo_display()
+  - pk (propiedad)
+
+============================================================
+APP: ESPACIOS
+============================================================
+
+Nombre del Modelo: Stand
+Tabla DB: espacios_stand
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - numero: CharField (max_length=20)
+  - zona: CharField (max_length=20, default=gimnasio, choices=[('gimnasio', 'Gimnasio UTEQ'), ('auditorio', 'Auditorio principal'), ('pasillo_a', 'Pasillo Edificio A'), ('pasillo_b', 'Pasillo Edificio B'), ('exterior', 'Explanada / Exterior'), ('otro', 'Otro / Sala alterna')])
+  - capacidad_proyectos: PositiveIntegerField (default=1)
+  - descripcion: TextField (blank=True)
+  - esta_activo: BooleanField (default=True)
+  - pos_fila: PositiveIntegerField (default=0)
+  - pos_col: PositiveIntegerField (default=0)
+Meta Opciones:
+  - ordering: ['zona', 'numero']
+  - verbose_name: Stand / Espacio
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_zona_display()
+  - pk (propiedad)
+
+Nombre del Modelo: AsignacionStand
+Tabla DB: espacios_asignacionstand
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - stand: OneToOneField (to=Stand, on_delete=models.CASCADE, related_name='asignacion')
+  - proyecto: ForeignKey (to=Proyecto, on_delete=models.CASCADE, related_name='asignaciones_stands')
+  - fecha_asignacion: DateTimeField (blank=True, auto_now_add=True)
+  - comentarios: TextField (blank=True)
+  - cambio_solicitado: BooleanField (default=False)
+  - motivo_cambio: TextField (blank=True)
+  - cambio_autorizado: BooleanField (null=True, blank=True)
+  - motivo_rechazo: TextField (blank=True)
+Meta Opciones:
+  - ordering: ['-fecha_asignacion']
+  - verbose_name: Asignación de Stand
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_next_by_fecha_asignacion()
+  - get_previous_by_fecha_asignacion()
+  - pk (propiedad)
+
+Nombre del Modelo: CargaDocente
+Tabla DB: espacios_cargadocente
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - docente: ForeignKey (to=Usuario, on_delete=models.CASCADE, related_name='grupos_impartidos')
+  - codigo_grupo: CharField (max_length=10)
+Meta Opciones:
+  - verbose_name: Carga Académica Docente
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - pk (propiedad)
+
+============================================================
+APP: INVENTARIO
+============================================================
+
+Nombre del Modelo: ItemInventario
+Tabla DB: inventario_iteminventario
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - uuid: UUIDField (max_length=32, default=<function uuid4 at 0x000001626C150220>)
+  - nombre: CharField (max_length=100)
+  - descripcion: TextField (blank=True)
+  - estado: CharField (max_length=15, default=bueno, choices=[('bueno', 'Excelente / Bueno'), ('regular', 'Regular / Desgastado'), ('malo', 'Dañado / Requiere cambio')])
+  - stand_asignado: ForeignKey (null=True, blank=True, to=Stand, on_delete=models.SET_NULL, related_name='items_inventario')
+  - fecha_registro: DateTimeField (blank=True, auto_now_add=True)
+Meta Opciones:
+  - ordering: ['nombre', '-fecha_registro']
+  - verbose_name: Mobiliario / Item de Inventario
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_estado_display()
+  - get_next_by_fecha_registro()
+  - get_previous_by_fecha_registro()
+  - pk (propiedad)
+  - url_qr (propiedad)
+
+Nombre del Modelo: Incidencia
+Tabla DB: inventario_incidencia
+----------------------------------------
+Campos:
+  - id: BigAutoField (blank=True)
+  - item: ForeignKey (to=ItemInventario, on_delete=models.CASCADE, related_name='incidencias')
+  - titulo: CharField (max_length=150)
+  - descripcion: TextField
+  - prioridad: CharField (max_length=10, default=media, choices=[('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta / Crítica')])
+  - reportado_por: ForeignKey (null=True, blank=True, to=Usuario, on_delete=models.SET_NULL, related_name='incidencias_reportadas')
+  - resuelta: BooleanField (default=False)
+  - comentarios_resolucion: TextField (blank=True)
+  - fecha_reporte: DateTimeField (blank=True, auto_now_add=True)
+  - fecha_resolucion: DateTimeField (null=True, blank=True)
+Meta Opciones:
+  - ordering: ['resuelta', '-fecha_reporte']
+  - verbose_name: Incidencia de Inventario
+Métodos y Propiedades:
+  - DoesNotExist()
+  - MultipleObjectsReturned()
+  - __str__()
+  - get_next_by_fecha_reporte()
+  - get_previous_by_fecha_reporte()
+  - get_prioridad_display()
+  - pk (propiedad)
+
+============================================================
+APP: REPORTES
+============================================================
+
+============================================================
+RESUMEN DE RELACIONES ENTRE MODELOS
+============================================================
+
+AsignacionStand -> Proyecto : ForeignKey (proyecto) [CASCADE]
+AsignacionStand -> Stand : OneToOne (stand) [CASCADE]
+CargaDocente -> Usuario : ForeignKey (docente) [CASCADE]
+DetalleEvaluacion -> CriterioEvaluacion : ForeignKey (criterio) [CASCADE]
+DetalleEvaluacion -> Evaluacion : ForeignKey (evaluacion) [CASCADE]
+Evaluacion -> Proyecto : ForeignKey (proyecto) [CASCADE]
+Evaluacion -> Usuario : ForeignKey (evaluador) [SET_NULL]
+EvaluacionExterna -> Proyecto : ForeignKey (proyecto) [CASCADE]
+Incidencia -> ItemInventario : ForeignKey (item) [CASCADE]
+Incidencia -> Usuario : ForeignKey (reportado_por) [SET_NULL]
+Integrante -> Proyecto : ForeignKey (proyecto) [CASCADE]
+ItemInventario -> Stand : ForeignKey (stand_asignado) [SET_NULL]
+LogActividad -> Usuario : ForeignKey (usuario) [SET_NULL]
+Proyecto -> Carrera : ForeignKey (carrera) [SET_NULL]
+Proyecto -> Usuario : ForeignKey (creado_por) [CASCADE]
+Proyecto -> Usuario : ForeignKey (evaluador_asignado) [SET_NULL]
+Usuario -> Group : ManyToMany (groups) [N/A]
+Usuario -> Permission : ManyToMany (user_permissions) [N/A]

@@ -93,10 +93,7 @@ AUTH_USER_MODEL = 'usuarios.Usuario'  # REQUERIDO para que funcione todo
 
 # ─── Redirecciones de login ──────────────────────────────────
 LOGIN_URL = '/auth/login/'
-LOGIN_REDIRECT_URL = '/'
-
-# Correos en consola durante desarrollo
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+LOGIN_REDIRECT_URL = '/dashboard/'
 
 # ─── Backends de autenticación ──────────────────────────────
 # Permite login con username O correo institucional
@@ -136,13 +133,13 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_AGE = 86400
 
 # ─── Configuración de Correo SMTP ─────────────────────────────
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@conevent.com')
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='equipo.soporte.oasis@gmail.com')
 
 # ─── Archivos de Media ────────────────────────────────────────
 STATIC_ROOT = BASE_DIR / 'staticfiles'

@@ -1,0 +1,1090 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ConEvent — Gestión de ferias académicas, optimizada. Registro, espacios, mobiliario QR y evaluación de jueces en tiempo real.">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>ConEvent | Gestión de Ferias Académicas, Optimizada</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;700;800;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   ConEvent — sistema de diseño
+   Base blanco/negro · acento azul SCIA · glow degradado azul
+   azul→celeste→gris→gris oscuro · Gabarito (títulos) + Nunito (cuerpo)
+   ============================================================ */
+
+:root{
+  --black: #0a192f;
+  --black-soft: #1c2541;
+  --white: #FFFFFF;
+  --gray-50: #f0f4f8;
+  --gray-100: #dce6f0;
+  --gray-300: #a8b2d1;
+  --gray-500: #6b7a99;
+  --gray-700: #3a4a6b;
+
+  --purple: #0b3c5d;
+  --purple-light: #328cc1;
+  --purple-tint: #e8f4fb;
+
+  --glow: linear-gradient(90deg, #0b3c5d, #328cc1, #a8b2d1, #1c2541);
+  --glow-soft: linear-gradient(90deg, rgba(11,60,93,.55), rgba(50,140,193,.55), rgba(168,178,209,.55), rgba(28,37,65,.55));
+
+  --font-head: 'Gabarito', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+
+  --shadow-card: 0 20px 45px rgba(10,25,47,0.10);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  font-family: var(--font-body);
+  color: var(--black);
+  background: var(--white);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{ text-decoration:none; color:inherit; }
+ul{ list-style:none; }
+img,svg{ display:block; max-width:100%; }
+.container{ width:100%; max-width:1240px; margin:0 auto; padding:0 24px; }
+h1,h2,h3,h4{ font-family: var(--font-head); font-weight:800; letter-spacing:-0.02em; }
+:focus-visible{ outline:3px solid var(--purple-light); outline-offset:3px; }
+
+/* eyebrow label used across sections */
+.eyebrow{
+  font-family: var(--font-head); font-weight:800; font-size:12.5px;
+  letter-spacing:0.14em; text-transform:uppercase; color: var(--purple);
+  margin-bottom:14px; display:inline-block;
+}
+.eyebrow.on-dark{ color: var(--purple-light); }
+
+.section-head{ max-width: 640px; margin: 0 auto 52px; text-align:center; }
+.section-head h2{ font-size: clamp(28px,3.4vw,42px); line-height:1.1; margin-bottom:14px; }
+.section-head p{ color: var(--gray-700); font-size:16px; }
+.section-head.on-dark p{ color: var(--gray-300); }
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family: var(--font-head); font-weight:700; font-size:14.5px;
+  padding: 13px 26px; border-radius: 999px; cursor:pointer; border:2px solid transparent;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+  white-space:nowrap;
+}
+.btn-glow{
+  color:#fff; background: var(--glow); background-size: 200% auto;
+  box-shadow: 0 8px 24px -8px rgba(139,92,246,0.55);
+}
+.btn-glow:hover{ background-position: right center; transform: translateY(-2px); box-shadow: 0 14px 32px -10px rgba(139,92,246,0.7); }
+.btn-dark{ background: var(--black); color:#fff; }
+.btn-dark:hover{ transform: translateY(-2px); background:#000; }
+.btn-outline{ border-color: var(--black); color: var(--black); }
+.btn-outline:hover{ background: var(--black); color:#fff; }
+.btn-outline.on-dark{ border-color: rgba(255,255,255,0.35); color:#fff; }
+.btn-outline.on-dark:hover{ background:#fff; color:var(--black); }
+.btn-sm{ padding: 9px 18px; font-size:13px; }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+header{
+  position: sticky; top:0; z-index:100;
+  background: rgba(255,255,255,0.82); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--gray-100);
+}
+.nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; position:relative; }
+.logo{ font-family: var(--font-head); font-weight:900; font-size:20px; letter-spacing:-0.02em; }
+.logo span{
+  background: var(--glow); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.nav-menu{ display:flex; align-items:center; gap:8px; }
+.nav-item{ position:relative; }
+.nav-item > a, .nav-item > button{
+  display:flex; align-items:center; gap:5px; padding:10px 14px; border-radius:8px;
+  font-weight:700; font-size:14.5px; color:var(--black); background:none; border:none; cursor:pointer;
+  font-family: var(--font-body); transition: background .15s;
+}
+.nav-item > a:hover, .nav-item > button:hover{ background: var(--gray-50); }
+.caret{ font-size:10px; color: var(--gray-500); transition: transform .18s; }
+.nav-item:hover .caret{ transform: rotate(180deg); }
+
+.dropdown{
+  position:absolute; top: calc(100% + 8px); left:0; min-width: 260px;
+  background:#fff; border:1px solid var(--gray-100); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card); padding: 10px; opacity:0; visibility:hidden;
+  transform: translateY(6px); transition: all .18s ease;
+}
+.nav-item:hover .dropdown{ opacity:1; visibility:visible; transform:translateY(0); }
+.dropdown a{
+  display:block; padding: 11px 12px; border-radius:8px; font-size:14px; font-weight:600; color: var(--black);
+}
+.dropdown a:hover{ background: var(--purple-tint); color: var(--purple); }
+.dropdown a small{ display:block; color: var(--gray-500); font-weight:400; font-size:12px; margin-top:2px; }
+
+.nav-right{ display:flex; align-items:center; gap:12px; }
+.lang-badge{
+  font-family: var(--font-head); font-weight:800; font-size:12.5px; color: var(--gray-700);
+  border: 1px solid var(--gray-300); border-radius:999px; padding:6px 12px;
+}
+.nav-toggle-input{ display:none; }
+.nav-toggle{ display:none; flex-direction:column; gap:5px; cursor:pointer; padding:6px; }
+.nav-toggle span{ width:22px; height:2px; background:var(--black); border-radius:2px; }
+.nav-menu-mobile{ display:none; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{ padding: 84px 0 40px; position:relative; overflow:hidden; }
+.hero::before{
+  content:""; position:absolute; top:-180px; right:-160px; width:520px; height:520px; border-radius:50%;
+  background: var(--glow-soft); filter: blur(90px); opacity:.55; z-index:0;
+}
+.hero-inner{ position:relative; z-index:1; text-align:center; max-width:900px; margin:0 auto; }
+.hero h1{
+  font-size: clamp(38px, 6vw, 68px); line-height:1.02; letter-spacing:-0.03em; margin-bottom:22px;
+}
+.hero h1 .grad{
+  background: var(--glow); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero p.lead{
+  font-size: 18px; color: var(--gray-700); max-width: 560px; margin: 0 auto 32px;
+}
+.hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom: 64px; }
+
+/* platform mockup with tabs */
+.platform-mock{
+  max-width: 980px; margin: 0 auto; border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100); background: var(--gray-50);
+  box-shadow: var(--shadow-card); overflow:hidden; position:relative; z-index:1;
+}
+.mock-tabs{ display:flex; justify-content:center; gap:8px; padding:18px; border-bottom:1px solid var(--gray-100); flex-wrap:wrap; }
+.mock-tab{
+  font-family: var(--font-head); font-weight:700; font-size:13.5px; padding:9px 18px; border-radius:999px;
+  background:#fff; border:1px solid var(--gray-100); cursor:pointer; color: var(--gray-700); transition: all .15s;
+}
+.mock-tab.active{ background: var(--black); color:#fff; border-color:var(--black); }
+.mock-panels{ padding: 32px; min-height: 280px; }
+.mock-panel{ display:none; }
+.mock-panel.active{ display:grid; grid-template-columns: 1.1fr 0.9fr; gap:26px; align-items:center; text-align:left; }
+.mock-panel h3{ font-size:20px; margin-bottom:10px; }
+.mock-panel p{ color: var(--gray-700); font-size:14.5px; margin-bottom:18px; }
+.mock-visual{
+  background:#fff; border:1px solid var(--gray-100); border-radius: var(--radius-md); padding:20px; min-height:200px;
+}
+.mock-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px dashed var(--gray-100); }
+.mock-row:last-child{ border-bottom:none; }
+.avatar-dot{ width:30px; height:30px; border-radius:8px; background: var(--glow); flex-shrink:0; }
+.mock-bar{ height:8px; border-radius:4px; background: var(--gray-100); flex:1; }
+.mock-bar.short{ max-width:40%; }
+.qr-fake{
+  width:96px; height:96px; margin:0 auto; border-radius:12px;
+  background:
+    conic-gradient(from 90deg at 20% 20%, #000 90deg, transparent 0) 0 0/60% 60%,
+    conic-gradient(from 180deg at 80% 20%, #000 90deg, transparent 0) 100% 0/60% 60%,
+    conic-gradient(from 0deg at 20% 80%, #000 90deg, transparent 0) 0 100%/60% 60%,
+    #fff;
+  background-repeat:no-repeat; border:1px solid var(--gray-100);
+}
+
+/* marquee logos */
+.marquee-wrap{ margin-top:52px; overflow:hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.marquee{ display:flex; gap:56px; width:max-content; animation: scroll 26s linear infinite; align-items:center; padding: 26px 0; }
+.marquee span{ font-family: var(--font-head); font-weight:800; font-size:15px; color: var(--gray-500); white-space:nowrap; }
+@keyframes scroll{ from{ transform:translateX(0);} to{ transform:translateX(-50%);} }
+
+/* ============================================================
+   SOLUTIONS — 3 cards
+   ============================================================ */
+.solutions{ padding: 100px 0; background: var(--gray-50); }
+.grid-3{ display:grid; grid-template-columns: repeat(3,1fr); gap:24px; }
+.solution-card{
+  background:#fff; border:1px solid var(--gray-100); border-radius: var(--radius-md);
+  padding: 34px 28px; transition: transform .2s, box-shadow .2s;
+}
+.solution-card:hover{ transform: translateY(-6px); box-shadow: var(--shadow-card); }
+.solution-card .tag{
+  display:inline-block; font-family: var(--font-head); font-weight:800; font-size:11.5px;
+  padding:5px 12px; border-radius:999px; margin-bottom:18px;
+}
+.tag-purple { background: #e8f4fb; color: #0b3c5d; }
+.tag-orange { background: #dce6f0; color: #1c2541; }
+.tag-black  { background: #0a192f; color: #fff; }
+.solution-card h3{ font-size:19px; margin-bottom:10px; }
+.solution-card p{ color: var(--gray-700); font-size:14.5px; }
+
+/* ============================================================
+   OPTIMIZA CADA ETAPA — tabs + accordion + preview
+   ============================================================ */
+.stages{ padding:100px 0; }
+.stages-layout{ display:grid; grid-template-columns: 0.85fr 1.15fr; gap:48px; align-items:start; }
+.stage-list{ border-top:1px solid var(--gray-100); }
+.stage-item{ border-bottom:1px solid var(--gray-100); }
+.stage-btn{
+  width:100%; text-align:left; background:none; border:none; cursor:pointer;
+  padding: 22px 4px; display:flex; align-items:center; justify-content:space-between;
+  font-family: var(--font-head); font-weight:700; font-size:16.5px; color: var(--gray-700);
+}
+.stage-item.active .stage-btn{ color: var(--black); }
+.stage-btn .chev{ font-size:14px; transition: transform .2s; color: var(--gray-500); }
+.stage-item.active .chev{ transform: rotate(45deg); color: var(--purple); }
+.stage-desc{ max-height:0; overflow:hidden; transition: max-height .25s ease; font-size:14.5px; color:var(--gray-700); }
+.stage-item.active .stage-desc{ max-height:120px; padding-bottom:20px; }
+
+.stage-preview{
+  background: var(--gray-50); border:1px solid var(--gray-100); border-radius: var(--radius-lg);
+  padding: 34px; min-height:360px; display:flex; align-items:center; justify-content:center;
+}
+.stage-preview-panel{ display:none; width:100%; }
+.stage-preview-panel.active{ display:block; }
+.stage-preview-panel h4{ font-size:17px; margin-bottom:14px; }
+
+/* ============================================================
+   DARK SECTION — API + Enterprise
+   ============================================================ */
+.dark-section{ background: var(--black); color:#fff; padding:100px 0; position:relative; overflow:hidden; }
+.dark-section::after{
+  content:""; position:absolute; bottom:-200px; left:50%; transform:translateX(-50%);
+  width:700px; height:400px; background: var(--glow-soft); filter: blur(120px); opacity:.35;
+}
+.dark-grid{ display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; position:relative; z-index:1; }
+.dark-grid h2{ color:#fff; font-size: clamp(26px,3vw,36px); margin-bottom:16px; }
+.dark-grid p{ color: var(--gray-300); font-size:15.5px; margin-bottom:26px; }
+.floating-badges{ position:relative; height: 320px; }
+.fbadge{
+  position:absolute; background: rgba(50,140,193,0.10); border: 1px solid rgba(50,140,193,0.25);
+  border-radius: var(--radius-sm); padding: 12px 18px; font-family: var(--font-head); font-weight:700; font-size:13px;
+  backdrop-filter: blur(6px); animation: float 5s ease-in-out infinite;
+}
+@keyframes float{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-12px);} }
+
+/* ============================================================
+   VIDEO DEMO
+   ============================================================ 
+.video-demo{ padding: 100px 0; text-align:center; }
+.video-frame{
+  max-width: 880px; margin: 0 auto; aspect-ratio: 16/8; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #111, #2a2a30); position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; box-shadow: var(--shadow-card);
+}
+.play-btn{
+  width:76px; height:76px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition: transform .2s;
+}
+.play-btn:hover{ transform: scale(1.08); }
+.play-btn::after{ content:""; border-left: 20px solid var(--black); border-top:12px solid transparent; border-bottom:12px solid transparent; margin-left:5px; } */
+
+/* ============================================================
+   OBJETIVOS — gradient border cards
+   ============================================================ */
+.goals{ padding: 100px 0; background: var(--gray-50); }
+.grid-4{ display:grid; grid-template-columns: repeat(4,1fr); gap:20px; margin-bottom: 44px; }
+.goal-card-wrap{ padding:1.5px; border-radius: var(--radius-md); background: var(--glow); }
+.goal-card{
+  background:#fff; border-radius: calc(var(--radius-md) - 1.5px); padding:26px 22px; height:100%;
+}
+.goal-card .num{ font-family: var(--font-head); font-weight:900; font-size:26px; color: var(--purple-light); display:block; margin-bottom:10px; }
+.goal-card h4{ font-size:15.5px; margin-bottom:8px; }
+.goal-card p{ font-size:13px; color: var(--gray-700); }
+.goals-cta{ text-align:center; }
+
+/* ============================================================
+   REVIEWS carousel (scroll-snap, sin JS)
+   ============================================================ */
+.reviews{ padding:100px 0; }
+.rating-row{ display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:40px; }
+.stars{ color:#FACC15; font-size:20px; letter-spacing:2px; }
+.rating-num{ font-family: var(--font-head); font-weight:800; font-size:18px; }
+.review-track{
+  display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:12px;
+}
+.review-card{
+  scroll-snap-align:start; flex: 0 0 320px; background: var(--gray-50); border:1px solid var(--gray-100);
+  border-radius: var(--radius-md); padding:26px;
+}
+.review-card .stars{ font-size:14px; margin-bottom:14px; }
+.review-card p{ font-size:14.5px; color: var(--gray-700); margin-bottom:18px; }
+.review-author{ font-family: var(--font-head); font-weight:700; font-size:13.5px; }
+.review-author span{ display:block; font-family: var(--font-body); font-weight:400; color: var(--gray-500); font-size:12.5px; }
+
+/* ============================================================
+   RESOURCES + ARTICLE
+   ============================================================ */
+.resources{ padding:100px 0; background: var(--gray-50); }
+.resource-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:22px; margin-bottom:48px; }
+.resource-card{ background:#fff; border:1px solid var(--gray-100); border-radius: var(--radius-md); padding:24px; transition: transform .2s; }
+.resource-card:hover{ transform: translateY(-4px); }
+.resource-card .kicker{ font-size:12px; font-weight:800; color: var(--purple); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+.resource-card h4{ font-size:16px; margin-bottom:8px; }
+.resource-card p{ font-size:13.5px; color: var(--gray-700); }
+
+.article-card{
+  display:grid; grid-template-columns: 1fr 1.4fr; gap:32px; align-items:center;
+  background:#fff; border:1px solid var(--gray-100); border-radius: var(--radius-lg); padding:32px;
+}
+.article-visual{ height:200px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--purple-tint), #FFF1E0); }
+.article-card h3{ font-size:22px; margin-bottom:12px; }
+.article-card p{ color: var(--gray-700); font-size:14.5px; margin-bottom:18px; }
+
+/* ============================================================
+   FAQ accordion
+   ============================================================ */
+.faq{ padding:100px 0; max-width:820px; margin:0 auto; }
+.faq-item{ border-bottom:1px solid var(--gray-100); }
+.faq-q{
+  width:100%; display:flex; justify-content:space-between; align-items:center; gap:16px;
+  background:none; border:none; cursor:pointer; padding: 22px 4px; text-align:left;
+  font-family: var(--font-head); font-weight:700; font-size:16px; color: var(--black);
+}
+.faq-q .chev{ color: var(--gray-500); transition: transform .2s; flex-shrink:0; }
+.faq-item.active .faq-q .chev{ transform: rotate(45deg); color:var(--purple); }
+.faq-a{ max-height:0; overflow:hidden; transition: max-height .25s ease; font-size:14.5px; color: var(--gray-700); }
+.faq-item.active .faq-a{ max-height:200px; padding-bottom:22px; }
+
+/* ============================================================
+   CTA FORM (black)
+   ============================================================ */
+.cta-form{ background: var(--black); color:#fff; padding:100px 0; }
+.cta-form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
+.cta-form-grid h2{ color:#fff; font-size:clamp(28px,3.4vw,40px); margin-bottom:16px; }
+.cta-form-grid p{ color: var(--gray-300); font-size:15.5px; }
+.form-card{ background:#141417; border:1px solid rgba(255,255,255,0.12); border-radius: var(--radius-lg); padding:30px; }
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:7px; color: var(--gray-300); }
+.field input, .field select{
+  width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.14);
+  background:#0B0B0D; color:#fff; font-family: var(--font-body); font-size:14px;
+}
+.field input::placeholder{ color: var(--gray-500); }
+.form-card .btn{ width:100%; margin-top:6px; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{ background: var(--black-soft); color: var(--gray-300); padding: 70px 0 30px; }
+.footer-top{ display:grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:50px; }
+.footer-brand .logo{ margin-bottom:14px; }
+.footer-brand p{ font-size:13.5px; color: var(--gray-500); max-width:260px; margin-bottom:20px; }
+.newsletter{ display:flex; gap:8px; }
+.newsletter input{
+  flex:1; padding:11px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.14);
+  background:#0B0B0D; color:#fff; font-size:13.5px;
+}
+.footer-col h5{ font-family: var(--font-head); font-size:13.5px; color:#fff; margin-bottom:16px; letter-spacing:.03em; }
+.footer-col ul li{ margin-bottom:11px; }
+.footer-col a{ font-size:13.5px; color: var(--gray-500); transition: color .15s; }
+.footer-col a:hover{ color:#fff; }
+.footer-bottom{
+  border-top:1px solid rgba(255,255,255,0.1); padding-top:24px; display:flex; justify-content:space-between;
+  align-items:center; flex-wrap:wrap; gap:14px; font-size:12.5px; color: var(--gray-500);
+}
+.social-row{ display:flex; gap:14px; }
+.social-row a{ width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; font-size:12px; color: var(--gray-300); }
+.social-row a:hover{ border-color:#fff; color:#fff; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 980px){
+  .grid-3, .grid-4{ grid-template-columns: repeat(2,1fr); }
+  .stages-layout{ grid-template-columns:1fr; }
+  .dark-grid{ grid-template-columns:1fr; }
+  .floating-badges{ height:220px; }
+  .cta-form-grid{ grid-template-columns:1fr; }
+  .article-card{ grid-template-columns:1fr; }
+  .footer-top{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 720px){
+  .nav-menu, .nav-right .btn{ display:none; }
+  .lang-badge{ display:none; }
+  .nav-toggle{ display:flex; }
+  .nav-menu-mobile{
+    display:none; position:absolute; top:100%; left:0; width:100%; background:#fff;
+    border-bottom:1px solid var(--gray-100); flex-direction:column; padding:18px 24px; gap:6px;
+  }
+  .nav-toggle-input:checked ~ .container .nav-menu-mobile{ display:flex; }
+  .nav-menu-mobile a, .nav-menu-mobile button{
+    padding:12px 4px; font-weight:700; text-align:left; background:none; border:none; font-size:15px; color:var(--black);
+    font-family: var(--font-body);
+  }
+  .grid-3, .grid-4, .resource-grid{ grid-template-columns:1fr; }
+  .mock-panel.active{ grid-template-columns:1fr; }
+  .footer-top{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header>
+  <input type="checkbox" id="nav-toggle" class="nav-toggle-input">
+  <div class="container nav">
+    <a href="#inicio" class="logo">CON<span>EVENT</span></a>
+
+    <nav class="nav-menu" aria-label="Navegación principal">
+      <div class="nav-item">
+        <button type="button">Producto <span class="caret">▾</span></button>
+        <div class="dropdown">
+          <a href="#etapas">Registro de proyectos <small>Alta de equipos e integrantes</small></a>
+          <a href="#etapas">Mapa del auditorio <small>Mapa real del auditorio</small></a>
+          <a href="#etapas">Mobiliario con QR <small>Control de mesas y equipo</small></a>
+          <a href="#etapas">Evaluación de jueces <small>Criterios y cronómetro digital</small></a>
+        </div>
+      </div>
+      <div class="nav-item">
+        <button type="button">Recursos <span class="caret">▾</span></button>
+        <div class="dropdown">
+          <a href="#faq">Preguntas frecuentes</a>
+          <a href="#contacto">Contacto</a>
+        </div>
+      </div>
+      <a href="#contacto">Contacto</a>
+    </nav>
+
+    <div class="nav-right">
+      <span class="lang-badge">ES</span>
+      <a href="/auth/login/" class="btn btn-outline btn-sm">Iniciar sesión</a>
+      <a href="/auth/registro/" class="btn btn-glow btn-sm">Registrarse</a>
+      <label for="nav-toggle" class="nav-toggle" aria-label="Abrir menú"><span></span><span></span><span></span></label>
+    </div>
+
+    <nav class="nav-menu-mobile" aria-label="Navegación móvil">
+      <a href="#etapas">Producto</a>
+      <a href="#faq">Preguntas frecuentes</a>
+      <a href="#contacto">Contacto</a>
+      <a href="/auth/login/" class="btn btn-outline btn-sm" style="margin-top:10px;">Iniciar sesión</a>
+      <a href="/auth/registro/" class="btn btn-glow btn-sm" style="margin-top:8px;">Registrarse</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <section id="inicio" class="hero">
+    <div class="container hero-inner">
+      <h1>Gestión de ferias<br>académicas, <span class="grad">optimizada.</span></h1>
+      <p class="lead">ConEvent centraliza el registro de proyectos estudiantiles, la asignación automática de espacios en el auditorio y la evaluación con rúbrica UTEQ — para que tu feria universitaria corra sola.</p>
+
+      <div style="display:flex; gap:16px; justify-content:center; margin-bottom:32px; flex-wrap:wrap;">
+        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=280&h=180&fit=crop" 
+             alt="Estudiantes presentando proyecto en feria académica" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+        <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=280&h=180&fit=crop" 
+             alt="Equipo universitario trabajando en prototipo" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=280&h=180&fit=crop" 
+             alt="Juez evaluando proyecto estudiantil" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+      </div>
+
+      <div class="hero-actions">
+        <a href="/auth/registro/" class="btn btn-glow">Comenzar ahora</a>
+        <a href="#video" class="btn btn-outline">Ver demo</a>
+      </div>
+
+      <div class="platform-mock">
+        <div class="mock-tabs" role="tablist">
+          <button class="mock-tab active" data-tab="registro">Registro</button>
+          <button class="mock-tab" data-tab="espacios">Espacios</button>
+          <button class="mock-tab" data-tab="checkin">Check-in QR</button>
+        </div>
+        <div class="mock-panels">
+          <div class="mock-panel active" data-panel="registro">
+            <div>
+              <h3>Alta de equipos en minutos</h3>
+              <p>Título del proyecto, carrera, grupo, integrantes e información de logo — validado automáticamente antes de confirmar el lugar.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual">
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+            </div>
+          </div>
+          <div class="mock-panel" data-panel="espacios">
+            <div>
+              <h3>Mesas asignadas al mapa real</h3>
+              <p>Cada equipo se ubica sobre las dimensiones reales del auditorio, agrupando proyectos por carrera en posiciones contiguas.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual" style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; align-content:center;">
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#a8b2d1"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#328cc1"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+            </div>
+          </div>
+          <div class="mock-panel" data-panel="checkin">
+            <div>
+              <h3>Cada mesa, un código QR</h3>
+              <p>Escanea para iniciar la presentación, confirmar asistencia, reportar mobiliario o calificar como visitante externo.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual" style="display:flex; align-items:center; justify-content:center;">
+              <div class="qr-fake"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="marquee-wrap">
+        <div class="marquee">
+          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
+          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SOLUTIONS ============ -->
+  <section class="solutions">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Una plataforma, todos los roles</span>
+        <h2>Diseñada para cada persona en el evento</h2>
+        <p>Estudiantes, evaluadores y administradores trabajan sobre la misma información, en tiempo real.</p>
+      </div>
+      <div class="grid-3">
+        <div class="solution-card">
+          <span class="tag tag-purple">Estudiantes</span>
+          <h3>Registro autónomo de proyectos</h3>
+          <p>Cada equipo se registra con título, integrantes, carrera y grupo. El sistema genera un QR único para evaluadores externos al instante.</p>
+        </div>
+        <div class="solution-card">
+          <span class="tag tag-orange">Jueces/Evaluadores</span>
+          <h3>Rúbrica UTEQ digital</h3>
+          <p>Criterios con escala AU/DE/SA/NA, cronómetro de 10 minutos y calificación automática ponderada — desde cualquier celular.</p>
+        </div>
+        <div class="solution-card">
+          <span class="tag tag-black">Administradores</span>
+          <h3>Control total del evento</h3>
+          <p>Mapa interactivo del auditorio, asignación automática de stands por carrera, inventario con QR y logs de auditoría en un solo panel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ OPTIMIZA CADA ETAPA ============ -->
+  <section id="etapas" class="stages">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">De principio a fin</span>
+        <h2>Optimiza cada etapa de tu feria</h2>
+        <p>Un módulo dedicado para cada momento del evento, desde el registro hasta los resultados.</p>
+      </div>
+
+      <div class="stages-layout">
+        <div class="stage-list">
+          <div class="stage-item active" data-stage="registro">
+            <button class="stage-btn"><span>Registro de proyectos</span><span class="chev">+</span></button>
+            <div class="stage-desc">Alta de equipos con título, integrantes, carrera, grupo y logo. El sistema declara cuántas mesas necesita cada equipo y genera el QR de evaluación externa automáticamente.</div>
+          </div>
+          <div class="stage-item" data-stage="espacios">
+            <button class="stage-btn"><span>Distribución de espacios</span><span class="chev">+</span></button>
+            <div class="stage-desc">Asignación automática de stands sobre el mapa real del auditorio (11.7m × 30m), agrupando proyectos por carrera en posiciones contiguas.</div>
+          </div>
+          <div class="stage-item" data-stage="qr">
+            <button class="stage-btn"><span>Mobiliario con QR</span><span class="chev">+</span></button>
+            <div class="stage-desc">Cada mesa y equipo tiene UUID único. Escanea para ver el estado, reportar daños o pérdidas — sin necesidad de app.</div>
+          </div>
+          <div class="stage-item" data-stage="evaluacion">
+            <button class="stage-btn"><span>Evaluación digital</span><span class="chev">+</span></button>
+            <div class="stage-desc">Rúbrica con 4 criterios ponderados (Exposición, Innovación, Viabilidad, Funcionalidad Técnica), escala UTEQ y cronómetro visual de 10 minutos por proyecto.</div>
+          </div>
+          <div class="stage-item" data-stage="reportes">
+            <button class="stage-btn"><span>Reportes y resultados</span><span class="chev">+</span></button>
+            <div class="stage-desc">Dashboard con gráficas Chart.js, ranking de proyectos, promedios por carrera y exportación a PDF o CSV con un clic.</div>
+          </div>
+        </div>
+
+        <div class="stage-preview">
+          <div class="stage-preview-panel active" data-preview="registro">
+            <h4>Formulario de alta de proyecto</h4>
+            <div class="mock-visual">
+              <div class="mock-row"><div style="flex:1"><div class="mock-bar" style="margin-bottom:8px"></div><div class="mock-bar short"></div></div></div>
+              <div class="mock-row"><div style="flex:1"><div class="mock-bar" style="margin-bottom:8px"></div><div class="mock-bar short"></div></div></div>
+            </div>
+          </div>
+          <div class="stage-preview-panel" data-preview="espacios">
+            <h4>Mapa del auditorio</h4>
+            <div class="mock-visual" style="display:grid; grid-template-columns:repeat(8,1fr); gap:6px;">
+              <div style="aspect-ratio:1;border-radius:4px;background:#0b3c5d"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#a8b2d1"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#0b3c5d"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div>
+            </div>
+            <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop" 
+                 alt="Vista de auditorio universitario con stands de exhibición"
+                 style="border-radius:12px; width:100%; height:160px; object-fit:cover; margin-top:14px; opacity:0.85;">
+          </div>
+          <div class="stage-preview-panel" data-preview="qr">
+            <h4>Identificación de mobiliario</h4>
+            <div class="mock-visual" style="display:flex; justify-content:center;"><div class="qr-fake"></div></div>
+          </div>
+          <div class="stage-preview-panel" data-preview="evaluacion">
+            <h4>Panel del juez</h4>
+            <div class="mock-visual">
+              <div class="mock-row"><span>Exposición</span><div class="mock-bar" style="flex:.5"></div></div>
+              <div class="mock-row"><span>Innovación</span><div class="mock-bar" style="flex:.7"></div></div>
+              <div class="mock-row"><span>Funcionalidad Técnica</span><div class="mock-bar" style="flex:.8"></div></div>
+            </div>
+          </div>
+          <div class="stage-preview-panel" data-preview="reportes">
+            <h4>Ranking del evento</h4>
+            <div class="mock-visual">
+              <div class="mock-row"><span class="avatar-dot" style="border-radius:6px"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div></div></div>
+              <div class="mock-row"><span class="avatar-dot" style="border-radius:6px"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DARK SECTION ============ -->
+  <section class="dark-section">
+    <div class="container dark-grid">
+      <div>
+        <span class="eyebrow on-dark">Arquitectura abierta</span>
+        <h2>Construida sobre tecnología institucional</h2>
+        <p>Backend en Django + DRF, autenticación con 2FA y JWT, base de datos SQLite/PostgreSQL y generación de reportes en PDF — lista para escalar a futuros eventos de la UTEQ.</p>
+      </div>
+      <div class="floating-badges">
+        <div class="fbadge" style="top:10%; left:8%; animation-delay:.2s;">Django · Python</div>
+        <div class="fbadge" style="top:40%; left:38%; animation-delay:1.1s;">DRF + JWT</div>
+        <div class="fbadge" style="top:6%; left:58%; animation-delay:.6s;">PostgreSQL</div>
+        <div class="fbadge" style="top:52%; left:12%; animation-delay:1.4s;">Autenticación 2FA</div>
+        <div class="fbadge" style="top:74%; left:48%; animation-delay:.9s;">Códigos QR</div>
+        <div class="fbadge" style="top:80%; left:10%; animation-delay:1.8s;">ReportLab PDF</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIDEO DEMO ============ -->
+  <section id="video" class="video-demo">
+    <div class="container">
+      <span class="eyebrow">Míralo en acción</span>
+      <h2 style="font-size:clamp(24px,3vw,34px); margin-bottom:34px;">Así se ve ConEvent en un evento real</h2>
+      <div class="video-frame">
+        <div class="play-btn" role="button" aria-label="Reproducir demo"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ OBJETIVOS ============ -->
+  <section class="goals">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Resultados esperados</span>
+        <h2>Logra todos tus objetivos</h2>
+      </div>
+      <div class="grid-4">
+        <div class="goal-card-wrap"><div class="goal-card"><span class="num">↓</span><h4>Menos tiempo operativo</h4><p>Asignación automática de stands y evaluación digital eliminan la logística manual del evento.</p></div></div>
+        <div class="goal-card-wrap"><div class="goal-card"><span class="num">100%</span><h4>Registro digital</h4><p>Proyectos, integrantes, evaluaciones y mobiliario capturados en la plataforma, sin hojas sueltas.</p></div></div>
+        <div class="goal-card-wrap"><div class="goal-card"><span class="num">QR</span><h4>Inventario bajo control</h4><p>Cada mesa y equipo tiene su código QR. Reporta daños al instante desde el celular.</p></div></div>
+        <div class="goal-card-wrap"><div class="goal-card"><span class="num">1</span><h4>Un solo panel</h4><p>Mapa del auditorio, evaluaciones, incidencias y resultados centralizados para el administrador.</p></div></div>
+      </div>
+      <div class="goals-cta"><a href="/auth/registro/" class="btn btn-glow">Empezar ahora</a></div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIOS — pendiente de implementación
+  <section id="reviews" class="reviews">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Testimonios</span>
+        <h2>Conoce las opiniones</h2>
+      </div>
+      <div class="rating-row"><span class="stars">★★★★★</span><span class="rating-num">4.5 / 5</span></div>
+      <div class="review-track">
+        <div class="review-card">
+          <div class="stars">★★★★★</div>
+          <p>"Organizamos la feria de Ingeniería en Sistemas sin una sola hoja de asistencia impresa. El control de mesas con QR nos ahorró horas."</p>
+          <div class="review-author">Coordinadora de carrera<span>Ingeniería en Sistemas</span></div>
+        </div>
+        <div class="review-card">
+          <div class="stars">★★★★★</div>
+          <p>"Como juez, evaluar desde el celular con cronómetro y criterios claros cambió por completo el orden del evento."</p>
+          <div class="review-author">Docente evaluador<span>Ingeniería Industrial</span></div>
+        </div>
+        <div class="review-card">
+          <div class="stars">★★★★☆</div>
+          <p>"Mi equipo se registró solo, eligió su mesa asignada y llegó directo a presentar. Cero filas el día del evento."</p>
+          <div class="review-author">Estudiante participante<span>Ingeniería en Software</span></div>
+        </div>
+        <div class="review-card">
+          <div class="stars">★★★★★</div>
+          <p>"Los reportes finales con el ranking y los promedios se generaron en minutos, no en días."</p>
+          <div class="review-author">Organizador de evento<span>Departamento Académico</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  -->
+
+  <!-- ============ FAQ ============ -->
+  <section id="faq" class="faq">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Dudas frecuentes</span>
+        <h2>Preguntas frecuentes</h2>
+      </div>
+
+      <div class="faq-item active">
+        <button class="faq-q"><span>¿Cómo se registran los equipos?</span><span class="chev">+</span></button>
+        <div class="faq-a">Cada equipo entra con su correo @uteq.edu.mx, registra su proyecto con título, carrera, grupo e integrantes, y declara cuántas mesas necesita para exhibir.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Cómo funciona la asignación de espacios?</span><span class="chev">+</span></button>
+        <div class="faq-a">El administrador ejecuta la asignación automática desde el panel. El sistema agrupa proyectos de la misma carrera en stands contiguos sobre el mapa real del auditorio.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Para qué sirve el código QR en el mobiliario?</span><span class="chev">+</span></button>
+        <div class="faq-a">Cada mesa tiene un QR único vinculado al inventario. Al escanearlo puedes ver su estado y reportar daños o pérdidas al instante, sin necesidad de registrarte.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Los jueces necesitan instalar algo?</span><span class="chev">+</span></button>
+        <div class="faq-a">No. Los docentes evaluadores acceden con su correo institucional y evalúan desde el navegador con la rúbrica UTEQ ya configurada.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Se puede reutilizar para futuros eventos?</span><span class="chev">+</span></button>
+        <div class="faq-a">Sí. ConEvent está diseñado para reutilizarse en cualquier feria académica futura de la UTEQ, con configuración de criterios y espacios personalizable.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ UBICACION ============ -->
+  <section id="ubicacion" style="padding:60px 0 0;">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">¿Dónde estamos?</span>
+        <h2>Universidad Tecnológica de Querétaro</h2>
+        <p>Av. Pie de la Cuesta No. 2501, Nacional, Santiago de Querétaro, Qro.</p>
+      </div>
+    </div>
+    <div style="width:100%; height:380px; filter:grayscale(20%);">
+      <iframe 
+        src="https://maps.google.com/maps?q=Universidad%20Tecnol%C3%B3gica%20de%20Quer%C3%A9taro&t=&z=15&ie=UTF8&iwloc=&output=embed"
+        width="100%" height="380" style="border:0; display:block;" 
+        allowfullscreen loading="lazy" 
+        referrerpolicy="no-referrer-when-downgrade"
+        title="Ubicación de la UTEQ">
+      </iframe>
+    </div>
+  </section>
+
+  <!-- ============ CONTACTO ============ -->
+  <section id="contacto" style="padding:80px 0; background:var(--gray-50);">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">¿Tienes dudas?</span>
+        <h2>Contáctanos</h2>
+        <p>Reporta un error, haz una pregunta o comparte tu opinión sobre ConEvent.</p>
+      </div>
+      <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid var(--gray-100); 
+                  border-radius:var(--radius-lg); padding:36px;">
+        <div class="field">
+          <label for="c-nombre">Nombre completo</label>
+          <input type="text" id="c-nombre" placeholder="Tu nombre completo">
+        </div>
+        <div class="field">
+          <label for="c-correo">Correo electrónico</label>
+          <input type="email" id="c-correo" placeholder="tu@correo.com">
+        </div>
+        <div class="field">
+          <label for="c-asunto">Asunto</label>
+          <input type="text" id="c-asunto" placeholder="Ej. Error al registrar proyecto">
+        </div>
+        <div class="field">
+          <label for="c-mensaje">Mensaje</label>
+          <textarea id="c-mensaje" rows="4" 
+            style="width:100%; padding:12px 14px; border-radius:10px; 
+                   border:1px solid var(--gray-300); font-family:var(--font-body); 
+                   font-size:14px; resize:vertical;"
+            placeholder="Describe tu duda o problema..."></textarea>
+        </div>
+        <div id="c-msg-exito" style="display:none; background:#e8f4fb; color:#0b3c5d; 
+             border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:14px; font-weight:600;">
+          ✓ Tu mensaje fue enviado. Te responderemos a la brevedad.
+        </div>
+        <button type="button" class="btn btn-glow" style="width:100%;" onclick="enviarContacto()">
+          Enviar mensaje
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA FORM ============ -->
+  <section id="cta" class="cta-form">
+    <div class="container cta-form-grid">
+      <div>
+        <span class="eyebrow on-dark">¿Quieres participar?</span>
+        <h2>Registra tu proyecto en ConEvent</h2>
+        <p>Crea tu cuenta con correo @uteq.edu.mx y da de alta tu equipo antes de que cierren los registros.</p>
+      </div>
+      <div class="form-card">
+        <form action="/auth/registro/" method="get">
+          <div class="field">
+            <label for="reg_nombre">Nombre completo</label>
+            <input type="text" id="reg_nombre" name="nombre" placeholder="Ej. Juan Pérez Solís" required>
+          </div>
+          <div class="field">
+            <label for="reg_correo">Correo institucional</label>
+            <input type="email" id="reg_correo" name="correo" placeholder="Ej. juan.perez@student.uteq.edu.mx" required>
+          </div>
+          <button type="submit" class="btn btn-glow">Crear cuenta</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="container footer-top">
+    <div class="footer-brand">
+      <a href="#inicio" class="logo">CON<span>EVENT</span></a>
+      <p>Sistema de gestión de ferias académicas de la UTEQ. Registro, espacios, inventario y evaluación en una sola plataforma.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Producto</h5>
+      <ul>
+        <li><a href="#etapas">Registro de proyectos</a></li>
+        <li><a href="#etapas">Mapa del auditorio</a></li>
+        <li><a href="#etapas">Inventario QR</a></li>
+        <li><a href="#etapas">Evaluación UTEQ</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Recursos</h5>
+      <ul>
+        <li><a href="#faq">Preguntas frecuentes</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Proyecto</h5>
+      <ul>
+        <li><a href="#inicio">Sobre ConEvent</a></li>
+        <li><a href="/auth/login/">Iniciar sesión</a></li>
+        <li><a href="/auth/registro/">Registrarse</a></li>
+        <li style="margin-top:16px;">
+          <span style="font-family:var(--font-head); font-size:13.5px; color:#fff; display:block; margin-bottom:8px;">Contacto</span>
+          <a href="mailto:equipo.soporte.oasis@gmail.com" style="font-size:13px;">
+            equipo.soporte.oasis@gmail.com
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; margin-bottom:20px; 
+              display:flex; gap:20px; flex-wrap:wrap;">
+    <a href="#" onclick="abrirModal('modal-privacidad'); return false;" 
+       style="font-size:12.5px; color:var(--gray-500);">Aviso de Privacidad</a>
+    <a href="#" onclick="abrirModal('modal-terminos'); return false;" 
+       style="font-size:12.5px; color:var(--gray-500);">Términos y Condiciones</a>
+    <a href="#" onclick="abrirModal('modal-usos'); return false;" 
+       style="font-size:12.5px; color:var(--gray-500);">Usos y Aplicaciones</a>
+  </div>
+
+  <div class="container footer-bottom">
+    <p>© 2026 ConEvent — UTEQ. Proyecto escolar de ingeniería.</p>
+    <div class="social-row">
+      <a href="#" aria-label="Instagram" title="Instagram">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+        </svg>
+      </a>
+      <a href="#" aria-label="LinkedIn" title="LinkedIn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+      </a>
+      <a href="#" aria-label="GitHub" title="GitHub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Tabs for platform mockup
+  const tabs = document.querySelectorAll(".mock-tab");
+  const panels = document.querySelectorAll(".mock-panel");
+  
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      panels.forEach(p => p.classList.remove("active"));
+      
+      tab.classList.add("active");
+      const target = tab.getAttribute("data-tab");
+      document.querySelector(`.mock-panel[data-panel="${target}"]`).classList.add("active");
+    });
+  });
+
+  // Stages accordion and preview switching
+  const stageItems = document.querySelectorAll(".stage-item");
+  const previewPanels = document.querySelectorAll(".stage-preview-panel");
+  
+  stageItems.forEach(item => {
+    const btn = item.querySelector(".stage-btn");
+    btn.addEventListener("click", () => {
+      stageItems.forEach(i => i.classList.remove("active"));
+      previewPanels.forEach(p => p.classList.remove("active"));
+      
+      item.classList.add("active");
+      const target = item.getAttribute("data-stage");
+      document.querySelector(`.stage-preview-panel[data-preview="${target}"]`).classList.add("active");
+    });
+  });
+
+  // FAQ accordion
+  const faqItems = document.querySelectorAll(".faq-item");
+  faqItems.forEach(item => {
+    const q = item.querySelector(".faq-q");
+    q.addEventListener("click", () => {
+      const isActive = item.classList.contains("active");
+      faqItems.forEach(i => i.classList.remove("active"));
+      if (!isActive) {
+        item.classList.add("active");
+      }
+    });
+  });
+
+  // Modal event listeners
+  document.querySelectorAll('[id^="modal-"]').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) cerrarModal(modal.id);
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[id^="modal-"]').forEach(m => cerrarModal(m.id));
+    }
+  });
+});
+
+function abrirModal(id) {
+  const modal = document.getElementById(id);
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModal(id) {
+  const modal = document.getElementById(id);
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function enviarContacto() {
+  const nombre = document.getElementById('c-nombre').value.trim();
+  const correo = document.getElementById('c-correo').value.trim();
+  const asunto = document.getElementById('c-asunto').value.trim();
+  const mensaje = document.getElementById('c-mensaje').value.trim();
+  if (!nombre || !correo || !mensaje) {
+    alert('Por favor completa nombre, correo y mensaje.');
+    return;
+  }
+  fetch('/contacto/enviar/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''
+    },
+    body: new URLSearchParams({ nombre, correo, asunto, mensaje })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      document.getElementById('c-msg-exito').style.display = 'block';
+      document.getElementById('c-nombre').value = '';
+      document.getElementById('c-correo').value = '';
+      document.getElementById('c-asunto').value = '';
+      document.getElementById('c-mensaje').value = '';
+    } else {
+      alert('Error al enviar. Intenta de nuevo.');
+    }
+  });
+}
+</script>
+
+<!-- Modal Aviso de Privacidad -->
+<div id="modal-privacidad" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-privacidad')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Aviso de Privacidad</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      <strong>ConEvent — UTEQ</strong> es un proyecto escolar de ingeniería desarrollado por estudiantes 
+      de la Universidad Tecnológica de Querétaro. Los datos personales que recopilamos (nombre, correo 
+      institucional y matrícula) son utilizados exclusivamente para la gestión del evento académico 
+      interno y no son compartidos con terceros. El tratamiento de sus datos se realiza conforme a la 
+      Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) de México. 
+      Para ejercer sus derechos ARCO contacte a: equipo.soporte.oasis@gmail.com
+    </p>
+  </div>
+</div>
+
+<!-- Modal Términos y Condiciones -->
+<div id="modal-terminos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-terminos')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Términos y Condiciones</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      El uso de la plataforma ConEvent está restringido a estudiantes, docentes y personal 
+      administrativo de la UTEQ con correo institucional activo. El registro implica la aceptación 
+      de estos términos. Queda prohibido el uso de la plataforma para fines distintos a la gestión 
+      del evento académico. ConEvent se reserva el derecho de cancelar registros que incumplan 
+      estas condiciones. La plataforma se ofrece tal como está, como proyecto escolar sin garantía 
+      de disponibilidad continua.
+    </p>
+  </div>
+</div>
+
+<!-- Modal Usos y Aplicaciones -->
+<div id="modal-usos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-usos')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Usos y Aplicaciones</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      ConEvent está diseñado exclusivamente para la gestión de ferias académicas dentro de la UTEQ. 
+      Sus funcionalidades incluyen: registro de proyectos estudiantiles, asignación de espacios en 
+      el auditorio, control de inventario con códigos QR, evaluación docente con rúbrica UTEQ y 
+      generación de reportes. Queda prohibido su uso para actividades comerciales, recopilación 
+      no autorizada de datos o cualquier fin ajeno al evento académico para el que fue desarrollado.
+    </p>
+  </div>
+</div>
+</body>
+</html>

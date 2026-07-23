@@ -461,9 +461,70 @@ class Superuser2FABypassTestCase(TestCase):
         session.save()
 
         response = self.client.get(reverse('verificar_2fa'))
-        self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('index'))
         self.assertIn('_auth_user_id', self.client.session)
         self.assertEqual(int(self.client.session['_auth_user_id']), self.superuser.id)
+
+
+class LandingPageTestCase(TestCase):
+    def setUp(self):
+        self.alumno = User.objects.create_user(
+            username='alumno.landing',
+            email='alumno.landing@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
+
+    def test_anonymous_user_access_landing_page(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'landing.html')
+
+    def test_anonymous_user_redirected_from_dashboard(self):
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/')
+
+    def test_authenticated_user_redirected_from_landing(self):
+        self.client.login(username='alumno.landing', password='Password123!')
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/dashboard/')
+
+    def test_authenticated_user_access_dashboard(self):
+        self.client.login(username='alumno.landing', password='Password123!')
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'seguridad/index.html')
+
+
+class ContactoTestCase(TestCase):
+    def test_contacto_form_submission_success(self):
+        from django.urls import reverse
+        from django.core import mail
+        response = self.client.post(reverse('contacto_enviar'), {
+            'nombre': 'Luis Ángel',
+            'correo': 'luis@gmail.com',
+            'asunto': 'Duda de registro',
+            'mensaje': 'Hola, tengo una pregunta sobre el registro de proyectos.'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, '[ConEvent] Contacto: Duda de registro')
+        self.assertIn('Luis Ángel', mail.outbox[0].body)
+
+    def test_contacto_form_submission_incomplete(self):
+        from django.urls import reverse
+        response = self.client.post(reverse('contacto_enviar'), {
+            'nombre': 'Luis Ángel',
+            'correo': '',
+            'asunto': '',
+            'mensaje': ''
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': False, 'error': 'Campos incompletos'})
+
+
 
 

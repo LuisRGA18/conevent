@@ -264,11 +264,23 @@ def activar_cuenta_view(request):
 
 
 # ──────────────────────────────────────────────────────────────
+# LANDING PAGE DE BIENVENIDA (PÚBLICA)
+# ──────────────────────────────────────────────────────────────
+
+def landing_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+    return render(request, 'landing.html')
+
+
+# ──────────────────────────────────────────────────────────────
 # DASHBOARD PRINCIPAL (CON CONTADORES REALES)
 # ──────────────────────────────────────────────────────────────
 
-@login_required(login_url='login')
 def index_view(request):
+    if not request.user.is_authenticated:
+        return redirect('landing')
+
     if request.session.pop('mostrar_bienvenida', False):
         nombre = request.user.first_name or request.user.username
         messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
@@ -1013,3 +1025,25 @@ def procesar_cambio_stand_view(request, pk, action):
             messages.info(request, f"Se rechazó la solicitud de cambio para el proyecto '{proyecto.titulo}'.")
             
     return redirect('panel_admin')
+
+
+def contacto_view(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        correo = request.POST.get('correo', '').strip()
+        asunto = request.POST.get('asunto', '').strip()
+        mensaje = request.POST.get('mensaje', '').strip()
+        if nombre and correo and mensaje:
+            try:
+                send_mail(
+                    subject=f'[ConEvent] Contacto: {asunto}',
+                    message=f'De: {nombre} <{correo}>\n\n{mensaje}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=['equipo.soporte.oasis@gmail.com'],
+                    fail_silently=True,
+                )
+                return JsonResponse({'ok': True})
+            except Exception:
+                return JsonResponse({'ok': False, 'error': 'Error al enviar'})
+        return JsonResponse({'ok': False, 'error': 'Campos incompletos'})
+    return JsonResponse({'ok': False, 'error': 'Método no permitido'})

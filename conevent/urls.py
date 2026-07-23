@@ -41,8 +41,10 @@ urlpatterns = [
              template_name='usuarios/password_reset_complete.html',
          ), name='password_reset_complete'),
 
-    # Dashboard
-    path('', usuarios_views.index_view, name='index'),
+    # Landing Page y Dashboard
+    path('', usuarios_views.landing_view, name='landing'),
+    path('dashboard/', usuarios_views.index_view, name='index'),
+    path('contacto/enviar/', usuarios_views.contacto_view, name='contacto_enviar'),
 
     # Evaluación Externa y QRs por Proyecto
     path('proyectos/<int:proyecto_id>/evaluar-externo/', usuarios_views.evaluar_externo_view, name='evaluar_externo'),
