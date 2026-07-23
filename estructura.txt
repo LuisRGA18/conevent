@@ -200,7 +200,10 @@ urlpatterns = [
          ), name='password_reset_complete'),
 
     # Landing Page y Dashboard
-    path('', usuarios_views.landing_view, name='landing'),
+    path('', usuarios_views.landing_home_view, name='landing'),
+    path('como-funciona/', usuarios_views.landing_funciona_view, name='landing_funciona'),
+    path('faq/', usuarios_views.landing_faq_view, name='landing_faq'),
+    path('contacto/', usuarios_views.landing_contacto_view, name='landing_contacto'),
     path('dashboard/', usuarios_views.index_view, name='index'),
     path('contacto/enviar/', usuarios_views.contacto_view, name='contacto_enviar'),
 
@@ -833,10 +836,19 @@ def activar_cuenta_view(request):
 # LANDING PAGE DE BIENVENIDA (PÚBLICA)
 # ──────────────────────────────────────────────────────────────
 
-def landing_view(request):
+def landing_home_view(request):
     if request.user.is_authenticated:
         return redirect('index')
-    return render(request, 'landing.html')
+    return render(request, 'landing_home.html')
+
+def landing_funciona_view(request):
+    return render(request, 'landing_funciona.html')
+
+def landing_faq_view(request):
+    return render(request, 'landing_faq.html')
+
+def landing_contacto_view(request):
+    return render(request, 'landing_contacto.html')
 
 
 # ──────────────────────────────────────────────────────────────

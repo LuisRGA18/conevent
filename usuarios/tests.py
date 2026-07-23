@@ -478,7 +478,7 @@ class LandingPageTestCase(TestCase):
     def test_anonymous_user_access_landing_page(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'landing.html')
+        self.assertTemplateUsed(response, 'landing_home.html')
 
     def test_anonymous_user_redirected_from_dashboard(self):
         response = self.client.get('/dashboard/')
@@ -496,6 +496,21 @@ class LandingPageTestCase(TestCase):
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'seguridad/index.html')
+
+    def test_landing_funciona_page_access(self):
+        response = self.client.get('/como-funciona/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'landing_funciona.html')
+
+    def test_landing_faq_page_access(self):
+        response = self.client.get('/faq/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'landing_faq.html')
+
+    def test_landing_contacto_page_access(self):
+        response = self.client.get('/contacto/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'landing_contacto.html')
 
 
 class ContactoTestCase(TestCase):

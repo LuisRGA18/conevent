@@ -42,7 +42,10 @@ urlpatterns = [
          ), name='password_reset_complete'),
 
     # Landing Page y Dashboard
-    path('', usuarios_views.landing_view, name='landing'),
+    path('', usuarios_views.landing_home_view, name='landing'),
+    path('como-funciona/', usuarios_views.landing_funciona_view, name='landing_funciona'),
+    path('faq/', usuarios_views.landing_faq_view, name='landing_faq'),
+    path('contacto/', usuarios_views.landing_contacto_view, name='landing_contacto'),
     path('dashboard/', usuarios_views.index_view, name='index'),
     path('contacto/enviar/', usuarios_views.contacto_view, name='contacto_enviar'),
 

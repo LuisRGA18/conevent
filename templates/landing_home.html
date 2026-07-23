@@ -1,0 +1,117 @@
+{% extends "landing_base.html" %}
+{% block title %}ConEvent | Gestión de Ferias Académicas, Optimizada{% endblock %}
+{% block nav_home %}active{% endblock %}
+{% block content %}
+<section id="inicio" class="hero">
+    <div class="container hero-inner">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="hero-progress"></div>
+      </div>
+      <h1>Gestión de ferias<br>académicas, <span class="grad">optimizada.</span></h1>
+      <p class="lead">ConEvent centraliza el registro de proyectos estudiantiles, la asignación automática de espacios en el auditorio y la evaluación con rúbrica UTEQ — para que tu feria universitaria corra sola.</p>
+
+      <div style="display:flex; gap:16px; justify-content:center; margin-bottom:32px; flex-wrap:wrap;">
+        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=280&h=180&fit=crop" 
+             alt="Estudiantes presentando proyecto en feria académica" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+        <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=280&h=180&fit=crop" 
+             alt="Equipo universitario trabajando en prototipo" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=280&h=180&fit=crop" 
+             alt="Juez evaluando proyecto estudiantil" 
+             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
+      </div>
+
+      <div class="hero-actions">
+        <a href="/auth/registro/" class="btn btn-glow">Comenzar ahora</a>
+        <a href="#video" class="btn btn-outline">Ver demo</a>
+      </div>
+
+      <div class="platform-mock">
+        <div class="mock-tabs" role="tablist">
+          <button class="mock-tab active" data-tab="registro">Registro</button>
+          <button class="mock-tab" data-tab="espacios">Espacios</button>
+          <button class="mock-tab" data-tab="checkin">Check-in QR</button>
+        </div>
+        <div class="mock-panels">
+          <div class="mock-panel active" data-panel="registro">
+            <div>
+              <h3>Alta de equipos en minutos</h3>
+              <p>Título del proyecto, carrera, grupo, integrantes e información de logo — validado automáticamente antes de confirmar el lugar.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual">
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
+            </div>
+          </div>
+          <div class="mock-panel" data-panel="espacios">
+            <div>
+              <h3>Mesas asignadas al mapa real</h3>
+              <p>Cada equipo se ubica sobre las dimensiones reales del auditorio, agrupando proyectos por carrera en posiciones contiguas.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual" style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; align-content:center;">
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#a8b2d1"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#328cc1"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
+            </div>
+          </div>
+          <div class="mock-panel" data-panel="checkin">
+            <div>
+              <h3>Cada mesa, un código QR</h3>
+              <p>Escanea para iniciar la presentación, confirmar asistencia, reportar mobiliario o calificar como visitante externo.</p>
+              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
+            </div>
+            <div class="mock-visual" style="display:flex; align-items:center; justify-content:center;">
+              <div class="qr-fake"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="marquee-wrap">
+        <div class="marquee">
+          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
+          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
+        </div>
+      </div>
+    </div>
+  </section>
+<section class="solutions">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Una plataforma, todos los roles</span>
+        <h2>Diseñada para cada persona en el evento</h2>
+        <p>Estudiantes, evaluadores y administradores trabajan sobre la misma información, en tiempo real.</p>
+      </div>
+      <div class="grid-3">
+        <div class="solution-card reveal reveal-delay-1">
+          <span class="tag tag-purple">Estudiantes</span>
+          <h3>Registro autónomo de proyectos</h3>
+          <p>Cada equipo se registra con título, integrantes, carrera y grupo. El sistema genera un QR único para evaluadores externos al instante.</p>
+        </div>
+        <div class="solution-card reveal reveal-delay-2">
+          <span class="tag tag-orange">Jueces/Evaluadores</span>
+          <h3>Rúbrica UTEQ digital</h3>
+          <p>Criterios con escala AU/DE/SA/NA, cronómetro de 10 minutos y calificación automática ponderada — desde cualquier celular.</p>
+        </div>
+        <div class="solution-card reveal reveal-delay-3">
+          <span class="tag tag-black">Administradores</span>
+          <h3>Control total del evento</h3>
+          <p>Mapa interactivo del auditorio, asignación automática de stands por carrera, inventario con QR y logs de auditoría en un solo panel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

@@ -2,17 +2,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="ConEvent — Gestión de ferias académicas, optimizada. Registro, espacios, mobiliario QR y evaluación de jueces en tiempo real.">
-<meta name="csrf-token" content="{{ csrf_token }}">
-<title>ConEvent | Gestión de Ferias Académicas, Optimizada</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;700;800;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ConEvent | Gestión de Ferias Académicas{% endblock %}</title>
+  <style>
 /* ============================================================
    ConEvent — sistema de diseño
    Base blanco/negro · acento azul SCIA · glow degradado azul
@@ -561,50 +554,57 @@ footer{ background: var(--black-soft); color: var(--gray-300); padding: 70px 0 3
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
-</style>
+
+/* ── Estilos de nav link activo ── */
+.nav-link {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--black);
+  transition: background .15s, color .15s;
+}
+.nav-link:hover { background: var(--gray-50); }
+.nav-link.active {
+  color: var(--purple);
+  background: var(--purple-tint);
+}
+
+  </style>
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
+
 <div class="cursor-glow" id="cursor-glow"></div>
 <div id="reading-bar"></div>
 <button id="btn-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Volver arriba">↑</button>
 
-<!-- ============ HEADER ============ -->
+<!-- HEADER — igual en todas las páginas -->
 <header>
   <input type="checkbox" id="nav-toggle" class="nav-toggle-input">
   <div class="container nav">
-    <a href="#inicio" class="logo">CON<span>EVENT</span></a>
+    <a href="/" class="logo">CON<span>EVENT</span></a>
 
     <nav class="nav-menu" aria-label="Navegación principal">
-      <div class="nav-item">
-        <button type="button">Producto <span class="caret">▾</span></button>
-        <div class="dropdown">
-          <a href="#etapas">Registro de proyectos <small>Alta de equipos e integrantes</small></a>
-          <a href="#etapas">Mapa del auditorio <small>Mapa real del auditorio</small></a>
-          <a href="#etapas">Mobiliario con QR <small>Control de mesas y equipo</small></a>
-          <a href="#etapas">Evaluación de jueces <small>Criterios y cronómetro digital</small></a>
-        </div>
-      </div>
-      <div class="nav-item">
-        <button type="button">Recursos <span class="caret">▾</span></button>
-        <div class="dropdown">
-          <a href="#faq">Preguntas frecuentes</a>
-          <a href="#contacto">Contacto</a>
-        </div>
-      </div>
-      <a href="#contacto">Contacto</a>
+      <a href="/" class="nav-link {% block nav_home %}{% endblock %}">Inicio</a>
+      <a href="/como-funciona/" class="nav-link {% block nav_funciona %}{% endblock %}">Cómo funciona</a>
+      <a href="/faq/" class="nav-link {% block nav_faq %}{% endblock %}">FAQ</a>
+      <a href="/contacto/" class="nav-link {% block nav_contacto %}{% endblock %}">Contacto</a>
     </nav>
 
     <div class="nav-right">
-      <span class="lang-badge">ES</span>
       <a href="/auth/login/" class="btn btn-outline btn-sm">Iniciar sesión</a>
       <a href="/auth/registro/" class="btn btn-glow btn-sm">Registrarse</a>
-      <label for="nav-toggle" class="nav-toggle" aria-label="Abrir menú"><span></span><span></span><span></span></label>
+      <label for="nav-toggle" class="nav-toggle" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </label>
     </div>
 
     <nav class="nav-menu-mobile" aria-label="Navegación móvil">
-      <a href="#etapas">Producto</a>
-      <a href="#faq">Preguntas frecuentes</a>
-      <a href="#contacto">Contacto</a>
+      <a href="/">Inicio</a>
+      <a href="/como-funciona/">Cómo funciona</a>
+      <a href="/faq/">FAQ</a>
+      <a href="/contacto/">Contacto</a>
       <a href="/auth/login/" class="btn btn-outline btn-sm" style="margin-top:10px;">Iniciar sesión</a>
       <a href="/auth/registro/" class="btn btn-glow btn-sm" style="margin-top:8px;">Registrarse</a>
     </nav>
@@ -612,424 +612,39 @@ footer{ background: var(--black-soft); color: var(--gray-300); padding: 70px 0 3
 </header>
 
 <main>
-  <!-- ============ HERO ============ -->
-  <section id="inicio" class="hero">
-    <div class="container hero-inner">
-      <div class="progress-bar-wrap">
-        <div class="progress-bar-fill" id="hero-progress"></div>
-      </div>
-      <h1>Gestión de ferias<br>académicas, <span class="grad">optimizada.</span></h1>
-      <p class="lead">ConEvent centraliza el registro de proyectos estudiantiles, la asignación automática de espacios en el auditorio y la evaluación con rúbrica UTEQ — para que tu feria universitaria corra sola.</p>
-
-      <div style="display:flex; gap:16px; justify-content:center; margin-bottom:32px; flex-wrap:wrap;">
-        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=280&h=180&fit=crop" 
-             alt="Estudiantes presentando proyecto en feria académica" 
-             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
-        <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=280&h=180&fit=crop" 
-             alt="Equipo universitario trabajando en prototipo" 
-             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
-        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=280&h=180&fit=crop" 
-             alt="Juez evaluando proyecto estudiantil" 
-             style="border-radius:16px; width:280px; height:180px; object-fit:cover; box-shadow:0 8px 24px rgba(10,25,47,0.12);">
-      </div>
-
-      <div class="hero-actions">
-        <a href="/auth/registro/" class="btn btn-glow">Comenzar ahora</a>
-        <a href="#video" class="btn btn-outline">Ver demo</a>
-      </div>
-
-      <div class="platform-mock">
-        <div class="mock-tabs" role="tablist">
-          <button class="mock-tab active" data-tab="registro">Registro</button>
-          <button class="mock-tab" data-tab="espacios">Espacios</button>
-          <button class="mock-tab" data-tab="checkin">Check-in QR</button>
-        </div>
-        <div class="mock-panels">
-          <div class="mock-panel active" data-panel="registro">
-            <div>
-              <h3>Alta de equipos en minutos</h3>
-              <p>Título del proyecto, carrera, grupo, integrantes e información de logo — validado automáticamente antes de confirmar el lugar.</p>
-              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
-            </div>
-            <div class="mock-visual">
-              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
-              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
-              <div class="mock-row"><span class="avatar-dot"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div><div class="mock-bar short"></div></div></div>
-            </div>
-          </div>
-          <div class="mock-panel" data-panel="espacios">
-            <div>
-              <h3>Mesas asignadas al mapa real</h3>
-              <p>Cada equipo se ubica sobre las dimensiones reales del auditorio, agrupando proyectos por carrera en posiciones contiguas.</p>
-              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
-            </div>
-            <div class="mock-visual" style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; align-content:center;">
-              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#a8b2d1"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#328cc1"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#0b3c5d"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-              <div style="aspect-ratio:1;border-radius:5px;background:#dce6f0"></div>
-            </div>
-          </div>
-          <div class="mock-panel" data-panel="checkin">
-            <div>
-              <h3>Cada mesa, un código QR</h3>
-              <p>Escanea para iniciar la presentación, confirmar asistencia, reportar mobiliario o calificar como visitante externo.</p>
-              <a href="#etapas" class="btn btn-outline btn-sm">Ver módulo</a>
-            </div>
-            <div class="mock-visual" style="display:flex; align-items:center; justify-content:center;">
-              <div class="qr-fake"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="marquee-wrap">
-        <div class="marquee">
-          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
-          <span>Ingeniería en Sistemas</span><span>Mecatrónica</span><span>Ingeniería en Software</span><span>Tecnologías de la Información</span><span>Desarrollo de Software Multiplataforma</span><span>Redes Inteligentes y Ciberseguridad</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ SOLUTIONS ============ -->
-  <section class="solutions">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">Una plataforma, todos los roles</span>
-        <h2>Diseñada para cada persona en el evento</h2>
-        <p>Estudiantes, evaluadores y administradores trabajan sobre la misma información, en tiempo real.</p>
-      </div>
-      <div class="grid-3">
-        <div class="solution-card reveal reveal-delay-1">
-          <span class="tag tag-purple">Estudiantes</span>
-          <h3>Registro autónomo de proyectos</h3>
-          <p>Cada equipo se registra con título, integrantes, carrera y grupo. El sistema genera un QR único para evaluadores externos al instante.</p>
-        </div>
-        <div class="solution-card reveal reveal-delay-2">
-          <span class="tag tag-orange">Jueces/Evaluadores</span>
-          <h3>Rúbrica UTEQ digital</h3>
-          <p>Criterios con escala AU/DE/SA/NA, cronómetro de 10 minutos y calificación automática ponderada — desde cualquier celular.</p>
-        </div>
-        <div class="solution-card reveal reveal-delay-3">
-          <span class="tag tag-black">Administradores</span>
-          <h3>Control total del evento</h3>
-          <p>Mapa interactivo del auditorio, asignación automática de stands por carrera, inventario con QR y logs de auditoría en un solo panel.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ OPTIMIZA CADA ETAPA ============ -->
-  <section id="etapas" class="stages">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">De principio a fin</span>
-        <h2>Optimiza cada etapa de tu feria</h2>
-        <p>Un módulo dedicado para cada momento del evento, desde el registro hasta los resultados.</p>
-      </div>
-
-      <div class="stages-layout">
-        <div class="stage-list reveal-left">
-          <div class="stage-item active" data-stage="registro">
-            <button class="stage-btn"><span>Registro de proyectos</span><span class="chev">+</span></button>
-            <div class="stage-desc">Alta de equipos con título, integrantes, carrera, grupo y logo. El sistema declara cuántas mesas necesita cada equipo y genera el QR de evaluación externa automáticamente.</div>
-          </div>
-          <div class="stage-item" data-stage="espacios">
-            <button class="stage-btn"><span>Distribución de espacios</span><span class="chev">+</span></button>
-            <div class="stage-desc">Asignación automática de stands sobre el mapa real del auditorio (11.7m × 30m), agrupando proyectos por carrera en posiciones contiguas.</div>
-          </div>
-          <div class="stage-item" data-stage="qr">
-            <button class="stage-btn"><span>Mobiliario con QR</span><span class="chev">+</span></button>
-            <div class="stage-desc">Cada mesa y equipo tiene UUID único. Escanea para ver el estado, reportar daños o pérdidas — sin necesidad de app.</div>
-          </div>
-          <div class="stage-item" data-stage="evaluacion">
-            <button class="stage-btn"><span>Evaluación digital</span><span class="chev">+</span></button>
-            <div class="stage-desc">Rúbrica con 4 criterios ponderados (Exposición, Innovación, Viabilidad, Funcionalidad Técnica), escala UTEQ y cronómetro visual de 10 minutos por proyecto.</div>
-          </div>
-          <div class="stage-item" data-stage="reportes">
-            <button class="stage-btn"><span>Reportes y resultados</span><span class="chev">+</span></button>
-            <div class="stage-desc">Dashboard con gráficas Chart.js, ranking de proyectos, promedios por carrera y exportación a PDF o CSV con un clic.</div>
-          </div>
-        </div>
-
-        <div class="stage-preview reveal-right">
-          <div class="stage-preview-panel active" data-preview="registro">
-            <h4>Formulario de alta de proyecto</h4>
-            <div class="mock-visual">
-              <div class="mock-row"><div style="flex:1"><div class="mock-bar" style="margin-bottom:8px"></div><div class="mock-bar short"></div></div></div>
-              <div class="mock-row"><div style="flex:1"><div class="mock-bar" style="margin-bottom:8px"></div><div class="mock-bar short"></div></div></div>
-            </div>
-          </div>
-          <div class="stage-preview-panel" data-preview="espacios">
-            <h4>Mapa del auditorio</h4>
-            <div class="mock-visual" style="display:grid; grid-template-columns:repeat(8,1fr); gap:6px;">
-              <div style="aspect-ratio:1;border-radius:4px;background:#0b3c5d"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#a8b2d1"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#0b3c5d"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div><div style="aspect-ratio:1;border-radius:4px;background:#dce6f0"></div>
-            </div>
-            <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop" 
-                 alt="Vista de auditorio universitario con stands de exhibición"
-                 style="border-radius:12px; width:100%; height:160px; object-fit:cover; margin-top:14px; opacity:0.85;">
-          </div>
-          <div class="stage-preview-panel" data-preview="qr">
-            <h4>Identificación de mobiliario</h4>
-            <div class="mock-visual" style="display:flex; justify-content:center;"><div class="qr-fake"></div></div>
-          </div>
-          <div class="stage-preview-panel" data-preview="evaluacion">
-            <h4>Panel del juez</h4>
-            <div class="mock-visual">
-              <div class="mock-row"><span>Exposición</span><div class="mock-bar" style="flex:.5"></div></div>
-              <div class="mock-row"><span>Innovación</span><div class="mock-bar" style="flex:.7"></div></div>
-              <div class="mock-row"><span>Funcionalidad Técnica</span><div class="mock-bar" style="flex:.8"></div></div>
-            </div>
-          </div>
-          <div class="stage-preview-panel" data-preview="reportes">
-            <h4>Ranking del evento</h4>
-            <div class="mock-visual">
-              <div class="mock-row"><span class="avatar-dot" style="border-radius:6px"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div></div></div>
-              <div class="mock-row"><span class="avatar-dot" style="border-radius:6px"></span><div style="flex:1"><div class="mock-bar" style="margin-bottom:6px"></div></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ DARK SECTION ============ -->
-  <section class="dark-section">
-    <div class="container dark-grid">
-      <div class="reveal-left">
-        <span class="eyebrow on-dark">Arquitectura abierta</span>
-        <h2>Construida sobre tecnología institucional</h2>
-        <p>Backend en Django + DRF, autenticación con 2FA y JWT, base de datos SQLite/PostgreSQL y generación de reportes en PDF — lista para escalar a futuros eventos de la UTEQ.</p>
-      </div>
-      <div class="floating-badges reveal-right">
-        <div class="fbadge" style="top:10%; left:8%; animation-delay:.2s;">Django · Python</div>
-        <div class="fbadge" style="top:40%; left:38%; animation-delay:1.1s;">DRF + JWT</div>
-        <div class="fbadge" style="top:6%; left:58%; animation-delay:.6s;">PostgreSQL</div>
-        <div class="fbadge" style="top:52%; left:12%; animation-delay:1.4s;">Autenticación 2FA</div>
-        <div class="fbadge" style="top:74%; left:48%; animation-delay:.9s;">Códigos QR</div>
-        <div class="fbadge" style="top:80%; left:10%; animation-delay:1.8s;">ReportLab PDF</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ VIDEO DEMO ============ -->
-  <section id="video" class="video-demo">
-    <div class="container">
-      <span class="eyebrow">Míralo en acción</span>
-      <h2 style="font-size:clamp(24px,3vw,34px); margin-bottom:34px;">Así se ve ConEvent en un evento real</h2>
-      <div class="video-frame">
-        <div class="play-btn" role="button" aria-label="Reproducir demo"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ OBJETIVOS ============ -->
-  <section class="goals">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">Resultados esperados</span>
-        <h2>Logra todos tus objetivos</h2>
-      </div>
-      <div class="grid-4">
-        <div class="goal-card-wrap reveal reveal-delay-1"><div class="goal-card"><span class="num">↓</span><h4>Menos tiempo operativo</h4><p>Asignación automática de stands y evaluación digital eliminan la logística manual del evento.</p></div></div>
-        <div class="goal-card-wrap reveal reveal-delay-2"><div class="goal-card"><span class="num"><span class="count-num" data-target="100">0</span>%</span><h4>Registro digital</h4><p>Proyectos, integrantes, evaluaciones y mobiliario capturados en la plataforma, sin hojas sueltas.</p></div></div>
-        <div class="goal-card-wrap reveal reveal-delay-3"><div class="goal-card"><span class="num">QR</span><h4>Inventario bajo control</h4><p>Cada mesa y equipo tiene su código QR. Reporta daños al instante desde el celular.</p></div></div>
-        <div class="goal-card-wrap reveal reveal-delay-4"><div class="goal-card"><span class="num"><span class="count-num" data-target="1">0</span></span><h4>Un solo panel</h4><p>Mapa del auditorio, evaluaciones, incidencias y resultados centralizados para el administrador.</p></div></div>
-      </div>
-      <div class="goals-cta"><a href="/auth/registro/" class="btn btn-glow">Empezar ahora</a></div>
-    </div>
-  </section>
-
-  <!-- TESTIMONIOS — pendiente de implementación
-  <section id="reviews" class="reviews">
-    <div class="container">
-      <div class="section-head">
-        <span class="eyebrow">Testimonios</span>
-        <h2>Conoce las opiniones</h2>
-      </div>
-      <div class="rating-row"><span class="stars">★★★★★</span><span class="rating-num">4.5 / 5</span></div>
-      <div class="review-track">
-        <div class="review-card">
-          <div class="stars">★★★★★</div>
-          <p>"Organizamos la feria de Ingeniería en Sistemas sin una sola hoja de asistencia impresa. El control de mesas con QR nos ahorró horas."</p>
-          <div class="review-author">Coordinadora de carrera<span>Ingeniería en Sistemas</span></div>
-        </div>
-        <div class="review-card">
-          <div class="stars">★★★★★</div>
-          <p>"Como juez, evaluar desde el celular con cronómetro y criterios claros cambió por completo el orden del evento."</p>
-          <div class="review-author">Docente evaluador<span>Ingeniería Industrial</span></div>
-        </div>
-        <div class="review-card">
-          <div class="stars">★★★★☆</div>
-          <p>"Mi equipo se registró solo, eligió su mesa asignada y llegó directo a presentar. Cero filas el día del evento."</p>
-          <div class="review-author">Estudiante participante<span>Ingeniería en Software</span></div>
-        </div>
-        <div class="review-card">
-          <div class="stars">★★★★★</div>
-          <p>"Los reportes finales con el ranking y los promedios se generaron en minutos, no en días."</p>
-          <div class="review-author">Organizador de evento<span>Departamento Académico</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-  -->
-
-  <!-- ============ FAQ ============ -->
-  <section id="faq" class="faq">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">Dudas frecuentes</span>
-        <h2>Preguntas frecuentes</h2>
-      </div>
-
-      <div class="faq-item active">
-        <button class="faq-q"><span>¿Cómo se registran los equipos?</span><span class="chev">+</span></button>
-        <div class="faq-a">Cada equipo entra con su correo @uteq.edu.mx, registra su proyecto con título, carrera, grupo e integrantes, y declara cuántas mesas necesita para exhibir.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q"><span>¿Cómo funciona la asignación de espacios?</span><span class="chev">+</span></button>
-        <div class="faq-a">El administrador ejecuta la asignación automática desde el panel. El sistema agrupa proyectos de la misma carrera en stands contiguos sobre el mapa real del auditorio.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q"><span>¿Para qué sirve el código QR en el mobiliario?</span><span class="chev">+</span></button>
-        <div class="faq-a">Cada mesa tiene un QR único vinculado al inventario. Al escanearlo puedes ver su estado y reportar daños o pérdidas al instante, sin necesidad de registrarte.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q"><span>¿Los jueces necesitan instalar algo?</span><span class="chev">+</span></button>
-        <div class="faq-a">No. Los docentes evaluadores acceden con su correo institucional y evalúan desde el navegador con la rúbrica UTEQ ya configurada.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q"><span>¿Se puede reutilizar para futuros eventos?</span><span class="chev">+</span></button>
-        <div class="faq-a">Sí. ConEvent está diseñado para reutilizarse en cualquier feria académica futura de la UTEQ, con configuración de criterios y espacios personalizable.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ UBICACION ============ -->
-  <section id="ubicacion" class="reveal" style="padding:60px 0 0;">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">¿Dónde estamos?</span>
-        <h2>Universidad Tecnológica de Querétaro</h2>
-        <p>Av. Pie de la Cuesta No. 2501, Nacional, Santiago de Querétaro, Qro.</p>
-      </div>
-    </div>
-    <div style="width:100%; height:380px; filter:grayscale(20%);">
-      <iframe 
-        src="https://maps.google.com/maps?q=Universidad%20Tecnol%C3%B3gica%20de%20Quer%C3%A9taro&t=&z=15&ie=UTF8&iwloc=&output=embed"
-        width="100%" height="380" style="border:0; display:block;" 
-        allowfullscreen loading="lazy" 
-        referrerpolicy="no-referrer-when-downgrade"
-        title="Ubicación de la UTEQ">
-      </iframe>
-    </div>
-  </section>
-
-  <!-- ============ CONTACTO ============ -->
-  <section id="contacto" style="padding:80px 0; background:var(--gray-50);">
-    <div class="container">
-      <div class="section-head reveal">
-        <span class="eyebrow">¿Tienes dudas?</span>
-        <h2>Contáctanos</h2>
-        <p>Reporta un error, haz una pregunta o comparte tu opinión sobre ConEvent.</p>
-      </div>
-      <div class="reveal" style="max-width:560px; margin:0 auto; background:#fff; border:1px solid var(--gray-100); 
-                  border-radius:var(--radius-lg); padding:36px;">
-        <div class="field">
-          <label for="c-nombre">Nombre completo</label>
-          <input type="text" id="c-nombre" placeholder="Tu nombre completo">
-        </div>
-        <div class="field">
-          <label for="c-correo">Correo electrónico</label>
-          <input type="email" id="c-correo" placeholder="tu@correo.com">
-        </div>
-        <div class="field">
-          <label for="c-asunto">Asunto</label>
-          <input type="text" id="c-asunto" placeholder="Ej. Error al registrar proyecto">
-        </div>
-        <div class="field">
-          <label for="c-mensaje">Mensaje</label>
-          <textarea id="c-mensaje" rows="4" 
-            style="width:100%; padding:12px 14px; border-radius:10px; 
-                   border:1px solid var(--gray-300); font-family:var(--font-body); 
-                   font-size:14px; resize:vertical;"
-            placeholder="Describe tu duda o problema..."></textarea>
-        </div>
-        <div id="c-msg-exito" style="display:none; background:#e8f4fb; color:#0b3c5d; 
-             border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:14px; font-weight:600;">
-          ✓ Tu mensaje fue enviado. Te responderemos a la brevedad.
-        </div>
-        <button type="button" class="btn btn-glow" style="width:100%;" onclick="enviarContacto()">
-          Enviar mensaje
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ CTA FORM ============ -->
-  <section id="cta" class="cta-form">
-    <div class="container cta-form-grid">
-      <div>
-        <span class="eyebrow on-dark">¿Quieres participar?</span>
-        <h2>Registra tu proyecto en ConEvent</h2>
-        <p>Crea tu cuenta con correo @uteq.edu.mx y da de alta tu equipo antes de que cierren los registros.</p>
-      </div>
-      <div class="form-card">
-        <form action="/auth/registro/" method="get">
-          <div class="field">
-            <label for="reg_nombre">Nombre completo</label>
-            <input type="text" id="reg_nombre" name="nombre" placeholder="Ej. Juan Pérez Solís" required>
-          </div>
-          <div class="field">
-            <label for="reg_correo">Correo institucional</label>
-            <input type="email" id="reg_correo" name="correo" placeholder="Ej. juan.perez@student.uteq.edu.mx" required>
-          </div>
-          <button type="submit" class="btn btn-glow">Crear cuenta</button>
-        </form>
-      </div>
-    </div>
-  </section>
+  {% block content %}{% endblock %}
 </main>
 
-<!-- ============ FOOTER ============ -->
 <footer>
   <div class="container footer-top">
     <div class="footer-brand">
-      <a href="#inicio" class="logo">CON<span>EVENT</span></a>
+      <a href="/" class="logo">CON<span>EVENT</span></a>
       <p>Sistema de gestión de ferias académicas de la UTEQ. Registro, espacios, inventario y evaluación en una sola plataforma.</p>
     </div>
     <div class="footer-col">
       <h5>Producto</h5>
       <ul>
-        <li><a href="#etapas">Registro de proyectos</a></li>
-        <li><a href="#etapas">Mapa del auditorio</a></li>
-        <li><a href="#etapas">Inventario QR</a></li>
-        <li><a href="#etapas">Evaluación UTEQ</a></li>
+        <li><a href="/como-funciona/">Registro de proyectos</a></li>
+        <li><a href="/como-funciona/">Mapa del auditorio</a></li>
+        <li><a href="/como-funciona/">Inventario QR</a></li>
+        <li><a href="/como-funciona/">Evaluación UTEQ</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Recursos</h5>
       <ul>
-        <li><a href="#faq">Preguntas frecuentes</a></li>
+        <li><a href="/faq/">Preguntas frecuentes</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Proyecto</h5>
       <ul>
-        <li><a href="#inicio">Sobre ConEvent</a></li>
+        <li><a href="/">Sobre ConEvent</a></li>
         <li><a href="/auth/login/">Iniciar sesión</a></li>
         <li><a href="/auth/registro/">Registrarse</a></li>
         <li style="margin-top:16px;">
           <span style="font-family:var(--font-head); font-size:13.5px; color:#fff; display:block; margin-bottom:8px;">Contacto</span>
+          <a href="/contacto/" style="font-size:13.5px; color:var(--gray-500); display:block; margin-bottom:4px;">Formulario de contacto</a>
           <a href="mailto:equipo.soporte.oasis@gmail.com" style="font-size:13px;">
             equipo.soporte.oasis@gmail.com
           </a>
@@ -1069,6 +684,65 @@ footer{ background: var(--black-soft); color: var(--gray-300); padding: 70px 0 3
     </div>
   </div>
 </footer>
+
+<!-- Modal Aviso de Privacidad -->
+<div id="modal-privacidad" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-privacidad')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Aviso de Privacidad</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      <strong>ConEvent — UTEQ</strong> es un proyecto escolar de ingeniería desarrollado por estudiantes 
+      de la Universidad Tecnológica de Querétaro. Los datos personales que recopilamos (nombre, correo 
+      institucional y matrícula) son utilizados exclusivamente para la gestión del evento académico 
+      interno y no son compartidos con terceros. El tratamiento de sus datos se realiza conforme a la 
+      Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) de México. 
+      Para ejercer sus derechos ARCO contacte a: equipo.soporte.oasis@gmail.com
+    </p>
+  </div>
+</div>
+
+<!-- Modal Términos y Condiciones -->
+<div id="modal-terminos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-terminos')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Términos y Condiciones</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      El uso de la plataforma ConEvent está restringido a estudiantes, docentes y personal 
+      administrativo de la UTEQ con correo institucional activo. El registro implica la aceptación 
+      de estos términos. Queda prohibido el uso de la plataforma para fines distintos a la gestión 
+      del evento académico. ConEvent se reserva el derecho de cancelar registros que incumplan 
+      estas condiciones. La plataforma se ofrece tal como está, como proyecto escolar sin garantía 
+      de disponibilidad continua.
+    </p>
+  </div>
+</div>
+
+<!-- Modal Usos y Aplicaciones -->
+<div id="modal-usos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
+     z-index:999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
+               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
+    <button onclick="cerrarModal('modal-usos')" 
+            style="position:absolute; top:16px; right:20px; background:none; border:none; 
+                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
+    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Usos y Aplicaciones</h3>
+    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
+      ConEvent está diseñado exclusivamente para la gestión de ferias académicas dentro de la UTEQ. 
+      Sus funcionalidades incluyen: registro de proyectos estudiantiles, asignación de espacios en 
+      el auditorio, control de inventario con códigos QR, evaluación docente con rúbrica UTEQ y 
+      generación de reportes. Queda prohibido su uso para actividades comerciales, recopilación 
+      no autorizada de datos o cualquier fin ajeno al evento académico para el que fue desarrollado.
+    </p>
+  </div>
+</div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -1288,63 +962,6 @@ const sectionObserver = new IntersectionObserver((entries) => {
 sections.forEach(s => sectionObserver.observe(s));
 </script>
 
-<!-- Modal Aviso de Privacidad -->
-<div id="modal-privacidad" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
-     z-index:999; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
-               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
-    <button onclick="cerrarModal('modal-privacidad')" 
-            style="position:absolute; top:16px; right:20px; background:none; border:none; 
-                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
-    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Aviso de Privacidad</h3>
-    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
-      <strong>ConEvent — UTEQ</strong> es un proyecto escolar de ingeniería desarrollado por estudiantes 
-      de la Universidad Tecnológica de Querétaro. Los datos personales que recopilamos (nombre, correo 
-      institucional y matrícula) son utilizados exclusivamente para la gestión del evento académico 
-      interno y no son compartidos con terceros. El tratamiento de sus datos se realiza conforme a la 
-      Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) de México. 
-      Para ejercer sus derechos ARCO contacte a: equipo.soporte.oasis@gmail.com
-    </p>
-  </div>
-</div>
-
-<!-- Modal Términos y Condiciones -->
-<div id="modal-terminos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
-     z-index:999; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
-               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
-    <button onclick="cerrarModal('modal-terminos')" 
-            style="position:absolute; top:16px; right:20px; background:none; border:none; 
-                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
-    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Términos y Condiciones</h3>
-    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
-      El uso de la plataforma ConEvent está restringido a estudiantes, docentes y personal 
-      administrativo de la UTEQ con correo institucional activo. El registro implica la aceptación 
-      de estos términos. Queda prohibido el uso de la plataforma para fines distintos a la gestión 
-      del evento académico. ConEvent se reserva el derecho de cancelar registros que incumplan 
-      estas condiciones. La plataforma se ofrece tal como está, como proyecto escolar sin garantía 
-      de disponibilidad continua.
-    </p>
-  </div>
-</div>
-
-<!-- Modal Usos y Aplicaciones -->
-<div id="modal-usos" style="display:none; position:fixed; inset:0; background:rgba(10,25,47,0.7); 
-     z-index:999; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#fff; border-radius:var(--radius-lg); max-width:680px; width:100%; 
-               max-height:80vh; overflow-y:auto; padding:40px; position:relative;">
-    <button onclick="cerrarModal('modal-usos')" 
-            style="position:absolute; top:16px; right:20px; background:none; border:none; 
-                   font-size:22px; cursor:pointer; color:var(--gray-500);">✕</button>
-    <h3 style="font-family:var(--font-head); font-size:22px; margin-bottom:16px;">Usos y Aplicaciones</h3>
-    <p style="font-size:14px; color:var(--gray-700); line-height:1.7;">
-      ConEvent está diseñado exclusivamente para la gestión de ferias académicas dentro de la UTEQ. 
-      Sus funcionalidades incluyen: registro de proyectos estudiantiles, asignación de espacios en 
-      el auditorio, control de inventario con códigos QR, evaluación docente con rúbrica UTEQ y 
-      generación de reportes. Queda prohibido su uso para actividades comerciales, recopilación 
-      no autorizada de datos o cualquier fin ajeno al evento académico para el que fue desarrollado.
-    </p>
-  </div>
-</div>
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

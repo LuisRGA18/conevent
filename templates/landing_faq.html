@@ -1,0 +1,43 @@
+{% extends "landing_base.html" %}
+{% block title %}ConEvent | Preguntas Frecuentes{% endblock %}
+{% block nav_faq %}active{% endblock %}
+{% block content %}
+  <section style="padding:60px 0 20px;">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Resolvemos tus dudas</span>
+        <h2>Preguntas frecuentes</h2>
+        <p>Todo lo que necesitas saber sobre ConEvent antes de registrarte.</p>
+      </div>
+    </div>
+  </section>
+<section id="faq" class="faq">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Dudas frecuentes</span>
+        <h2>Preguntas frecuentes</h2>
+      </div>
+
+      <div class="faq-item active">
+        <button class="faq-q"><span>¿Cómo se registran los equipos?</span><span class="chev">+</span></button>
+        <div class="faq-a">Cada equipo entra con su correo @uteq.edu.mx, registra su proyecto con título, carrera, grupo e integrantes, y declara cuántas mesas necesita para exhibir.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Cómo funciona la asignación de espacios?</span><span class="chev">+</span></button>
+        <div class="faq-a">El administrador ejecuta la asignación automática desde el panel. El sistema agrupa proyectos de la misma carrera en stands contiguos sobre el mapa real del auditorio.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Para qué sirve el código QR en el mobiliario?</span><span class="chev">+</span></button>
+        <div class="faq-a">Cada mesa tiene un QR único vinculado al inventario. Al escanearlo puedes ver su estado y reportar daños o pérdidas al instante, sin necesidad de registrarte.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Los jueces necesitan instalar algo?</span><span class="chev">+</span></button>
+        <div class="faq-a">No. Los docentes evaluadores acceden con su correo institucional y evalúan desde el navegador con la rúbrica UTEQ ya configurada.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>¿Se puede reutilizar para futuros eventos?</span><span class="chev">+</span></button>
+        <div class="faq-a">Sí. ConEvent está diseñado para reutilizarse en cualquier feria académica futura de la UTEQ, con configuración de criterios y espacios personalizable.</div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

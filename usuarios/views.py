@@ -267,10 +267,19 @@ def activar_cuenta_view(request):
 # LANDING PAGE DE BIENVENIDA (PÚBLICA)
 # ──────────────────────────────────────────────────────────────
 
-def landing_view(request):
+def landing_home_view(request):
     if request.user.is_authenticated:
         return redirect('index')
-    return render(request, 'landing.html')
+    return render(request, 'landing_home.html')
+
+def landing_funciona_view(request):
+    return render(request, 'landing_funciona.html')
+
+def landing_faq_view(request):
+    return render(request, 'landing_faq.html')
+
+def landing_contacto_view(request):
+    return render(request, 'landing_contacto.html')
 
 
 # ──────────────────────────────────────────────────────────────
