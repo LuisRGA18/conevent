@@ -1348,9 +1348,10 @@ def evaluar_externo_view(request, proyecto_id):
         comentario = request.POST.get('comentario', '').strip()
         codigo_acceso = request.POST.get('codigo_acceso', '').strip()
 
+        codigo_correcto = config('CODIGO_EVALUACION_EXTERNA', default='1407')
         if not nombre_visitante or not empresa_procedencia or not correo_contacto or not calificacion or not codigo_acceso:
             error_msg = "Por favor, completa todos los campos obligatorios."
-        elif codigo_acceso != config('CODIGO_EVALUACION_EXTERNA', default='UTEQ2025'):
+        elif codigo_acceso != codigo_correcto:
             error_msg = "Código de acceso incorrecto. Solicita el código correcto en el stand del proyecto."
         elif calificacion not in ['AU', 'DE', 'SA', 'NA']:
             error_msg = "Opción de calificación no válida."
