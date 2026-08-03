@@ -3,21 +3,61 @@
     "model": "usuarios.carrera",
     "pk": 1,
     "fields": {
-      "nombre": "Ingeniería en Sistemas Computacionales",
-      "clave": "ISC"
+      "nombre": "Ingeniería Ambiental",
+      "clave": "IA"
     }
   },
   {
     "model": "usuarios.carrera",
     "pk": 2,
     "fields": {
-      "nombre": "Desarrollo de Software Multiplataforma",
-      "clave": "DSM"
+      "nombre": "Ingeniería en Agricultura Sustentable y Protegida",
+      "clave": "IASP"
     }
   },
   {
     "model": "usuarios.carrera",
     "pk": 3,
+    "fields": {
+      "nombre": "Ingeniería en Desarrollo y Gestión de Software",
+      "clave": "IDGS"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 4,
+    "fields": {
+      "nombre": "Ingeniería en Energías Renovables",
+      "clave": "IER"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 5,
+    "fields": {
+      "nombre": "Ingeniería en Mantenimiento Industrial",
+      "clave": "IMI"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 6,
+    "fields": {
+      "nombre": "Ingeniería en Metal Mecánica",
+      "clave": "IMM"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 7,
+    "fields": {
+      "nombre": "Ingeniería en Nanotecnología",
+      "clave": "IN"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 8,
     "fields": {
       "nombre": "Ingeniería en Redes Inteligentes y Ciberseguridad",
       "clave": "IRIC"
@@ -25,18 +65,26 @@
   },
   {
     "model": "usuarios.carrera",
-    "pk": 4,
+    "pk": 9,
     "fields": {
-      "nombre": "Ingeniería en Gestión Empresarial",
-      "clave": "IGE"
+      "nombre": "Ingeniería en Tecnologías de Automatización",
+      "clave": "ITA"
     }
   },
   {
     "model": "usuarios.carrera",
-    "pk": 5,
+    "pk": 10,
     "fields": {
-      "nombre": "Ingeniería en Inteligencia Artificial",
-      "clave": "IIA"
+      "nombre": "Mecánica",
+      "clave": "MA"
+    }
+  },
+  {
+    "model": "usuarios.carrera",
+    "pk": 11,
+    "fields": {
+      "nombre": "Mecatrónica",
+      "clave": "E"
     }
   }
 ]

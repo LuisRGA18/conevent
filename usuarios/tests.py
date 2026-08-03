@@ -375,7 +375,7 @@ class EvaluacionExternaTestCase(TestCase):
         self.assertFalse(EvaluacionExterna.objects.filter(correo_contacto='john.doe@gmail.com').exists())
 
         # 3. POST with correct access code
-        data['codigo_acceso'] = config('CODIGO_EVALUACION_EXTERNA', default='UTEQ2025')
+        data['codigo_acceso'] = config('CODIGO_EVALUACION_EXTERNA', default='1407')
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "¡Evaluación Registrada!")

@@ -150,7 +150,7 @@ class RegistroForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(attrs={
             'class': INPUT_CLASS,
-            'placeholder': 'Código de acceso docente (solo evaluadores)'
+            'placeholder': 'Código de acceso docente'
         }),
         label="Código de acceso docente"
     )

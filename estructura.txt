@@ -4954,12 +4954,18 @@ urlpatterns = [
       <div class="d-flex align-items-center flex-wrap gap-2">
         <span class="text-muted small me-2"><i class="fas fa-filter me-1"></i> Filtrar Carrera:</span>
         <button class="btn btn-outline-light btn-sm active filter-btn" data-filter="all">Todos</button>
-        <button class="btn btn-outline-primary btn-sm filter-btn" data-filter="ISC">ISC / ITI</button>
-        <button class="btn btn-outline-success btn-sm filter-btn" data-filter="DSM">DSM</button>
-        <button class="btn btn-outline-warning btn-sm filter-btn" data-filter="IRIC" style="color:#f97316; border-color:#f97316;">IRIC</button>
-        <button class="btn btn-outline-amber btn-sm filter-btn" data-filter="IGE" style="color:#f59e0b; border-color:#f59e0b;">IGE</button>
-        <button class="btn btn-outline-purple btn-sm filter-btn" data-filter="IIA" style="color:#8b5cf6; border-color:#8b5cf6;">IIA</button>
-        <button class="btn btn-outline-secondary btn-sm filter-btn" data-filter="unassigned">Sin Asignar</button>
+        <button class="btn btn-outline-secondary btn-sm filter-btn" data-filter="unassigned">Libres</button>
+        <button class="btn btn-outline-success btn-sm filter-btn" data-filter="IA" style="color:#059669; border-color:#059669;">IA</button>
+        <button class="btn btn-outline-emerald btn-sm filter-btn" data-filter="IASP" style="color:#047857; border-color:#047857;">IASP</button>
+        <button class="btn btn-outline-primary btn-sm filter-btn" data-filter="IDGS" style="color:#2563EB; border-color:#2563EB;">IDGS</button>
+        <button class="btn btn-outline-yellow btn-sm filter-btn" data-filter="IER" style="color:#CA8A04; border-color:#CA8A04;">IER</button>
+        <button class="btn btn-outline-warning btn-sm filter-btn" data-filter="IMI" style="color:#D97706; border-color:#D97706;">IMI</button>
+        <button class="btn btn-outline-slate btn-sm filter-btn" data-filter="IMM" style="color:#475569; border-color:#475569;">IMM</button>
+        <button class="btn btn-outline-indigo btn-sm filter-btn" data-filter="IN" style="color:#7C3AED; border-color:#7C3AED;">IN</button>
+        <button class="btn btn-outline-pink btn-sm filter-btn" data-filter="IRIC" style="color:#DB2777; border-color:#DB2777;">IRIC</button>
+        <button class="btn btn-outline-info btn-sm filter-btn" data-filter="ITA" style="color:#0284C7; border-color:#0284C7;">ITA</button>
+        <button class="btn btn-outline-danger btn-sm filter-btn" data-filter="MA" style="color:#DC2626; border-color:#DC2626;">MA</button>
+        <button class="btn btn-outline-orange btn-sm filter-btn" data-filter="E" style="color:#EA580C; border-color:#EA580C;">E</button>
       </div>
     </div>
   </div>
@@ -4971,9 +4977,19 @@ urlpatterns = [
       <div class="card bg-dark border-secondary shadow-sm" style="min-height: 480px;">
         <div class="card-header text-white fw-semibold border-secondary bg-black bg-opacity-20 d-flex justify-content-between align-items-center py-3">
           <span><i class="bi bi-grid-3x3-gap me-2 text-info"></i>Plano del Evento</span>
-          <div class="d-flex gap-3 small text-muted">
+          <div class="d-flex gap-3 small text-muted flex-wrap">
             <span><i class="fas fa-square me-1" style="color: #4b5563;"></i> Libre</span>
-            <span><i class="fas fa-square me-1 text-info"></i> Ocupado</span>
+            <span><i class="fas fa-square me-1" style="color: #059669;"></i> IA</span>
+            <span><i class="fas fa-square me-1" style="color: #047857;"></i> IASP</span>
+            <span><i class="fas fa-square me-1" style="color: #2563EB;"></i> IDGS</span>
+            <span><i class="fas fa-square me-1" style="color: #CA8A04;"></i> IER</span>
+            <span><i class="fas fa-square me-1" style="color: #D97706;"></i> IMI</span>
+            <span><i class="fas fa-square me-1" style="color: #475569;"></i> IMM</span>
+            <span><i class="fas fa-square me-1" style="color: #7C3AED;"></i> IN</span>
+            <span><i class="fas fa-square me-1" style="color: #DB2777;"></i> IRIC</span>
+            <span><i class="fas fa-square me-1" style="color: #0284C7;"></i> ITA</span>
+            <span><i class="fas fa-square me-1" style="color: #DC2626;"></i> MA</span>
+            <span><i class="fas fa-square me-1" style="color: #EA580C;"></i> E</span>
           </div>
         </div>
         <div class="card-body d-flex justify-content-center align-items-center bg-black bg-opacity-40 p-4" style="overflow: auto;">
@@ -5101,23 +5117,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Color Palette by Career
   const careerColors = {
-    'ISC': '#3b82f6', // azul
-    'ITI': '#3b82f6', // azul (fallback)
-    'DSM': '#10b981', // verde
-    'IRIC': '#f97316', // coral/naranja
-    'IGE': '#f59e0b', // amarillo/ámbar
-    'IIA': '#8b5cf6', // morado
-    'free': '#4b5563'  // gris
-  };
-
-  const careerNames = {
-    'ISC': 'ISC',
-    'ITI': 'ITI',
-    'DSM': 'DSM',
-    'IRIC': 'IRIC',
-    'IGE': 'IGE',
-    'IIA': 'IIA',
-    'free': 'Libre'
+    'IA':    { fill: '#D1FAE5', stroke: '#059669', text: '#064E3B', label: 'Ingeniería Ambiental' },
+    'IASP':  { fill: '#A7F3D0', stroke: '#047857', text: '#022C22', label: 'Agricultura Sustentable y Protegida' },
+    'IDGS':  { fill: '#DBEAFE', stroke: '#2563EB', text: '#1E3A8A', label: 'Desarrollo y Gestión de Software' },
+    'IER':   { fill: '#FEF9C3', stroke: '#CA8A04', text: '#713F12', label: 'Energías Renovables' },
+    'IMI':   { fill: '#FEF3C7', stroke: '#D97706', text: '#78350F', label: 'Mantenimiento Industrial' },
+    'IMM':   { fill: '#F1F5F9', stroke: '#475569', text: '#1E293B', label: 'Metal Mecánica' },
+    'IN':    { fill: '#EDE9FE', stroke: '#7C3AED', text: '#4C1D95', label: 'Nanotecnología' },
+    'IRIC':  { fill: '#FCE7F3', stroke: '#DB2777', text: '#831843', label: 'Redes Inteligentes y Ciberseguridad' },
+    'ITA':   { fill: '#E0F2FE', stroke: '#0284C7', text: '#0C4A6E', label: 'Tecnologías de Automatización' },
+    'MA':    { fill: '#FEE2E2', stroke: '#DC2626', text: '#7F1D1D', label: 'Mecánica' },
+    'E':     { fill: '#FFF7ED', stroke: '#EA580C', text: '#7C2D12', label: 'Mecatrónica' },
+    'free':  { fill: '#4b5563', stroke: '#9ca3af', text: '#ffffff', label: 'Libre' }
   };
 
   // Fetch stands map data
@@ -5262,7 +5273,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const h = nodeHeight + 8;
       
       const careerKey = s_first.proyecto_asignado.carrera_clave.toUpperCase();
-      const color = careerColors[careerKey] || careerColors.ISC;
+      const colorObj = careerColors[careerKey] || careerColors.IDGS;
+      const color = colorObj.stroke;
 
       svgHTML += `
         <rect x="${x_min}" y="${y_min}" width="${w}" height="${h}" rx="6" 
@@ -5277,21 +5289,21 @@ document.addEventListener("DOMContentLoaded", function () {
       const x = marginX + (s.pos_col - 1) * (nodeWidth + gapX);
       const y = marginY + (s.pos_fila - 1) * (nodeHeight + gapY);
 
-      let color = careerColors.free;
+      let colorObj = careerColors.free;
       let careerKey = "free";
       
       if (s.proyecto_asignado) {
         const key = s.proyecto_asignado.carrera_clave.toUpperCase();
-        careerKey = careerColors[key] ? key : 'ISC'; // default a ISC si es otra carrera
-        color = careerColors[careerKey];
+        careerKey = careerColors[key] ? key : 'IDGS'; // default a IDGS
+        colorObj = careerColors[careerKey];
       }
 
       svgHTML += `
         <g class="stand-node" id="node-${s.id}" data-id="${s.id}" data-carrera="${careerKey}">
           <rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="4" 
-                fill="${color}" fill-opacity="0.8" stroke="${color}" stroke-width="1.5" />
+                fill="${colorObj.fill}" fill-opacity="0.9" stroke="${colorObj.stroke}" stroke-width="1.5" />
           <text x="${x + nodeWidth/2}" y="${y + nodeHeight/2 + 4}" 
-                fill="#ffffff" font-size="10" font-weight="bold" text-anchor="middle">${s.numero}</text>
+                fill="${colorObj.text}" font-size="10" font-weight="bold" text-anchor="middle">${s.numero}</text>
         </g>
       `;
     });
@@ -5331,8 +5343,12 @@ document.addEventListener("DOMContentLoaded", function () {
       detCategoria.innerText = p.categoria.toUpperCase();
 
       const careerKey = p.carrera_clave.toUpperCase();
-      const color = careerColors[careerKey] || careerColors.ISC;
-      detCarrera.style.backgroundColor = color;
+      const colorObj = careerColors[careerKey] || careerColors.IDGS;
+      detCarrera.style.backgroundColor = colorObj.fill;
+      detCarrera.style.color = colorObj.text;
+      detCarrera.style.borderColor = colorObj.stroke;
+      detCarrera.style.borderWidth = '1px';
+      detCarrera.style.borderStyle = 'solid';
       detCarrera.innerText = `[${p.carrera_clave}] ${p.carrera_nombre}`;
       
       detLider.innerText = p.lider_nombre;
