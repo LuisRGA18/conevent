@@ -2624,9 +2624,70 @@ urlpatterns = [
         .kpi-icon      { font-size: 2rem; margin-bottom: 8px; }
         .kpi-value     { font-size: 2rem; font-weight: 700; line-height: 1; }
         .kpi-label     { font-size: 0.85rem; color: var(--gris-claro); margin-top: 4px; }
+
+        /* ── Responsive sidebar ── */
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed;
+            left: -260px;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+            transition: left 0.3s ease;
+            width: 260px !important;
+          }
+          .sidebar.open {
+            left: 0;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+          }
+          .content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 16px !important;
+            padding-top: 70px !important;
+          }
+          .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+          }
+          .sidebar-overlay.active {
+            display: block;
+          }
+          .btn-menu-toggle {
+            display: flex !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .btn-menu-toggle { display: none !important; }
+        }
+        .btn-menu-toggle {
+          display: none;
+          position: fixed;
+          top: 16px;
+          left: 16px;
+          z-index: 1001;
+          background: #0b3c5d;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 12px;
+          font-size: 18px;
+          cursor: pointer;
+          align-items: center;
+          justify-content: center;
+        }
     </style>
 </head>
 <body>
+<!-- Botón hamburguesa solo visible en móvil -->
+<button class="btn-menu-toggle" id="btnMenuToggle" aria-label="Abrir menú">☰</button>
+
+<!-- Overlay oscuro al abrir sidebar en móvil -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="wrapper">
 
     <nav class="sidebar">
@@ -2810,6 +2871,33 @@ urlpatterns = [
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const btnToggle = document.getElementById('btnMenuToggle');
+const sidebar = document.querySelector('.sidebar');
+const overlay = document.getElementById('sidebarOverlay');
+
+function abrirSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+if (btnToggle) btnToggle.addEventListener('click', abrirSidebar);
+if (overlay) overlay.addEventListener('click', cerrarSidebar);
+
+// Cerrar al hacer clic en un enlace del sidebar en móvil
+document.querySelectorAll('.sidebar a').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 768) cerrarSidebar();
+  });
+});
+</script>
 </body>
 </html>
 # ===== ARCHIVO: templates/usuarios/login.html =====
