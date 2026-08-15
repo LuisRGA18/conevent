@@ -1,0 +1,16 @@
+[
+  {
+    "model": "espacios.asignacionstand",
+    "pk": 1,
+    "fields": {
+      "stand": 1,
+      "proyecto": 2,
+      "fecha_asignacion": "2026-07-07T19:02:30.506Z",
+      "comentarios": "Asignación automática (1 mesas)",
+      "cambio_solicitado": false,
+      "motivo_cambio": "",
+      "cambio_autorizado": null,
+      "motivo_rechazo": ""
+    }
+  }
+]

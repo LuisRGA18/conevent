@@ -5,7 +5,7 @@
     "fields": {
       "nombre": "Innovación",
       "descripcion": "Nivel de novedad, originalidad y creatividad de la propuesta presentada.",
-      "peso": "0.40",
+      "peso": "0.30",
       "activo": true
     }
   },
@@ -15,7 +15,7 @@
     "fields": {
       "nombre": "Exposición",
       "descripcion": "Claridad, dominio técnico, calidad de la presentación y defensa de las preguntas.",
-      "peso": "0.30",
+      "peso": "0.25",
       "activo": true
     }
   },
@@ -25,7 +25,17 @@
     "fields": {
       "nombre": "Viabilidad",
       "descripcion": "Factibilidad de implementación técnica, comercial o social y uso de metodologías.",
-      "peso": "0.30",
+      "peso": "0.20",
+      "activo": true
+    }
+  },
+  {
+    "model": "usuarios.criterioevaluacion",
+    "pk": 4,
+    "fields": {
+      "nombre": "Funcionalidad Técnica",
+      "descripcion": "Nivel de desarrollo, funcionamiento real del prototipo y solidez técnica de la solución implementada.",
+      "peso": "0.25",
       "activo": true
     }
   }

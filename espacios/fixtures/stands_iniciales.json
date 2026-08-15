@@ -1,0 +1,912 @@
+[
+  {
+    "model": "espacios.stand",
+    "pk": 1,
+    "fields": {
+      "numero": "A-01",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-01 en fila 1, columna 1",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 2,
+    "fields": {
+      "numero": "A-02",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-02 en fila 1, columna 2",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 3,
+    "fields": {
+      "numero": "A-03",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-03 en fila 1, columna 3",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 4,
+    "fields": {
+      "numero": "A-04",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-04 en fila 1, columna 4",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 5,
+    "fields": {
+      "numero": "A-05",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-05 en fila 1, columna 5",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 6,
+    "fields": {
+      "numero": "A-06",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-06 en fila 1, columna 6",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 7,
+    "fields": {
+      "numero": "A-07",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-07 en fila 1, columna 7",
+      "esta_activo": true,
+      "pos_fila": 1,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 8,
+    "fields": {
+      "numero": "A-08",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-08 en fila 2, columna 1",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 9,
+    "fields": {
+      "numero": "A-09",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-09 en fila 2, columna 2",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 10,
+    "fields": {
+      "numero": "A-10",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-10 en fila 2, columna 3",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 11,
+    "fields": {
+      "numero": "A-11",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-11 en fila 2, columna 4",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 12,
+    "fields": {
+      "numero": "A-12",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-12 en fila 2, columna 5",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 13,
+    "fields": {
+      "numero": "A-13",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-13 en fila 2, columna 6",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 14,
+    "fields": {
+      "numero": "A-14",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-14 en fila 2, columna 7",
+      "esta_activo": true,
+      "pos_fila": 2,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 15,
+    "fields": {
+      "numero": "A-15",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-15 en fila 3, columna 1",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 16,
+    "fields": {
+      "numero": "A-16",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-16 en fila 3, columna 2",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 17,
+    "fields": {
+      "numero": "A-17",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-17 en fila 3, columna 3",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 18,
+    "fields": {
+      "numero": "A-18",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-18 en fila 3, columna 4",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 19,
+    "fields": {
+      "numero": "A-19",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-19 en fila 3, columna 5",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 20,
+    "fields": {
+      "numero": "A-20",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-20 en fila 3, columna 6",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 21,
+    "fields": {
+      "numero": "A-21",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-21 en fila 3, columna 7",
+      "esta_activo": true,
+      "pos_fila": 3,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 22,
+    "fields": {
+      "numero": "A-22",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-22 en fila 4, columna 1",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 23,
+    "fields": {
+      "numero": "A-23",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-23 en fila 4, columna 2",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 24,
+    "fields": {
+      "numero": "A-24",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-24 en fila 4, columna 3",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 25,
+    "fields": {
+      "numero": "A-25",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-25 en fila 4, columna 4",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 26,
+    "fields": {
+      "numero": "A-26",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-26 en fila 4, columna 5",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 27,
+    "fields": {
+      "numero": "A-27",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-27 en fila 4, columna 6",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 28,
+    "fields": {
+      "numero": "A-28",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar A-28 en fila 4, columna 7",
+      "esta_activo": true,
+      "pos_fila": 4,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 29,
+    "fields": {
+      "numero": "B-01",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-01 en fila 5, columna 1",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 30,
+    "fields": {
+      "numero": "B-02",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-02 en fila 5, columna 2",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 31,
+    "fields": {
+      "numero": "B-03",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-03 en fila 5, columna 3",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 32,
+    "fields": {
+      "numero": "B-04",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-04 en fila 5, columna 4",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 33,
+    "fields": {
+      "numero": "B-05",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-05 en fila 5, columna 5",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 34,
+    "fields": {
+      "numero": "B-06",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-06 en fila 5, columna 6",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 35,
+    "fields": {
+      "numero": "B-07",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-07 en fila 5, columna 7",
+      "esta_activo": true,
+      "pos_fila": 5,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 36,
+    "fields": {
+      "numero": "B-08",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-08 en fila 6, columna 1",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 37,
+    "fields": {
+      "numero": "B-09",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-09 en fila 6, columna 2",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 38,
+    "fields": {
+      "numero": "B-10",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-10 en fila 6, columna 3",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 39,
+    "fields": {
+      "numero": "B-11",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-11 en fila 6, columna 4",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 40,
+    "fields": {
+      "numero": "B-12",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-12 en fila 6, columna 5",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 41,
+    "fields": {
+      "numero": "B-13",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-13 en fila 6, columna 6",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 42,
+    "fields": {
+      "numero": "B-14",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-14 en fila 6, columna 7",
+      "esta_activo": true,
+      "pos_fila": 6,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 43,
+    "fields": {
+      "numero": "B-15",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-15 en fila 7, columna 1",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 44,
+    "fields": {
+      "numero": "B-16",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-16 en fila 7, columna 2",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 45,
+    "fields": {
+      "numero": "B-17",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-17 en fila 7, columna 3",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 46,
+    "fields": {
+      "numero": "B-18",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-18 en fila 7, columna 4",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 47,
+    "fields": {
+      "numero": "B-19",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-19 en fila 7, columna 5",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 48,
+    "fields": {
+      "numero": "B-20",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-20 en fila 7, columna 6",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 49,
+    "fields": {
+      "numero": "B-21",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-21 en fila 7, columna 7",
+      "esta_activo": true,
+      "pos_fila": 7,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 50,
+    "fields": {
+      "numero": "B-22",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-22 en fila 8, columna 1",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 51,
+    "fields": {
+      "numero": "B-23",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-23 en fila 8, columna 2",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 52,
+    "fields": {
+      "numero": "B-24",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-24 en fila 8, columna 3",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 53,
+    "fields": {
+      "numero": "B-25",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-25 en fila 8, columna 4",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 54,
+    "fields": {
+      "numero": "B-26",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-26 en fila 8, columna 5",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 55,
+    "fields": {
+      "numero": "B-27",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-27 en fila 8, columna 6",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 56,
+    "fields": {
+      "numero": "B-28",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar B-28 en fila 8, columna 7",
+      "esta_activo": true,
+      "pos_fila": 8,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 57,
+    "fields": {
+      "numero": "C-01",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-01 en fila 9, columna 1",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 58,
+    "fields": {
+      "numero": "C-02",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-02 en fila 9, columna 2",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 59,
+    "fields": {
+      "numero": "C-03",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-03 en fila 9, columna 3",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 60,
+    "fields": {
+      "numero": "C-04",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-04 en fila 9, columna 4",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 61,
+    "fields": {
+      "numero": "C-05",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-05 en fila 9, columna 5",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 62,
+    "fields": {
+      "numero": "C-06",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-06 en fila 9, columna 6",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 63,
+    "fields": {
+      "numero": "C-07",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-07 en fila 9, columna 7",
+      "esta_activo": true,
+      "pos_fila": 9,
+      "pos_col": 7
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 64,
+    "fields": {
+      "numero": "C-08",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-08 en fila 10, columna 1",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 1
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 65,
+    "fields": {
+      "numero": "C-09",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-09 en fila 10, columna 2",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 2
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 66,
+    "fields": {
+      "numero": "C-10",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-10 en fila 10, columna 3",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 3
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 67,
+    "fields": {
+      "numero": "C-11",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-11 en fila 10, columna 4",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 4
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 68,
+    "fields": {
+      "numero": "C-12",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-12 en fila 10, columna 5",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 5
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 69,
+    "fields": {
+      "numero": "C-13",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-13 en fila 10, columna 6",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 6
+    }
+  },
+  {
+    "model": "espacios.stand",
+    "pk": 70,
+    "fields": {
+      "numero": "C-14",
+      "zona": "auditorio",
+      "capacidad_proyectos": 1,
+      "descripcion": "Stand estándar C-14 en fila 10, columna 7",
+      "esta_activo": true,
+      "pos_fila": 10,
+      "pos_col": 7
+    }
+  }
+]
