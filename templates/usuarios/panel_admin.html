@@ -64,6 +64,7 @@
         <th class="text-center">Stand / Mesa (Fase 1)</th>
         <th class="text-center">Estatus Oficial</th>
         <th class="text-center">Eval. Externa</th>
+        <th class="text-center">Eval. Docente</th>
         <th>Asignar Evaluador</th>
         <th class="text-center pe-3">Acciones</th>
     </tr>
@@ -77,9 +78,10 @@
         <td>
             <div class="d-flex align-items-center">
                 {% if proyecto.logo %}
-                  <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:48px; border-radius:6px; object-fit:contain;">
-                {% else %}
-                  <span style="color:#aaa; font-size:12px;">Sin logo</span>
+                  <img src="{{ proyecto.logo.url }}" 
+                       alt="Logo {{ proyecto.titulo }}"
+                       style="height:48px; border-radius:6px; object-fit:contain;"
+                       onerror="this.style.display='none'">
                 {% endif %}
                 <div>
                     <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
@@ -131,10 +133,20 @@
                 </select>
             </form>
         </td>
-        <td class="text-center">
+         <td class="text-center">
             {% if proyecto.num_externas %}
                 <span class="badge bg-info text-dark" title="Total Evaluaciones Externas">{{ proyecto.num_externas }}</span>
                 <span class="text-white ms-1 fw-bold">{{ proyecto.promedio_externa|floatformat:2 }}</span>
+            {% else %}
+                <span class="text-muted small">—</span>
+            {% endif %}
+        </td>
+        <td class="text-center">
+            {% if proyecto.calificacion_final %}
+                <span class="fw-bold text-success">{{ proyecto.calificacion_final }}</span>
+                <span style="font-size:11px; color:#6b7a99;" class="d-block">
+                    (prom. {{ proyecto.evaluaciones.count }} eval.)
+                </span>
             {% else %}
                 <span class="text-muted small">—</span>
             {% endif %}
@@ -172,7 +184,7 @@
         </td>
     </tr>
     <tr class="collapse" id="detalle-{{ proyecto.pk }}">
-        <td colspan="9" class="bg-black bg-opacity-30 p-3 border-secondary">
+        <td colspan="10" class="bg-black bg-opacity-30 p-3 border-secondary">
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <h6 class="text-warning small mb-1 fw-bold"><i class="fas fa-users me-1"></i>Integrantes Registrados:</h6>
@@ -199,7 +211,7 @@
     </tr>
     {% empty %}
     <tr>
-        <td colspan="9" class="text-center py-4 text-muted small">
+        <td colspan="10" class="text-center py-4 text-muted small">
             <i class="fas fa-folder-open me-2"></i>No hay proyectos con esos criterios en la plataforma.
         </td>
     </tr>

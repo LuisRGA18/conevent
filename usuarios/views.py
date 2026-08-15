@@ -486,13 +486,12 @@ def eliminar_proyecto_view(request, pk):
 @login_required(login_url='login')
 def ver_calificacion_view(request):
     proyecto = Proyecto.objects.filter(creado_por=request.user).first()
-    evaluacion = None
-    if proyecto:
-        evaluacion = Evaluacion.objects.filter(proyecto=proyecto).first()
+    evaluaciones = proyecto.evaluaciones.all() if proyecto else []
 
     context = {
         'proyecto': proyecto,
-        'evaluacion': evaluacion,
+        'evaluaciones': evaluaciones,
+        'evaluacion': evaluaciones.first() if evaluaciones.exists() else None,
     }
     return render(request, 'seguridad/mis_calificaciones.html', context)
 
@@ -509,9 +508,14 @@ def proyectos_asignados_view(request):
 
     proyectos = Proyecto.objects.filter(
         evaluadores=request.user
-    ).prefetch_related('miembros').select_related('carrera')
+    ).prefetch_related('miembros', 'evaluaciones').select_related('carrera')
 
-    return render(request, 'usuarios/proyectos_asignados.html', {'proyectos': proyectos})
+    proyectos_list = list(proyectos)
+    for proyecto in proyectos_list:
+        proyecto.calificacion_display = proyecto.get_calificacion_promedio()
+        proyecto.mi_evaluacion = proyecto.evaluaciones.filter(evaluador=request.user).first()
+
+    return render(request, 'usuarios/proyectos_asignados.html', {'proyectos': proyectos_list})
 
 
 @login_required(login_url='login')
@@ -575,9 +579,8 @@ def evaluar_proyecto_view(request, pk):
                         # Forzar recalculación para actualizar Evaluación y Proyecto
                         evaluacion.recalcular_calificacion()
                     else:
-                        # Si es evaluación directa, guardar la calificación ingresada
-                        proyecto.calificacion = evaluacion.calificacion
-                        proyecto.save(update_fields=['calificacion'])
+                        # Si es evaluación directa, guardar la calificación ingresada y recalcular promedio
+                        proyecto.actualizar_calificacion_final()
 
                     # 🟢 Registrar log de auditoría
                     evaluacion.refresh_from_db()
@@ -645,6 +648,10 @@ def panel_admin_view(request):
 
     qs = qs.order_by('-id')
 
+    proyectos_list = list(qs)
+    for proyecto in proyectos_list:
+        proyecto.calificacion_display = proyecto.get_calificacion_promedio()
+
     from espacios.models import AsignacionStand
     solicitudes_cambio = AsignacionStand.objects.filter(
         cambio_solicitado=True,
@@ -652,7 +659,7 @@ def panel_admin_view(request):
     ).select_related('proyecto', 'stand')
 
     return render(request, 'usuarios/panel_admin.html', {
-        'todos_los_proyectos': qs,
+        'todos_los_proyectos': proyectos_list,
         'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
         'q':               q,
         'estatus_filtro':  estatus,

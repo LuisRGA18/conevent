@@ -144,7 +144,7 @@ DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='equipo.soporte.oasis@gma
 # ─── Archivos de Media ────────────────────────────────────────
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # ─── Headers de Seguridad HTTP ────────────────────────────────
 if not DEBUG:

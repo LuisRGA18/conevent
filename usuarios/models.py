@@ -141,6 +141,38 @@ class Proyecto(models.Model):
     def num_integrantes(self):
         return self.miembros.count()
 
+    @property
+    def calificacion_final(self):
+        return self.calificacion
+
+    def get_calificacion_promedio(self):
+        """Calcula el promedio de calificaciones de todos los evaluadores docentes."""
+        from decimal import Decimal
+        evaluaciones = self.evaluaciones.all()
+        if not evaluaciones.exists():
+            return None
+        
+        total = Decimal('0')
+        count = 0
+        for evaluacion in evaluaciones:
+            if evaluacion.calificacion is not None:
+                total += Decimal(str(evaluacion.calificacion))
+                count += 1
+        
+        if count == 0:
+            return None
+        
+        return round(total / count, 2)
+
+    def actualizar_calificacion_final(self):
+        """Actualiza la calificación final del proyecto con el promedio de evaluadores."""
+        promedio = self.get_calificacion_promedio()
+        if promedio is not None:
+            self.calificacion = promedio
+        else:
+            self.calificacion = None
+        self.save(update_fields=['calificacion'])
+
 
 # ──────────────────────────────────────────────────────────────
 # INTEGRANTE
@@ -241,8 +273,7 @@ class Evaluacion(models.Model):
             Evaluacion.objects.filter(pk=self.pk).update(calificacion=self.calificacion)
             
             # También actualizamos la calificación final del proyecto
-            self.proyecto.calificacion = self.calificacion
-            self.proyecto.save(update_fields=['calificacion'])
+            self.proyecto.actualizar_calificacion_final()
 
 
 # ──────────────────────────────────────────────────────────────

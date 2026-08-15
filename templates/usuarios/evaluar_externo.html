@@ -209,7 +209,10 @@
             <!-- Ficha del Proyecto -->
             <div class="project-card d-flex align-items-center gap-3">
                 {% if proyecto.logo %}
-                    <img src="{{ proyecto.logo.url }}" alt="Logo {{ proyecto.titulo }}" style="height:64px; border-radius:6px; object-fit: cover;">
+                    <img src="{{ proyecto.logo.url }}" 
+                         alt="Logo {{ proyecto.titulo }}"
+                         style="height:64px; border-radius:6px; object-fit:cover;"
+                         onerror="this.style.display='none'">
                 {% endif %}
                 <div>
                     <h3 class="project-title">{{ proyecto.titulo }}</h3>

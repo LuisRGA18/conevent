@@ -27,9 +27,10 @@
             <td>
               <div class="d-flex align-items-center">
                 {% if p.logo %}
-                  <img src="{{ p.logo.url }}" alt="Logo {{ p.titulo }}" style="height:48px; border-radius:6px; object-fit:contain;">
-                {% else %}
-                  <span style="color:#aaa; font-size:12px;">Sin logo</span>
+                  <img src="{{ p.logo.url }}" 
+                       alt="Logo {{ p.titulo }}"
+                       style="height:48px; border-radius:6px; object-fit:contain;"
+                       onerror="this.style.display='none'">
                 {% endif %}
                 <div>
                   <span class="fw-semibold">{{ p.titulo }}</span>
@@ -56,9 +57,16 @@
               {% endif %}
             </td>
             <td class="text-center">
-              <a href="{% url 'evaluar_proyecto' p.pk %}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-pencil-square me-1"></i> Evaluar
-              </a>
+              {% if p.mi_evaluacion %}
+                <span class="text-success small d-block mb-1"><i class="bi bi-check-circle-fill me-1"></i>Evaluado: <strong>{{ p.mi_evaluacion.calificacion }}</strong></span>
+                <a href="{% url 'evaluar_proyecto' p.pk %}" class="btn btn-sm btn-outline-info py-0 px-2 small" style="font-size: 0.75rem;">
+                  <i class="bi bi-pencil me-1"></i>Editar
+                </a>
+              {% else %}
+                <a href="{% url 'evaluar_proyecto' p.pk %}" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-pencil-square me-1"></i> Evaluar
+                </a>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

@@ -634,3 +634,59 @@ class AdminEvaluadorAssignmentTestCase(TestCase):
         self.assertIn(self.docente1, self.proyecto.evaluadores.all())
         self.assertIn(self.docente1, proyecto2.evaluadores.all())
 
+
+
+class EvaluacionPromedioTestCase(TestCase):
+    def setUp(self):
+        self.alumno = User.objects.create_user(
+            username='alumno.eval', password='Password123!', rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(nombre='DSM', clave='DSM')
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto MultiEvaluador',
+            carrera=self.carrera,
+            grupo='DSM-4A',
+            categoria='software',
+            creado_por=self.alumno,
+            estatus='aprobado'
+        )
+        
+        self.docente1 = User.objects.create_user(
+            username='prof1.eval', password='Password123!', rol='EVALUADOR'
+        )
+        self.docente2 = User.objects.create_user(
+            username='prof2.eval', password='Password123!', rol='EVALUADOR'
+        )
+        self.docente3 = User.objects.create_user(
+            username='prof3.eval', password='Password123!', rol='EVALUADOR'
+        )
+        
+        self.proyecto.evaluadores.add(self.docente1, self.docente2, self.docente3)
+
+    def test_promedio_multiples_evaluadores(self):
+        # Docente 1 evalúa con 8.00
+        e1 = Evaluacion.objects.create(
+            proyecto=self.proyecto,
+            evaluador=self.docente1,
+            calificacion=8.00
+        )
+        self.proyecto.actualizar_calificacion_final()
+        self.assertEqual(float(self.proyecto.calificacion), 8.00)
+        
+        # Docente 2 evalúa con 9.00
+        e2 = Evaluacion.objects.create(
+            proyecto=self.proyecto,
+            evaluador=self.docente2,
+            calificacion=9.00
+        )
+        self.proyecto.actualizar_calificacion_final()
+        self.assertEqual(float(self.proyecto.calificacion), 8.50)
+        
+        # Docente 3 evalúa con 10.00
+        e3 = Evaluacion.objects.create(
+            proyecto=self.proyecto,
+            evaluador=self.docente3,
+            calificacion=10.00
+        )
+        self.proyecto.actualizar_calificacion_final()
+        self.assertEqual(float(self.proyecto.calificacion), 9.00)
