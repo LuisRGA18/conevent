@@ -2,15 +2,6 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-  <!-- Mensajes de Alerta -->
-  {% for msg in messages %}
-  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert">
-    <i class="bi {% if msg.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
-    {{ msg }} 
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-  {% endfor %}
-
   <!-- Encabezado de Sección -->
   <div class="mb-4">
     <h4 class="text-white fw-bold mb-0">

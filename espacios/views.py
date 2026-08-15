@@ -77,3 +77,64 @@ def asignar_stands_automatico_view(request):
             messages.error(request, f"Error al ejecutar la asignación: {str(e)}")
             
     return redirect('espacios:gestionar_stands')
+
+
+@login_required(login_url='/auth/login/')
+def asignar_stand_manual_view(request, stand_pk):
+    from usuarios.models import Proyecto
+    from .models import AsignacionStand
+    
+    if request.user.rol != 'ADMIN':
+        return HttpResponse("Acceso denegado", status=403)
+        
+    stand = get_object_or_404(Stand, pk=stand_pk)
+    
+    if request.method == 'POST':
+        proyecto_id = request.POST.get('proyecto_id')
+        
+        if proyecto_id:
+            proyecto = get_object_or_404(Proyecto, pk=proyecto_id)
+            # Verificar si el proyecto ya tiene stand asignado
+            asignacion_existente = AsignacionStand.objects.filter(
+                proyecto=proyecto
+            ).first()
+            if asignacion_existente and asignacion_existente.stand != stand:
+                messages.warning(request, 
+                    f'El proyecto {proyecto.titulo} ya tiene asignado el stand '
+                    f'{asignacion_existente.stand.numero}. Se reasignará.')
+                asignacion_existente.delete()
+            
+            # Liberar stand si ya tenía otro proyecto
+            AsignacionStand.objects.filter(stand=stand).delete()
+            
+            # Crear nueva asignación
+            AsignacionStand.objects.create(
+                stand=stand,
+                proyecto=proyecto
+            )
+            messages.success(request, 
+                f'Stand {stand.numero} asignado a {proyecto.titulo} correctamente.')
+        else:
+            # Desasignar — liberar el stand
+            AsignacionStand.objects.filter(stand=stand).delete()
+            messages.success(request, f'Stand {stand.numero} liberado correctamente.')
+        
+        return redirect('espacios:gestionar_stands')
+    
+    proyectos_sin_stand = Proyecto.objects.exclude(
+        asignaciones_stands__isnull=False
+    ).exclude(estatus='rechazado').order_by('carrera__clave', 'titulo')
+    
+    asignacion_actual = AsignacionStand.objects.filter(
+        stand=stand
+    ).first()
+    
+    proyectos_list = list(proyectos_sin_stand)
+    if asignacion_actual and asignacion_actual.proyecto not in proyectos_list:
+        proyectos_list.insert(0, asignacion_actual.proyecto)
+    
+    return render(request, 'espacios/asignar_stand_manual.html', {
+        'stand': stand,
+        'proyectos': proyectos_list,
+        'asignacion_actual': asignacion_actual
+    })

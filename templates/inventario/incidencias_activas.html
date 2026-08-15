@@ -19,14 +19,7 @@
     </div>
   </div>
 
-  <!-- Mensajes de Alerta -->
-  {% for msg in messages %}
-  <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-    <i class="bi {% if msg.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
-    {{ msg }} 
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
-  </div>
-  {% endfor %}
+
 
   <!-- Incidencias List -->
   <div class="row">

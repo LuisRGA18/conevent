@@ -331,3 +331,50 @@ class EspaciosMejorasTestCase(TestCase):
         self.assertEqual(asig.motivo_rechazo, 'No hay más espacio disponible en esa fila.')
 
 
+
+
+class StandsAsignacionManualTestCase(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin.manual', password='Password123!', rol='ADMIN'
+        )
+        self.alumno = User.objects.create_user(
+            username='alumno.manual', password='Password123!', rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(nombre='DSM', clave='DSM')
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto Asignacion Manual',
+            carrera=self.carrera,
+            grupo='DSM4B',
+            categoria='software',
+            creado_por=self.alumno,
+            estatus='aprobado'
+        )
+        self.stand = Stand.objects.create(
+            numero='M-99',
+            pos_fila=1,
+            pos_col=1,
+            zona='auditorio',
+            esta_activo=True
+        )
+
+    def test_asignar_stand_manual_success(self):
+        self.client.login(username='admin.manual', password='Password123!')
+        url = reverse('espacios:asignar_stand_manual', args=[self.stand.pk])
+        response = self.client.post(url, {'proyecto_id': self.proyecto.pk})
+        self.assertRedirects(response, reverse('espacios:gestionar_stands'))
+        
+        # Verify db
+        self.assertTrue(AsignacionStand.objects.filter(stand=self.stand, proyecto=self.proyecto).exists())
+
+    def test_liberar_stand_manual_success(self):
+        # Primero asignar
+        AsignacionStand.objects.create(stand=self.stand, proyecto=self.proyecto)
+        
+        self.client.login(username='admin.manual', password='Password123!')
+        url = reverse('espacios:asignar_stand_manual', args=[self.stand.pk])
+        response = self.client.post(url, {'proyecto_id': ''}) # Dejar sin asignar
+        self.assertRedirects(response, reverse('espacios:gestionar_stands'))
+        
+        # Verify db (no active assignment exists for this stand)
+        self.assertFalse(AsignacionStand.objects.filter(stand=self.stand).exists())

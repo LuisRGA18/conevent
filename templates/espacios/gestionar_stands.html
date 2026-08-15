@@ -2,16 +2,6 @@
 {% block content %}
 <div class="container-fluid py-4 text-white">
 
-    <!-- Mensajes de Alerta -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show bg-dark text-white border-secondary shadow mb-4" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
     <!-- Encabezado -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
@@ -48,6 +38,7 @@
                                     <th class="text-center">Fila / Col (Coordenadas)</th>
                                     <th>Proyecto Asignado</th>
                                     <th class="text-center">Estatus</th>
+                                    <th class="text-center">Asignación</th>
                                     <th class="text-center pe-3">Acción</th>
                                 </tr>
                             </thead>
@@ -72,6 +63,18 @@
                                             <span class="badge bg-danger">Inactivo</span>
                                         {% endif %}
                                     </td>
+                                    <td class="text-center">
+                                      <a href="{% url 'espacios:asignar_stand_manual' stand.pk %}" 
+                                         class="btn btn-sm" 
+                                         style="background:#0b3c5d; color:#fff; padding:4px 10px; 
+                                                border-radius:6px; font-size:12px; text-decoration:none;">
+                                        {% if stand.asignacion %}
+                                          Reasignar
+                                        {% else %}
+                                          Asignar
+                                        {% endif %}
+                                      </a>
+                                    </td>
                                     <td class="text-center pe-3">
                                         <a href="{% url 'espacios:toggle_stand' stand.id %}" class="btn btn-sm {% if stand.esta_activo %}btn-outline-danger{% else %}btn-outline-success{% endif %} px-3 py-1">
                                             {% if stand.esta_activo %}<i class="fas fa-toggle-off"></i> Desactivar{% else %}<i class="fas fa-toggle-on"></i> Activar{% endif %}
@@ -80,7 +83,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-5">
+                                    <td colspan="7" class="text-center text-muted py-5">
                                         <i class="fas fa-map-marker-alt fs-2 d-block mb-2"></i>
                                         No hay stands físicos registrados en el sistema.
                                     </td>

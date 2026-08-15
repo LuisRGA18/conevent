@@ -252,6 +252,11 @@ def gestionar_inventario_view(request):
             messages.success(request, f"¡Mobiliario '{nombre}' registrado con éxito!")
             return redirect('inventario:gestionar_inventario')
 
+    from usuarios.models import Proyecto
+    proyectos = Proyecto.objects.filter(estatus='aprobado').order_by('titulo')
+    if not proyectos.exists():
+        proyectos = Proyecto.objects.exclude(estatus='rechazado').order_by('titulo')
+
     items = ItemInventario.objects.all().order_by('nombre').select_related('stand_asignado')
     stands = Stand.objects.filter(esta_activo=True).order_by('numero')
     estado_choices = ItemInventario.ESTADO_CHOICES
@@ -260,6 +265,7 @@ def gestionar_inventario_view(request):
         'items': items,
         'stands': stands,
         'estado_choices': estado_choices,
+        'proyectos': proyectos,
     })
 
 
