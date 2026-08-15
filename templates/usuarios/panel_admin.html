@@ -58,8 +58,10 @@
         <thead class="table-group-divider border-secondary text-muted small">
     <tr>
         <th class="ps-3">Código</th>
+        <th class="text-center">Logo</th>
         <th>Proyecto / Equipo</th>
         <th>Carrera y Grupo</th>
+        <th>Integrantes</th>
         <th class="text-center">Mesas</th>
         <th class="text-center">Stand / Mesa (Fase 1)</th>
         <th class="text-center">Estatus Oficial</th>
@@ -75,25 +77,44 @@
         <td class="ps-3">
             <span class="badge bg-secondary px-2 py-1">{{ proyecto.codigo }}</span>
         </td>
+        <td class="text-center">
+            {% if proyecto.logo %}
+                <img src="{{ proyecto.logo.url }}" 
+                     alt="Logo {{ proyecto.titulo }}"
+                     style="height:40px; width:40px; border-radius:6px; 
+                            object-fit:contain; background:#f0f4f8;"
+                     onerror="this.style.display='none'">
+            {% else %}
+                <span style="font-size:11px; color:#aaa;">Sin logo</span>
+            {% endif %}
+        </td>
         <td>
-            <div class="d-flex align-items-center">
-                {% if proyecto.logo %}
-                  <img src="{{ proyecto.logo.url }}" 
-                       alt="Logo {{ proyecto.titulo }}"
-                       style="height:48px; border-radius:6px; object-fit:contain;"
-                       onerror="this.style.display='none'">
-                {% endif %}
-                <div>
-                    <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
-                    <small class="text-info text-capitalize">
-                        <i class="fas fa-tag me-1 small"></i>{{ proyecto.get_categoria_display }}
-                    </small>
-                </div>
+            <div>
+                <span class="fw-semibold text-white d-block mb-1">{{ proyecto.titulo }}</span>
+                <small class="text-info text-capitalize">
+                    <i class="fas fa-tag me-1 small"></i>{{ proyecto.get_categoria_display }}
+                </small>
             </div>
         </td>
         <td>
             <span class="text-white-50 small d-block">{{ proyecto.carrera.nombre|default:"Sin Carrera" }}</span>
             <small class="text-muted">Grupo: {{ proyecto.grupo|default:"N/A" }}</small>
+        </td>
+        <td>
+            <details>
+                <summary style="cursor:pointer; font-size:12px; color:#328cc1;">
+                    Ver ({{ proyecto.miembros.count }})
+                </summary>
+                <ul style="margin:6px 0 0; padding-left:16px; font-size:12px;">
+                    {% for miembro in proyecto.miembros.all %}
+                        <li>{{ miembro.nombre_completo }}
+                            {% if miembro.es_lider %}
+                                <span style="color:#328cc1; font-weight:600;">(Líder)</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </details>
         </td>
         <td class="text-center">
             {% if proyecto.mesas_requeridas == 1 or proyecto.mesas_requeridas == 2 %}
@@ -178,13 +199,30 @@
           </a>
         </td>
         <td class="text-center pe-3">
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ proyecto.pk }}">
-                <i class="fas fa-comments"></i> Notas
-            </button>
+            <div class="d-flex flex-column gap-1 justify-content-center align-items-center">
+                <button class="btn btn-sm btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ proyecto.pk }}">
+                    <i class="fas fa-comments"></i> Notas
+                </button>
+                <a href="{% url 'editar_proyecto' proyecto.pk %}" 
+                   class="btn btn-sm btn-primary w-100"
+                   style="font-size:12px; text-decoration:none; padding:4px 10px;">
+                    ✏️ Editar
+                </a>
+                <form method="post" action="{% url 'eliminar_proyecto_admin' proyecto.pk %}"
+                      class="w-100"
+                      onsubmit="return confirm('¿Eliminar el proyecto {{ proyecto.titulo }}? Esta acción no se puede deshacer.')">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-sm btn-danger w-100"
+                            style="font-size:12px; cursor:pointer; padding:4px 10px;">
+                        🗑️ Eliminar
+                    </button>
+                </form>
+            </div>
         </td>
     </tr>
     <tr class="collapse" id="detalle-{{ proyecto.pk }}">
-        <td colspan="10" class="bg-black bg-opacity-30 p-3 border-secondary">
+        <td colspan="12" class="bg-black bg-opacity-30 p-3 border-secondary">
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <h6 class="text-warning small mb-1 fw-bold"><i class="fas fa-users me-1"></i>Integrantes Registrados:</h6>
@@ -211,7 +249,7 @@
     </tr>
     {% empty %}
     <tr>
-        <td colspan="10" class="text-center py-4 text-muted small">
+        <td colspan="12" class="text-center py-4 text-muted small">
             <i class="fas fa-folder-open me-2"></i>No hay proyectos con esos criterios en la plataforma.
         </td>
     </tr>

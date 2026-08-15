@@ -94,7 +94,7 @@
 
                 <input type="radio" class="btn-check rating-radio" name="criterio_{{ c.id }}" id="crit_{{ c.id }}_NA" value="NA" autocomplete="off"
                   {% for key, val in detalles_existentes.items %}{% if key == c.id and val == 'NA' %}checked{% endif %}{% endfor %}>
-                <label class="btn btn-outline-danger btn-sm" for="crit_{{ c.id }}_NA">NA (No Aprobatorio - 0)</label>
+                <label class="btn btn-outline-danger btn-sm" for="crit_{{ c.id }}_NA">NA (No Aprobatorio - 6)</label>
               </div>
             </div>
             {% endfor %}
@@ -144,7 +144,7 @@
       'AU': 10.0,
       'DE': 9.0,
       'SA': 8.0,
-      'NA': 0.0
+      'NA': 6.0
     };
 
     function calcularPromedio() {

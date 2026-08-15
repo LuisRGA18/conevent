@@ -525,26 +525,28 @@ def evaluar_proyecto_view(request, pk):
         return redirect('index')
 
     proyecto = get_object_or_404(Proyecto, pk=pk, evaluadores=request.user)
-    evaluacion_existente = Evaluacion.objects.filter(
-        proyecto=proyecto, evaluador=request.user
-    ).first()
-
     criterios = CriterioEvaluacion.objects.filter(activo=True)
     
-    # Cargar calificaciones de criterios si ya existen
+    # Buscar/crear evaluación existente de ESTE evaluador específico
+    evaluacion, created = Evaluacion.objects.get_or_create(
+        proyecto=proyecto,
+        evaluador=request.user,
+        defaults={'comentarios_evaluador': ''}
+    )
+    
+    # Cargar detalles existentes de este evaluador
     detalles_existentes = {}
-    if evaluacion_existente:
-        for det in evaluacion_existente.detalles.all():
-            detalles_existentes[det.criterio_id] = det.calificacion_cualitativa
+    for detalle in evaluacion.detalles.all():
+        detalles_existentes[detalle.criterio_id] = detalle.calificacion_cualitativa
 
     if request.method == 'POST':
-        form = EvaluacionForm(request.POST, instance=evaluacion_existente)
+        form = EvaluacionForm(request.POST, instance=evaluacion)
         
         # Si hay criterios, la calificación numérica se calculará por lo que prellenamos con 0.0
         if criterios.exists():
             post_data = request.POST.copy()
             post_data['calificacion'] = '0.00'
-            form = EvaluacionForm(post_data, instance=evaluacion_existente)
+            form = EvaluacionForm(post_data, instance=evaluacion)
 
         if form.is_valid():
             error_rubrica = False
@@ -563,19 +565,40 @@ def evaluar_proyecto_view(request, pk):
                 with transaction.atomic():
                     # 1. Guardar la evaluación base
                     evaluacion = form.save(commit=False)
-                    evaluacion.proyecto  = proyecto
+                    evaluacion.proyecto = proyecto
                     evaluacion.evaluador = request.user
                     evaluacion.save()
 
                     # 2. Guardar detalles de la rúbrica si existen
                     if criterios.exists():
+                        calificacion_total = Decimal('0')
+                        peso_total = Decimal('0')
+                        
+                        mapa = {
+                            'AU': Decimal('10'),
+                            'DE': Decimal('9'),
+                            'SA': Decimal('8'),
+                            'NA': Decimal('6')
+                        }
+                        
                         for c_id, val_cualitativo in respuestas_criterios.items():
                             criterio_obj = CriterioEvaluacion.objects.get(id=c_id)
+                            valor = mapa.get(val_cualitativo, Decimal('0'))
                             DetalleEvaluacion.objects.update_or_create(
                                 evaluacion=evaluacion,
                                 criterio=criterio_obj,
-                                defaults={'calificacion_cualitativa': val_cualitativo}
+                                defaults={
+                                    'calificacion_cualitativa': val_cualitativo,
+                                    'calificacion_numerica': valor
+                                }
                             )
+                            calificacion_total += valor * Decimal(str(criterio_obj.peso))
+                            peso_total += Decimal(str(criterio_obj.peso))
+                            
+                        if peso_total > 0:
+                            evaluacion.calificacion = round(calificacion_total, 2)
+                            evaluacion.save()
+                            
                         # Forzar recalculación para actualizar Evaluación y Proyecto
                         evaluacion.recalcular_calificacion()
                     else:
@@ -594,13 +617,13 @@ def evaluar_proyecto_view(request, pk):
                 messages.success(request, f'Evaluación guardada con éxito para "{proyecto.titulo}".')
                 return redirect('proyectos_asignados')
     else:
-        form = EvaluacionForm(instance=evaluacion_existente)
+        form = EvaluacionForm(instance=evaluacion)
 
     return render(request, 'usuarios/evaluar_proyecto.html', {
         'form':       form,
         'proyecto':   proyecto,
         'integrantes': proyecto.miembros.all(),  
-        'ya_evaluado': evaluacion_existente is not None,
+        'ya_evaluado': not created,
         'criterios':  criterios,
         'detalles_existentes': detalles_existentes,
     })
@@ -690,6 +713,21 @@ def cambiar_estatus_proyecto_view(request, pk):
 
 
 @login_required(login_url='login')
+def eliminar_proyecto_admin_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+    
+    if request.method == 'POST':
+        proyecto = get_object_or_404(Proyecto, pk=pk)
+        titulo = proyecto.titulo
+        proyecto.delete()
+        messages.success(request, f'Proyecto "{titulo}" eliminado correctamente.')
+    
+    return redirect('panel_admin')
+
+
+
+@login_required(login_url='login')
 def asignar_evaluador_view(request, pk):
     if not request.user.es_admin and request.user.rol != 'ADMIN':
         return redirect('index')
@@ -749,18 +787,19 @@ def guardar_comentario_admin_view(request, pk):
 @login_required(login_url='login')
 def editar_proyecto_view(request, pk):
     """
-    Permite al alumno creador editar su proyecto si y solo si
-    este se encuentra con estatus 'revision'.
+    Permite al alumno creador editar su proyecto si se encuentra en revisión o aprobado,
+    y al administrador editar cualquier proyecto independientemente de su estado.
     """
-    if request.user.rol != 'ALUMNO':
-        messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
-        return redirect('index')
-
-    proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
-
-    if proyecto.estatus != 'revision':
-        messages.error(request, "No puedes editar tu proyecto si ya ha sido evaluado o tiene un estatus aprobado/rechazado.")
-        return redirect('mi_proyecto')
+    if request.user.rol == 'ADMIN':
+        proyecto = get_object_or_404(Proyecto, pk=pk)
+    else:
+        if request.user.rol != 'ALUMNO':
+            messages.error(request, "Solo los alumnos o administradores pueden acceder a esta sección.")
+            return redirect('index')
+        proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
+        if proyecto.estatus != 'revision':
+            messages.error(request, 'No puedes editar este proyecto en su estado actual.')
+            return redirect('mi_proyecto')
 
     if request.method == 'POST':
         form = ProyectoForm(request.POST, request.FILES, instance=proyecto)
@@ -773,7 +812,9 @@ def editar_proyecto_view(request, pk):
                     f.cleaned_data['es_lider'] = True
             form.save()
             formset.save()
-            messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
+            messages.success(request, "¡Los datos del proyecto se actualizaron con éxito!")
+            if request.user.rol == 'ADMIN':
+                return redirect('panel_admin')
             return redirect('mi_proyecto')
         else:
             messages.error(request, "Por favor, corrige los errores en el formulario.")

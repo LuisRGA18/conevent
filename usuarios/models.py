@@ -258,6 +258,22 @@ class Evaluacion(models.Model):
     def __str__(self):
         return f"Evaluación {self.proyecto.codigo} — {self.calificacion}"
 
+    @property
+    def comentarios(self):
+        return self.comentarios_evaluador
+
+    @comentarios.setter
+    def comentarios(self, value):
+        self.comentarios_evaluador = value
+
+    @property
+    def calificacion_final(self):
+        return self.calificacion
+
+    @calificacion_final.setter
+    def calificacion_final(self, value):
+        self.calificacion = value
+
     def recalcular_calificacion(self):
         """
         Recalcula la calificación final a partir de los detalles cargados de la rúbrica.
@@ -292,7 +308,7 @@ class DetalleEvaluacion(models.Model):
         'AU': 10.0,
         'DE': 9.0,
         'SA': 8.0,
-        'NA': 0.0,
+        'NA': 6.0,
     }
 
     evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name='detalles')

@@ -33,8 +33,25 @@
                        onerror="this.style.display='none'">
                 {% endif %}
                 <div>
-                  <span class="fw-semibold">{{ p.titulo }}</span>
-                  {% if p.carrera %}<br><small class="text-muted">{{ p.carrera }} · Grp {{ p.grupo }}</small>{% endif %}
+                  <span class="fw-semibold text-white d-block mb-1">{{ p.titulo }}</span>
+                  {% if p.carrera %}<small class="text-muted d-block mb-2">{{ p.carrera }} · Grp {{ p.grupo }}</small>{% endif %}
+                  <details style="margin-top:4px;">
+                      <summary style="cursor:pointer; font-size:12px; color:#328cc1; font-weight:600;">
+                          Integrantes ({{ p.miembros.count }})
+                      </summary>
+                      <ul style="margin:6px 0 0; padding-left:16px; font-size:12px; color:#a8b2d1;">
+                          {% for miembro in p.miembros.all %}
+                              <li>
+                                  {{ miembro.nombre_completo }}
+                                  {% if miembro.es_lider %}
+                                      <span style="background:#e8f4fb; color:#0b3c5d; 
+                                                   padding:1px 6px; border-radius:99px; 
+                                                   font-size:10px; font-weight:600; margin-left:4px;">Líder</span>
+                                  {% endif %}
+                              </li>
+                          {% endfor %}
+                      </ul>
+                  </details>
                 </div>
               </div>
             </td>

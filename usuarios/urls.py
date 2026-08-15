@@ -30,5 +30,6 @@ urlpatterns = [
     path('panel-admin/comentario/<int:pk>/', views.guardar_comentario_admin_view, name='guardar_comentario_admin'),
     path('panel-admin/autorizar-mesas/<int:pk>/', views.autorizar_mesas_view, name='autorizar_mesas'),
     path('panel-admin/procesar-cambio-stand/<int:pk>/<str:action>/', views.procesar_cambio_stand_view, name='procesar_cambio_stand'),
+    path('panel-admin/eliminar-proyecto/<int:pk>/', views.eliminar_proyecto_admin_view, name='eliminar_proyecto_admin'),
     path('admin-logs/', views.admin_logs_view, name='admin_logs'),
 ]

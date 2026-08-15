@@ -690,3 +690,51 @@ class EvaluacionPromedioTestCase(TestCase):
         )
         self.proyecto.actualizar_calificacion_final()
         self.assertEqual(float(self.proyecto.calificacion), 9.00)
+
+
+class AdminProyectoAccionesTestCase(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='admin.test', password='Password123!', email='admin@uteq.edu.mx'
+        )
+        self.admin.rol = 'ADMIN'
+        self.admin.save()
+        
+        self.alumno = User.objects.create_user(
+            username='alumno.test', password='Password123!', email='alumno@uteq.edu.mx', rol='ALUMNO'
+        )
+        self.carrera = Carrera.objects.create(nombre='DSM', clave='DSM')
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto Admin Test',
+            carrera=self.carrera,
+            grupo='DSM-4A',
+            categoria='software',
+            creado_por=self.alumno,
+            estatus='aprobado'
+        )
+
+    def test_admin_editar_cualquier_proyecto(self):
+        self.client.login(username='admin.test', password='Password123!')
+        response = self.client.get(f'/auth/mi-proyecto/{self.proyecto.pk}/editar/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_alumno_editar_proyecto_status(self):
+        # Alumno puede editar en revisión
+        self.proyecto.estatus = 'revision'
+        self.proyecto.save()
+        self.client.login(username='alumno.test', password='Password123!')
+        response = self.client.get(f'/auth/mi-proyecto/{self.proyecto.pk}/editar/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_eliminar_proyecto(self):
+        self.client.login(username='admin.test', password='Password123!')
+        response = self.client.post(f'/auth/panel-admin/eliminar-proyecto/{self.proyecto.pk}/')
+        self.assertRedirects(response, '/auth/panel-admin/')
+        self.assertFalse(Proyecto.objects.filter(pk=self.proyecto.pk).exists())
+
+    def test_alumno_no_eliminar_proyecto(self):
+        self.client.login(username='alumno.test', password='Password123!')
+        response = self.client.post(f'/auth/panel-admin/eliminar-proyecto/{self.proyecto.pk}/')
+        self.assertRedirects(response, '/dashboard/')
+        self.assertTrue(Proyecto.objects.filter(pk=self.proyecto.pk).exists())
+
