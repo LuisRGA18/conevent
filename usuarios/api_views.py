@@ -31,7 +31,7 @@ class ProyectoViewSet(viewsets.ModelViewSet):
         if user.rol == 'ADMIN':
             return Proyecto.objects.all()
         elif user.rol == 'EVALUADOR':
-            return Proyecto.objects.filter(evaluador_asignado=user)
+            return Proyecto.objects.filter(evaluadores=user)
         elif user.rol == 'ALUMNO':
             return Proyecto.objects.filter(creado_por=user)
         return Proyecto.objects.none()

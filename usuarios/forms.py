@@ -99,18 +99,18 @@ class AsignacionEvaluadorForm(forms.ModelForm):
     """Formulario para que el ADMIN asigne evaluador a un proyecto."""
     class Meta:
         model = Proyecto
-        fields = ['evaluador_asignado']
+        fields = ['evaluadores']
         widgets = {
-            'evaluador_asignado': forms.Select(attrs={'class': SELECT_CLASS}),
+            'evaluadores': forms.SelectMultiple(attrs={'class': SELECT_CLASS}),
         }
         labels = {
-            'evaluador_asignado': 'Evaluador Asignado',
+            'evaluadores': 'Evaluadores Asignados',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Solo mostrar usuarios con rol EVALUADOR
-        self.fields['evaluador_asignado'].queryset = Usuario.objects.filter(rol='EVALUADOR')
+        self.fields['evaluadores'].queryset = Usuario.objects.filter(rol='EVALUADOR')
 
 
 class RegistroForm(forms.ModelForm):

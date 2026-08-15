@@ -41,7 +41,13 @@
             <dd class="text-white">{{ proyecto.fecha_registro|date:"d/m/Y" }}</dd>
             <dt class="text-muted small">Evaluador asignado</dt>
             <dd class="text-white">
-              {{ proyecto.evaluador_asignado.get_full_name|default:"Sin asignar" }}
+              {% if proyecto.evaluadores.all %}
+                {% for ev in proyecto.evaluadores.all %}
+                  {{ ev.get_full_name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              {% else %}
+                Sin asignar
+              {% endif %}
             </dd>
           </dl>
         </div>

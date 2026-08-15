@@ -29,7 +29,15 @@
                 <h5>Tu proyecto está en proceso de evaluación</h5>
                 <p class="text-white-50">Proyecto: <strong>{{ proyecto.titulo }}</strong> ({{ proyecto.codigo }})</p>
                 <p class="text-muted small max-w-md mx-auto">
-                    El evaluador asignado (<em>{{ proyecto.evaluador_asignado.get_full_name|default:"Sin evaluador asignado aún" }}</em>) se encuentra revisando tu documentación y propuesta. En cuanto guarde la rúbrica, verás los resultados aquí.
+                    El evaluador asignado (<em>
+                      {% if proyecto.evaluadores.all %}
+                        {% for ev in proyecto.evaluadores.all %}
+                          {{ ev.get_full_name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                      {% else %}
+                        Sin evaluador asignado aún
+                      {% endif %}
+                    </em>) se encuentra revisando tu documentación y propuesta. En cuanto guarde la rúbrica, verás los resultados aquí.
                 </p>
             </div>
         </div>

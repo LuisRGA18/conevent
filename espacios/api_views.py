@@ -18,8 +18,9 @@ class StandViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Stand.objects.all().select_related(
             'asignacion__proyecto__carrera',
-            'asignacion__proyecto__evaluador_asignado',
             'asignacion__proyecto__creado_por'
+        ).prefetch_related(
+            'asignacion__proyecto__evaluadores'
         )
     
     def get_permissions(self):
@@ -51,9 +52,8 @@ class StandViewSet(viewsets.ModelViewSet):
                 
             if asignacion:
                 proyecto = asignacion.proyecto
-                evaluador_nombre = ""
-                if proyecto.evaluador_asignado:
-                    evaluador_nombre = proyecto.evaluador_asignado.get_full_name() or proyecto.evaluador_asignado.username
+                evaluadores_list = [ev.get_full_name() or ev.username for ev in proyecto.evaluadores.all()]
+                evaluador_nombre = ", ".join(evaluadores_list) if evaluadores_list else "No asignado aún"
                 
                 creador_nombre = proyecto.creado_por.get_full_name() or proyecto.creado_por.username
                 
@@ -65,6 +65,7 @@ class StandViewSet(viewsets.ModelViewSet):
                     'carrera_nombre': proyecto.carrera.nombre if proyecto.carrera else 'Sin Carrera',
                     'lider_nombre': creador_nombre,
                     'evaluador_nombre': evaluador_nombre,
+                    'evaluadores': evaluadores_list,
                 }
             data.append(stand_data)
         return Response(data)

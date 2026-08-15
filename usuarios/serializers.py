@@ -28,17 +28,15 @@ class ProyectoSerializer(serializers.ModelSerializer):
     num_integrantes = serializers.ReadOnlyField()
     asignaciones_stands = AsignacionStandSerializer(many=True, read_only=True)
     creado_por_info = UsuarioSerializer(source='creado_por', read_only=True)
-    evaluador_asignado_info = UsuarioSerializer(source='evaluador_asignado', read_only=True)
-    evaluador_id = serializers.PrimaryKeyRelatedField(
-        queryset=Usuario.objects.filter(rol='EVALUADOR'), source='evaluador_asignado', write_only=True, required=False, allow_null=True
-    )
+    evaluadores = serializers.StringRelatedField(many=True, read_only=True)
+    evaluadores_info = UsuarioSerializer(source='evaluadores', many=True, read_only=True)
 
     class Meta:
         model = Proyecto
         fields = [
             'id', 'titulo', 'descripcion', 'carrera_info', 'carrera_id',
-            'grupo', 'categoria', 'logo', 'creado_por_info', 'evaluador_asignado_info', 
-            'evaluador_id', 'estatus', 'calificacion', 'codigo', 'num_integrantes',
+            'grupo', 'categoria', 'logo', 'creado_por_info', 'evaluadores', 
+            'evaluadores_info', 'estatus', 'calificacion', 'codigo', 'num_integrantes',
             'miembros', 'asignaciones_stands', 'fecha_registro', 'fecha_actualizacion'
         ]
         read_only_fields = ['calificacion', 'estatus']

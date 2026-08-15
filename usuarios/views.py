@@ -302,7 +302,7 @@ def index_view(request):
             'total_usuarios': Usuario.objects.count(),
             'total_proyectos': Proyecto.objects.count(),
             'evaluados': Proyecto.objects.filter(calificacion__isnull=False).count(),
-            'sin_evaluador': Proyecto.objects.filter(evaluador_asignado__isnull=True).count()
+            'sin_evaluador': Proyecto.objects.filter(evaluadores__isnull=True).count()
         }
 
     return render(request, 'seguridad/index.html', {'stats': stats})
@@ -508,7 +508,7 @@ def proyectos_asignados_view(request):
         return redirect('index')
 
     proyectos = Proyecto.objects.filter(
-        evaluador_asignado=request.user
+        evaluadores=request.user
     ).prefetch_related('miembros').select_related('carrera')
 
     return render(request, 'usuarios/proyectos_asignados.html', {'proyectos': proyectos})
@@ -520,7 +520,7 @@ def evaluar_proyecto_view(request, pk):
         messages.error(request, "No tienes permiso.")
         return redirect('index')
 
-    proyecto = get_object_or_404(Proyecto, pk=pk, evaluador_asignado=request.user)
+    proyecto = get_object_or_404(Proyecto, pk=pk, evaluadores=request.user)
     evaluacion_existente = Evaluacion.objects.filter(
         proyecto=proyecto, evaluador=request.user
     ).first()
@@ -625,8 +625,8 @@ def panel_admin_view(request):
     )
 
     qs = Proyecto.objects.select_related(
-        'creado_por', 'evaluador_asignado', 'carrera'
-    ).prefetch_related('miembros', 'asignaciones_stands__stand').annotate(
+        'creado_por', 'carrera'
+    ).prefetch_related('miembros', 'evaluadores', 'asignaciones_stands__stand').annotate(
         num_externas=Count('evaluaciones_externas', distinct=True),
         promedio_externa=Avg(calificacion_numerica_expr)
     )
@@ -688,30 +688,25 @@ def asignar_evaluador_view(request, pk):
         return redirect('index')
 
     proyecto = get_object_or_404(Proyecto, pk=pk)
-
+    
     if request.method == 'POST':
-        evaluador_id = request.POST.get('docente_id') or request.POST.get('evaluador_id')
-        
-        # Verificar si el proyecto ya tiene evaluador asignado
-        if proyecto.evaluador_asignado and str(proyecto.evaluador_asignado.id) != str(evaluador_id):
-            # Ya tiene evaluador diferente — mostrar error, no reemplazar silenciosamente
-            messages.error(request, 
-                f'El proyecto ya tiene asignado al evaluador {proyecto.evaluador_asignado.get_full_name()}. '
-                f'Desasígnalo primero antes de asignar uno nuevo.')
-            return redirect('panel_admin')
-        
+        evaluador_id = request.POST.get('evaluador_id') or request.POST.get('docente_id')
         if evaluador_id:
             evaluador = get_object_or_404(Usuario, pk=evaluador_id, rol='EVALUADOR')
-            proyecto.evaluador_asignado = evaluador
-            proyecto.save(update_fields=['evaluador_asignado'])
-            messages.success(request, f'Evaluador {evaluador.get_full_name()} asignado correctamente.')
-        
+            # Agregar sin reemplazar — ManyToMany permite múltiples
+            proyecto.evaluadores.add(evaluador)
+            messages.success(request, 
+                f'Evaluador {evaluador.get_full_name()} agregado correctamente.')
         return redirect('panel_admin')
     
-    evaluadores = Usuario.objects.filter(rol='EVALUADOR', is_active=True)
+    # Evaluadores disponibles — mostrar todos incluso si ya están en otros proyectos
+    evaluadores_disponibles = Usuario.objects.filter(rol='EVALUADOR', is_active=True)
+    evaluadores_actuales = proyecto.evaluadores.all()
+    
     return render(request, 'usuarios/asignar_evaluador.html', {
         'proyecto': proyecto,
-        'evaluadores': evaluadores
+        'evaluadores': evaluadores_disponibles,
+        'evaluadores_actuales': evaluadores_actuales
     })
 
 @login_required(login_url='login')
@@ -721,10 +716,12 @@ def desasignar_evaluador_view(request, pk):
 
     if request.method == 'POST':
         proyecto = get_object_or_404(Proyecto, pk=pk)
-        nombre = proyecto.evaluador_asignado.get_full_name() if proyecto.evaluador_asignado else ''
-        proyecto.evaluador_asignado = None
-        proyecto.save(update_fields=['evaluador_asignado'])
-        messages.success(request, f'Evaluador {nombre} desasignado correctamente.')
+        evaluador_id = request.POST.get('evaluador_id') or request.POST.get('docente_id')
+        if evaluador_id:
+            evaluador = get_object_or_404(Usuario, pk=evaluador_id)
+            proyecto.evaluadores.remove(evaluador)
+            messages.success(request, 
+                f'Evaluador {evaluador.get_full_name()} desasignado correctamente.')
     return redirect('panel_admin')
 
 

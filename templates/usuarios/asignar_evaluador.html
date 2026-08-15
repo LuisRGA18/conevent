@@ -16,18 +16,42 @@
     </div>
   </div>
 
+  {% if evaluadores_actuales %}
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-body">
+      <h6 class="text-white fw-bold mb-3">Evaluadores actuales:</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for ev in evaluadores_actuales %}
+          <span style="background:#e8f4fb; color:#0b3c5d; padding:4px 10px; 
+                       border-radius:99px; font-size:13px; font-weight:bold;">
+            {{ ev.get_full_name }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="card bg-dark border-secondary">
     <div class="card-body">
-      <form method="post" novalidate>
+      <h6 class="text-white fw-bold mb-3">Agregar evaluador:</h6>
+      <form method="post">
         {% csrf_token %}
         <div class="mb-4">
-          <label class="form-label text-white fw-semibold">{{ form.evaluador_asignado.label }}</label>
-          {{ form.evaluador_asignado }}
+          <select name="evaluador_id" class="form-select text-white-50" style="background-color: rgba(0,0,0,0.3); padding: 10px;" required>
+            <option value="">Selecciona un evaluador</option>
+            {% for ev in evaluadores %}
+              <option value="{{ ev.pk }}">
+                {{ ev.get_full_name }} 
+                {% if ev in evaluadores_actuales %}(ya asignado){% endif %}
+              </option>
+            {% endfor %}
+          </select>
         </div>
         <div class="d-flex justify-content-end gap-2">
           <a href="{% url 'panel_admin' %}" class="btn btn-outline-secondary">Cancelar</a>
           <button type="submit" class="btn btn-primary">
-            <i class="bi bi-person-check me-1"></i> Asignar
+            <i class="bi bi-person-plus-fill me-1"></i> Agregar evaluador
           </button>
         </div>
       </form>

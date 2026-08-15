@@ -150,7 +150,7 @@ class ExportCalificacionesCSVView(APIView):
             'Evaluador Asignado', 'Calificación Final', 'Estatus'
         ])
         
-        proyectos = Proyecto.objects.all().select_related('carrera', 'creado_por', 'evaluador_asignado').prefetch_related('miembros')
+        proyectos = Proyecto.objects.all().select_related('carrera', 'creado_por').prefetch_related('miembros', 'evaluadores')
         
         cat_map = dict(Proyecto.CATEGORIA_CHOICES)
         estatus_map = dict(Proyecto.ESTATUS_CHOICES)
@@ -160,9 +160,7 @@ class ExportCalificacionesCSVView(APIView):
             integrantes_str = "; ".join(integrantes_list)
             
             creador_str = f"{p.creado_por.first_name} {p.creado_por.last_name}" if p.creado_por.first_name else p.creado_por.username
-            evaluador_str = ""
-            if p.evaluador_asignado:
-                evaluador_str = f"{p.evaluador_asignado.first_name} {p.evaluador_asignado.last_name}" if p.evaluador_asignado.first_name else p.evaluador_asignado.username
+            evaluador_str = "; ".join([f"{ev.first_name} {ev.last_name}" if ev.first_name else ev.username for ev in p.evaluadores.all()])
             
             writer.writerow([
                 p.codigo,

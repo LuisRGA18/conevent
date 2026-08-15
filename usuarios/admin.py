@@ -28,7 +28,8 @@ class ProyectoAdmin(admin.ModelAdmin):
     list_filter = ('estatus', 'carrera', 'categoria')
     search_fields = ('titulo', 'descripcion', 'creado_por__username', 'creado_por__first_name')
     inlines = [IntegranteInline]
-    raw_id_fields = ('creado_por', 'evaluador_asignado')
+    raw_id_fields = ('creado_por',)
+    filter_horizontal = ('evaluadores',)
 
 @admin.register(Integrante)
 class IntegranteAdmin(admin.ModelAdmin):

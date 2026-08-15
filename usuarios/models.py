@@ -86,10 +86,12 @@ class Proyecto(models.Model):
         related_name='proyectos', verbose_name="Alumno / Creador"
     )
     # Quién lo evaluará
-    evaluador_asignado = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='proyectos_a_evaluar',
-        limit_choices_to={'rol': 'EVALUADOR'}, verbose_name="Evaluador Asignado"
+    evaluadores = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='proyectos_asignados',
+        limit_choices_to={'rol': 'EVALUADOR'},
+        verbose_name='Evaluadores asignados'
     )
 
     estatus     = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='revision')

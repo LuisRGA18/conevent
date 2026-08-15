@@ -34,8 +34,8 @@ class RubricaTestCase(TestCase):
             grupo='IRIC08',
             categoria='redes',
             creado_por=self.alumno,
-            evaluador_asignado=self.docente
         )
+        self.proyecto.evaluadores.add(self.docente)
 
         # Crear criterios de rúbrica
         self.criterio_inv = CriterioEvaluacion.objects.create(
@@ -209,8 +209,8 @@ class APIRESTTestCase(APITestCase):
             descripcion='Proyecto asignado para evaluación.',
             carrera=self.carrera,
             creado_por=self.alumno,
-            evaluador_asignado=self.docente
         )
+        proyecto.evaluadores.add(self.docente)
 
         # Autenticar docente
         login_response = self.client.post('/api/token/', {
@@ -551,6 +551,12 @@ class AdminEvaluadorAssignmentTestCase(TestCase):
             password='Password123!',
             rol='ADMIN'
         )
+        self.alumno = User.objects.create_user(
+            username='alumno.test',
+            email='alumno.test@uteq.edu.mx',
+            password='Password123!',
+            rol='ALUMNO'
+        )
         self.docente1 = User.objects.create_user(
             username='docente.uno',
             email='docente.uno@uteq.edu.mx',
@@ -569,50 +575,62 @@ class AdminEvaluadorAssignmentTestCase(TestCase):
             descripcion='Desc',
             carrera=self.carrera,
             grupo='DSM4B',
-            categoria='software'
+            categoria='software',
+            creado_por=self.alumno
         )
 
-    def test_asignar_evaluador_success(self):
-        self.client.login(username='admin.test', password='Password123!')
-        url = reverse('asignar_evaluador', args=[self.proyecto.pk])
-        response = self.client.post(url, {'docente_id': self.docente1.pk})
-        self.assertRedirects(response, reverse('panel_admin'))
-        
-        # Verify db
-        self.proyecto.refresh_from_db()
-        self.assertEqual(self.proyecto.evaluador_asignado, self.docente1)
-
-    def test_asignar_duplicate_evaluador_error(self):
-        # Primero asignar evaluador1
-        self.proyecto.evaluador_asignado = self.docente1
-        self.proyecto.save()
-
+    def test_asignar_evaluadores_success(self):
         self.client.login(username='admin.test', password='Password123!')
         url = reverse('asignar_evaluador', args=[self.proyecto.pk])
         
-        # Intentar asignar evaluador2 sin desasignar primero
-        response = self.client.post(url, {'docente_id': self.docente2.pk})
+        # Asignar primer evaluador
+        response = self.client.post(url, {'evaluador_id': self.docente1.pk})
         self.assertRedirects(response, reverse('panel_admin'))
         
-        # Debe fallar y mostrar mensaje de error en la sesión
-        messages = list(response.wsgi_request._messages)
-        self.assertTrue(any("Desasígnalo primero" in str(m) for m in messages))
+        # Asignar segundo evaluador
+        response = self.client.post(url, {'evaluador_id': self.docente2.pk})
+        self.assertRedirects(response, reverse('panel_admin'))
         
-        # El evaluador no debe cambiar en la db
+        # Verify db has both evaluators
         self.proyecto.refresh_from_db()
-        self.assertEqual(self.proyecto.evaluador_asignado, self.docente1)
+        evals = self.proyecto.evaluadores.all()
+        self.assertEqual(evals.count(), 2)
+        self.assertIn(self.docente1, evals)
+        self.assertIn(self.docente2, evals)
 
     def test_desasignar_evaluador_success(self):
-        # Primero asignar evaluador1
-        self.proyecto.evaluador_asignado = self.docente1
-        self.proyecto.save()
+        # Asignar ambos evaluadores
+        self.proyecto.evaluadores.add(self.docente1, self.docente2)
 
         self.client.login(username='admin.test', password='Password123!')
         url = reverse('desasignar_evaluador', args=[self.proyecto.pk])
-        response = self.client.post(url)
+        
+        # Desasignar solo el docente1
+        response = self.client.post(url, {'evaluador_id': self.docente1.pk})
         self.assertRedirects(response, reverse('panel_admin'))
         
-        # Verify db
+        # Verify db only has docente2
         self.proyecto.refresh_from_db()
-        self.assertIsNone(self.proyecto.evaluador_asignado)
+        evals = self.proyecto.evaluadores.all()
+        self.assertEqual(evals.count(), 1)
+        self.assertNotIn(self.docente1, evals)
+        self.assertIn(self.docente2, evals)
+
+    def test_evaluador_assigned_to_multiple_projects(self):
+        proyecto2 = Proyecto.objects.create(
+            titulo='Otro Proyecto',
+            descripcion='Desc',
+            carrera=self.carrera,
+            grupo='DSM4B',
+            categoria='software',
+            creado_por=self.alumno
+        )
+        # Asignar el mismo docente1 a ambos proyectos
+        self.proyecto.evaluadores.add(self.docente1)
+        proyecto2.evaluadores.add(self.docente1)
+
+        self.assertEqual(self.proyecto.evaluadores.count(), 1)
+        self.assertEqual(proyecto2.evaluadores.count(), 1)
+        self.assertIn(self.docente1, self.proyecto.evaluadores.all())
+        self.assertIn(self.docente1, proyecto2.evaluadores.all())
 
