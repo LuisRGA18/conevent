@@ -119,7 +119,7 @@ class RegistroForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(attrs={
             'class': INPUT_CLASS,
-            'placeholder': 'Ej. Luis Ángel'
+            'placeholder': 'Ej. Juan'
         }),
         label="Nombre(s)"
     )

@@ -690,17 +690,41 @@ def asignar_evaluador_view(request, pk):
     proyecto = get_object_or_404(Proyecto, pk=pk)
 
     if request.method == 'POST':
-        docente_id = request.POST.get('docente_id')
-        if docente_id:
-            docente = get_object_or_404(Usuario, pk=docente_id, rol='EVALUADOR')
-            proyecto.evaluador_asignado = docente
+        evaluador_id = request.POST.get('docente_id') or request.POST.get('evaluador_id')
+        
+        # Verificar si el proyecto ya tiene evaluador asignado
+        if proyecto.evaluador_asignado and str(proyecto.evaluador_asignado.id) != str(evaluador_id):
+            # Ya tiene evaluador diferente — mostrar error, no reemplazar silenciosamente
+            messages.error(request, 
+                f'El proyecto ya tiene asignado al evaluador {proyecto.evaluador_asignado.get_full_name()}. '
+                f'Desasígnalo primero antes de asignar uno nuevo.')
+            return redirect('panel_admin')
+        
+        if evaluador_id:
+            evaluador = get_object_or_404(Usuario, pk=evaluador_id, rol='EVALUADOR')
+            proyecto.evaluador_asignado = evaluador
             proyecto.save(update_fields=['evaluador_asignado'])
-            messages.success(request, f'Docente {docente.get_full_name() or docente.username} asignado correctamente a "{proyecto.titulo}".')
-        else:
-            proyecto.evaluador_asignado = None
-            proyecto.save(update_fields=['evaluador_asignado'])
-            messages.info(request, f'Se retiró el evaluador de "{proyecto.titulo}".')
-            
+            messages.success(request, f'Evaluador {evaluador.get_full_name()} asignado correctamente.')
+        
+        return redirect('panel_admin')
+    
+    evaluadores = Usuario.objects.filter(rol='EVALUADOR', is_active=True)
+    return render(request, 'usuarios/asignar_evaluador.html', {
+        'proyecto': proyecto,
+        'evaluadores': evaluadores
+    })
+
+@login_required(login_url='login')
+def desasignar_evaluador_view(request, pk):
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        return redirect('index')
+
+    if request.method == 'POST':
+        proyecto = get_object_or_404(Proyecto, pk=pk)
+        nombre = proyecto.evaluador_asignado.get_full_name() if proyecto.evaluador_asignado else ''
+        proyecto.evaluador_asignado = None
+        proyecto.save(update_fields=['evaluador_asignado'])
+        messages.success(request, f'Evaluador {nombre} desasignado correctamente.')
     return redirect('panel_admin')
 
 

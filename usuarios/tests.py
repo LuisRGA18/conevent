@@ -539,7 +539,80 @@ class ContactoTestCase(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'ok': False, 'error': 'Campos incompletos'})
+class AdminEvaluadorAssignmentTestCase(TestCase):
+    def setUp(self):
+        # We need a CustomUser since django auth User is custom in our project.
+        # Let's import get_user_model
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.admin = User.objects.create_superuser(
+            username='admin.test',
+            email='admin.test@conevent.com',
+            password='Password123!',
+            rol='ADMIN'
+        )
+        self.docente1 = User.objects.create_user(
+            username='docente.uno',
+            email='docente.uno@uteq.edu.mx',
+            password='Password123!',
+            rol='EVALUADOR'
+        )
+        self.docente2 = User.objects.create_user(
+            username='docente.dos',
+            email='docente.dos@uteq.edu.mx',
+            password='Password123!',
+            rol='EVALUADOR'
+        )
+        self.carrera = Carrera.objects.create(nombre='DSM', clave='DSM')
+        self.proyecto = Proyecto.objects.create(
+            titulo='Proyecto Test',
+            descripcion='Desc',
+            carrera=self.carrera,
+            grupo='DSM4B',
+            categoria='software'
+        )
 
+    def test_asignar_evaluador_success(self):
+        self.client.login(username='admin.test', password='Password123!')
+        url = reverse('asignar_evaluador', args=[self.proyecto.pk])
+        response = self.client.post(url, {'docente_id': self.docente1.pk})
+        self.assertRedirects(response, reverse('panel_admin'))
+        
+        # Verify db
+        self.proyecto.refresh_from_db()
+        self.assertEqual(self.proyecto.evaluador_asignado, self.docente1)
 
+    def test_asignar_duplicate_evaluador_error(self):
+        # Primero asignar evaluador1
+        self.proyecto.evaluador_asignado = self.docente1
+        self.proyecto.save()
 
+        self.client.login(username='admin.test', password='Password123!')
+        url = reverse('asignar_evaluador', args=[self.proyecto.pk])
+        
+        # Intentar asignar evaluador2 sin desasignar primero
+        response = self.client.post(url, {'docente_id': self.docente2.pk})
+        self.assertRedirects(response, reverse('panel_admin'))
+        
+        # Debe fallar y mostrar mensaje de error en la sesión
+        messages = list(response.wsgi_request._messages)
+        self.assertTrue(any("Desasígnalo primero" in str(m) for m in messages))
+        
+        # El evaluador no debe cambiar en la db
+        self.proyecto.refresh_from_db()
+        self.assertEqual(self.proyecto.evaluador_asignado, self.docente1)
+
+    def test_desasignar_evaluador_success(self):
+        # Primero asignar evaluador1
+        self.proyecto.evaluador_asignado = self.docente1
+        self.proyecto.save()
+
+        self.client.login(username='admin.test', password='Password123!')
+        url = reverse('desasignar_evaluador', args=[self.proyecto.pk])
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse('panel_admin'))
+        
+        # Verify db
+        self.proyecto.refresh_from_db()
+        self.assertIsNone(self.proyecto.evaluador_asignado)
 

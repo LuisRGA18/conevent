@@ -146,18 +146,30 @@
             {% endif %}
         </td>
         <td>
-            <form action="{% url 'asignar_evaluador' proyecto.pk %}" method="post" class="d-flex gap-2">
-                {% csrf_token %}
-                <select name="docente_id" class="form-select form-select-sm text-white-50" style="background-color: rgba(0,0,0,0.3);" required>
-                    <option value="">-- Seleccionar Evaluador --</option>
-                    {% for docente in todos_los_docentes %}
-                    <option value="{{ docente.pk }}" {% if proyecto.evaluador_asignado.pk == docente.pk %}selected{% endif %}>
-                        {{ docente.get_full_name|default:docente.username }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i></button>
-            </form>
+            {% if proyecto.evaluador_asignado %}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-white small">{{ proyecto.evaluador_asignado.get_full_name }}</span>
+                    <form method="post" action="{% url 'desasignar_evaluador' proyecto.pk %}" 
+                          style="display:inline;"
+                          onsubmit="return confirm('¿Desasignar a {{ proyecto.evaluador_asignado.get_full_name }}?')">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger py-0 px-2">✕</button>
+                    </form>
+                </div>
+            {% else %}
+                <form action="{% url 'asignar_evaluador' proyecto.pk %}" method="post" class="d-flex gap-2">
+                    {% csrf_token %}
+                    <select name="docente_id" class="form-select form-select-sm text-white-50" style="background-color: rgba(0,0,0,0.3);" required>
+                        <option value="">-- Seleccionar --</option>
+                        {% for docente in todos_los_docentes %}
+                        <option value="{{ docente.pk }}">
+                            {{ docente.get_full_name|default:docente.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i></button>
+                </form>
+            {% endif %}
         </td>
         <td class="text-center pe-3">
             <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#detalle-{{ proyecto.pk }}">

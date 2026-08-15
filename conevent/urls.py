@@ -58,5 +58,5 @@ urlpatterns = [
 from django.conf import settings
 from django.conf.urls.static import static
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Servir media siempre (producción con Nginx lo maneja, esto es fallback)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
