@@ -188,7 +188,7 @@
                         <h4 class="text-white fw-bold mb-0">Bienvenido, {{ request.user.first_name|default:request.user.username }} 👋</h4>
                         <small class="text-muted">Panel de alumno — ConEvent</small>
                     </div>
-                    {% if not stats.tiene_proyecto %}
+                    {% if not tiene_proyecto %}
                     <a href="{% url 'mi_proyecto' %}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i> Registrar Proyecto
                     </a>
@@ -196,57 +196,90 @@
                 </div>
 
                 <div class="row g-3 mb-4">
+                    <!-- Tarjeta proyecto -->
                     <div class="col-md-3">
-                        <div class="card-kpi">
+                        <div class="card-kpi {% if tiene_proyecto %}clickable{% endif %}"
+                             {% if tiene_proyecto %}onclick="window.location='{% url 'mi_proyecto' %}'"
+                             style="cursor:pointer;"{% endif %}>
                             <div class="kpi-icon text-info"><i class="fas fa-project-diagram"></i></div>
-                            <div class="kpi-value">{{ stats.total_proyectos }}</div>
-                            <div class="kpi-label">Proyecto{{ stats.total_proyectos|pluralize }} Registrado{{ stats.total_proyectos|pluralize }}</div>
+                            <div class="kpi-value">
+                                {% if tiene_proyecto %}1{% else %}0{% endif %}
+                            </div>
+                            <div class="kpi-label">Proyecto Registrado</div>
+                            {% if tiene_proyecto %}
+                                <span style="font-size:11px; color:#328cc1; display:block; margin-top:4px;">
+                                    {{ proyecto.titulo }} →
+                                </span>
+                            {% else %}
+                                <span style="font-size:11px; color:#dc2626; display:block; margin-top:4px;">
+                                    Sin proyecto registrado
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
+
+                    <!-- Tarjeta integrantes -->
                     <div class="col-md-3">
-                        <div class="card-kpi">
+                        <div class="card-kpi {% if tiene_proyecto %}clickable{% endif %}"
+                             {% if tiene_proyecto %}onclick="window.location='{% url 'mi_proyecto' %}'"
+                             style="cursor:pointer;"{% endif %}>
                             <div class="kpi-icon text-warning"><i class="fas fa-users"></i></div>
-                            <div class="kpi-value">{{ stats.total_integrantes }}</div>
-                            <div class="kpi-label">Integrante{{ stats.total_integrantes|pluralize }} en tu equipo</div>
+                            <div class="kpi-value">{{ num_integrantes|default:0 }}</div>
+                            <div class="kpi-label">Integrantes en tu equipo</div>
+                            {% if tiene_proyecto %}
+                                <span style="font-size:11px; color:#328cc1; display:block; margin-top:4px;">
+                                    Ver equipo →
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
+
+                    <!-- Tarjeta estatus -->
                     <div class="col-md-3">
                         <div class="card-kpi">
-                            <div class="kpi-icon {% if stats.estatus == 'aprobado' %}text-success{% elif stats.estatus == 'rechazado' %}text-danger{% else %}text-warning{% endif %}">
+                            <div class="kpi-icon {% if estatus == 'Aprobado' %}text-success{% elif estatus == 'Rechazado' %}text-danger{% else %}text-warning{% endif %}">
                                 <i class="fas fa-clipboard-check"></i>
                             </div>
-                            <div class="kpi-value" style="font-size:1.1rem;">
-                                {% if stats.estatus == 'aprobado' %}Aprobado
-                                {% elif stats.estatus == 'rechazado' %}Rechazado
-                                {% elif stats.estatus == 'revision' %}En Revisión
-                                {% else %}Sin proyecto{% endif %}
+                            <div class="kpi-value" style="font-size: 1.1rem; line-height: 2.2;">
+                                {{ estatus|default:"—" }}
                             </div>
                             <div class="kpi-label">Estatus actual</div>
                         </div>
                     </div>
+
+                    <!-- Tarjeta calificación -->
                     <div class="col-md-3">
-                        <div class="card-kpi">
+                        <div class="card-kpi {% if calificacion %}clickable{% endif %}"
+                             {% if calificacion %}onclick="window.location='{% url 'mis_calificaciones' %}'"
+                             style="cursor:pointer;"{% endif %}>
                             <div class="kpi-icon text-success"><i class="fas fa-star"></i></div>
-                            <div class="kpi-value">{% if stats.calificacion %}{{ stats.calificacion }}{% else %}—{% endif %}</div>
+                            <div class="kpi-value" style="color:#0b3c5d;">
+                                {{ calificacion|default:"—" }}
+                            </div>
                             <div class="kpi-label">Calificación Final</div>
+                            {% if calificacion %}
+                                <span style="font-size:11px; color:#328cc1; display:block; margin-top:4px;">
+                                    Ver detalle →
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
 
-                {% if stats.tiene_proyecto %}
+                {% if tiene_proyecto %}
                 <div class="card bg-dark border-secondary mb-4">
                     <div class="card-header text-white fw-semibold"><i class="fas fa-info-circle me-2 text-info"></i>Mi Proyecto Actual</div>
                     <div class="card-body">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h5 class="text-white mb-1">{{ stats.proyecto.titulo }}</h5>
-                                <small class="text-muted">{{ stats.proyecto.codigo }} · {{ stats.proyecto.carrera }} — Grupo {{ stats.proyecto.grupo }}</small>
-                                <p class="text-muted mt-2 mb-0 small">{{ stats.proyecto.descripcion|truncatewords:20 }}</p>
+                                <h5 class="text-white mb-1">{{ proyecto.titulo }}</h5>
+                                <small class="text-muted">{{ proyecto.codigo }} · {{ proyecto.carrera }} — Grupo {{ proyecto.grupo }}</small>
+                                <p class="text-muted mt-2 mb-0 small">{{ proyecto.descripcion|truncatewords:20 }}</p>
                             </div>
                             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                                 <a href="{% url 'mi_proyecto' %}" class="btn btn-outline-info btn-sm me-2"><i class="fas fa-eye me-1"></i> Ver detalle</a>
-                                {% if stats.proyecto.estatus == 'revision' %}
-                                <a href="{% url 'editar_proyecto' stats.proyecto.pk %}" class="btn btn-outline-warning btn-sm"><i class="fas fa-pencil-alt me-1"></i> Editar</a>
+                                {% if proyecto.estatus == 'revision' %}
+                                <a href="{% url 'editar_proyecto' proyecto.pk %}" class="btn btn-outline-warning btn-sm"><i class="fas fa-pencil-alt me-1"></i> Editar</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -260,9 +293,30 @@
                     <small class="text-muted">Panel de evaluador — ConEvent</small>
                 </div>
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-info"><i class="fas fa-clipboard-list"></i></div><div class="kpi-value">{{ stats.asignados }}</div><div class="kpi-label">Proyectos asignados</div></div></div>
-                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-success"><i class="fas fa-check-circle"></i></div><div class="kpi-value">{{ stats.evaluados }}</div><div class="kpi-label">Ya evaluados</div></div></div>
-                    <div class="col-md-4"><div class="card-kpi"><div class="kpi-icon text-warning"><i class="fas fa-hourglass-half"></i></div><div class="kpi-value">{{ stats.pendientes }}</div><div class="kpi-label">Pendientes</div></div></div>
+                    <div class="col-md-4">
+                        <div class="card-kpi" onclick="window.location='{% url 'proyectos_asignados' %}'" style="cursor:pointer;">
+                            <div class="kpi-icon text-info"><i class="fas fa-clipboard-list"></i></div>
+                            <div class="kpi-value">{{ proyectos_asignados|default:0 }}</div>
+                            <div class="kpi-label">Proyectos asignados</div>
+                            <span style="font-size:11px; color:#328cc1; display:block; margin-top:4px;">
+                                Ver proyectos →
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-kpi">
+                            <div class="kpi-icon text-success"><i class="fas fa-check-circle"></i></div>
+                            <div class="kpi-value" style="color:#059669;">{{ proyectos_evaluados|default:0 }}</div>
+                            <div class="kpi-label">Proyectos evaluados</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-kpi">
+                            <div class="kpi-icon text-warning"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="kpi-value" style="color:#d97706;">{{ proyectos_pendientes|default:0 }}</div>
+                            <div class="kpi-label">Pendientes de evaluar</div>
+                        </div>
+                    </div>
                 </div>
                 <a href="{% url 'proyectos_asignados' %}" class="btn btn-outline-info"><i class="fas fa-clipboard-check me-1"></i> Ir a mis evaluaciones</a>
 

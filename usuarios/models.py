@@ -34,6 +34,10 @@ class Usuario(AbstractUser):
     def es_alumno(self):
         return self.rol == 'ALUMNO'
 
+    @property
+    def evaluaciones(self):
+        return self.evaluaciones_realizadas
+
 
 # ──────────────────────────────────────────────────────────────
 # CARRERA
@@ -57,6 +61,11 @@ class Carrera(models.Model):
 # ──────────────────────────────────────────────────────────────
 
 class Proyecto(models.Model):
+    def __init__(self, *args, **kwargs):
+        if 'calificacion' in kwargs:
+            kwargs['calificacion_final'] = kwargs.pop('calificacion')
+        super().__init__(*args, **kwargs)
+
     ESTATUS_CHOICES = [
         ('revision',  'En Revisión'),
         ('aprobado',  'Aprobado'),
@@ -96,7 +105,7 @@ class Proyecto(models.Model):
 
     estatus     = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='revision')
     # Calificación final (resumen rápido; el detalle está en Evaluacion)
-    calificacion = models.DecimalField(
+    calificacion_final = models.DecimalField(
         max_digits=4, decimal_places=2, null=True, blank=True,
         verbose_name="Calificación Final"
     )
@@ -142,8 +151,18 @@ class Proyecto(models.Model):
         return self.miembros.count()
 
     @property
-    def calificacion_final(self):
-        return self.calificacion
+    def integrantes(self):
+        return self.miembros
+
+    @property
+    def calificacion(self):
+        return self.calificacion_final
+
+    @calificacion.setter
+    def calificacion(self, value):
+        self.calificacion_final = value
+
+
 
     def get_calificacion_promedio(self):
         """Calcula el promedio de calificaciones de todos los evaluadores docentes."""
@@ -155,8 +174,8 @@ class Proyecto(models.Model):
         total = Decimal('0')
         count = 0
         for evaluacion in evaluaciones:
-            if evaluacion.calificacion is not None:
-                total += Decimal(str(evaluacion.calificacion))
+            if evaluacion.calificacion_final is not None:
+                total += Decimal(str(evaluacion.calificacion_final))
                 count += 1
         
         if count == 0:
@@ -165,13 +184,19 @@ class Proyecto(models.Model):
         return round(total / count, 2)
 
     def actualizar_calificacion_final(self):
-        """Actualiza la calificación final del proyecto con el promedio de evaluadores."""
-        promedio = self.get_calificacion_promedio()
-        if promedio is not None:
-            self.calificacion = promedio
-        else:
-            self.calificacion = None
-        self.save(update_fields=['calificacion'])
+        from decimal import Decimal
+        evaluaciones = self.evaluaciones.filter(
+            calificacion_final__isnull=False
+        )
+        if not evaluaciones.exists():
+            return
+        
+        total = sum(e.calificacion_final for e in evaluaciones)
+        count = evaluaciones.count()
+        promedio = round(Decimal(str(total)) / Decimal(str(count)), 2)
+        
+        Proyecto.objects.filter(pk=self.pk).update(calificacion_final=promedio)
+        self.calificacion_final = promedio
 
 
 # ──────────────────────────────────────────────────────────────
@@ -231,13 +256,20 @@ class CriterioEvaluacion(models.Model):
 # ──────────────────────────────────────────────────────────────
 
 class Evaluacion(models.Model):
+    def __init__(self, *args, **kwargs):
+        if 'calificacion' in kwargs:
+            kwargs['calificacion_final'] = kwargs.pop('calificacion')
+        if 'comentarios_evaluador' in kwargs:
+            kwargs['comentarios'] = kwargs.pop('comentarios_evaluador')
+        super().__init__(*args, **kwargs)
+
     proyecto     = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='evaluaciones')
     evaluador    = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='evaluaciones_realizadas'
     )
-    calificacion          = models.DecimalField(max_digits=4, decimal_places=2, default=0.0)
-    comentarios_evaluador = models.TextField(blank=True, null=True)
+    calificacion_final    = models.DecimalField(max_digits=4, decimal_places=2, default=0.0)
+    comentarios           = models.TextField(blank=True, null=True)
     estatus_sugerido      = models.CharField(
         max_length=20, choices=Proyecto.ESTATUS_CHOICES, default='aprobado',
         verbose_name="Resultado sugerido"
@@ -256,23 +288,23 @@ class Evaluacion(models.Model):
         ]
 
     def __str__(self):
-        return f"Evaluación {self.proyecto.codigo} — {self.calificacion}"
+        return f"Evaluación {self.proyecto.codigo} — {self.calificacion_final}"
 
     @property
-    def comentarios(self):
-        return self.comentarios_evaluador
+    def comentarios_evaluador(self):
+        return self.comentarios
 
-    @comentarios.setter
-    def comentarios(self, value):
-        self.comentarios_evaluador = value
+    @comentarios_evaluador.setter
+    def comentarios_evaluador(self, value):
+        self.comentarios = value
 
     @property
-    def calificacion_final(self):
-        return self.calificacion
+    def calificacion(self):
+        return self.calificacion_final
 
-    @calificacion_final.setter
-    def calificacion_final(self, value):
-        self.calificacion = value
+    @calificacion.setter
+    def calificacion(self, value):
+        self.calificacion_final = value
 
     def recalcular_calificacion(self):
         """
@@ -283,10 +315,10 @@ class Evaluacion(models.Model):
             calif_final = 0
             for det in detalles:
                 calif_final += float(det.calificacion_numerica) * float(det.criterio.peso)
-            self.calificacion = calif_final
+            self.calificacion_final = calif_final
             
             # Guardamos únicamente la calificación para evitar ciclos infinitos de save()
-            Evaluacion.objects.filter(pk=self.pk).update(calificacion=self.calificacion)
+            Evaluacion.objects.filter(pk=self.pk).update(calificacion_final=self.calificacion_final)
             
             # También actualizamos la calificación final del proyecto
             self.proyecto.actualizar_calificacion_final()

@@ -82,16 +82,16 @@ class EvaluacionForm(forms.ModelForm):
     """Formulario para que el evaluador califique y comente un proyecto."""
     class Meta:
         model = Evaluacion
-        fields = ['comentarios_evaluador']
+        fields = ['comentarios']
         widgets = {
-            'comentarios_evaluador': forms.Textarea(attrs={
+            'comentarios': forms.Textarea(attrs={
                 'class': TEXTAREA_CLASS,
                 'rows': 4,
                 'placeholder': 'Observaciones sobre el proyecto...'
             }),
         }
         labels = {
-            'comentarios_evaluador': 'Comentarios generales / observaciones',
+            'comentarios': 'Comentarios generales / observaciones',
         }
 
 

@@ -294,18 +294,59 @@ def index_view(request):
         nombre = request.user.first_name or request.user.username
         messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
 
-    stats = {}
+    context = {}
     rol = request.user.rol
 
     if request.user.es_admin or rol == 'ADMIN':
-        stats = {
-            'total_usuarios': Usuario.objects.count(),
+        context['stats'] = {
+            'total_usuarios': Usuario.objects.filter(is_active=True).count(),
             'total_proyectos': Proyecto.objects.count(),
-            'evaluados': Proyecto.objects.filter(calificacion__isnull=False).count(),
+            'evaluados': Proyecto.objects.filter(calificacion_final__isnull=False).count(),
             'sin_evaluador': Proyecto.objects.filter(evaluadores__isnull=True).count()
         }
 
-    return render(request, 'seguridad/index.html', {'stats': stats})
+    elif rol == 'ALUMNO':
+        # Buscar proyecto donde el alumno es creador O integrante
+        from usuarios.models import Proyecto, Integrante
+        
+        proyecto = None
+        
+        # Primero buscar como creador
+        proyecto = Proyecto.objects.filter(
+            creado_por=request.user
+        ).select_related('carrera').prefetch_related(
+            'miembros', 'evaluadores', 'evaluaciones'
+        ).first()
+        
+        # Si no es creador, buscar como integrante
+        if not proyecto:
+            integrante = Integrante.objects.filter(
+                matricula=request.user.username
+            ).select_related('proyecto').first()
+            if integrante:
+                proyecto = integrante.proyecto
+        
+        context['proyecto'] = proyecto
+        context['tiene_proyecto'] = proyecto is not None
+        
+        if proyecto:
+            context['num_integrantes'] = proyecto.miembros.count()
+            context['calificacion'] = proyecto.calificacion_final
+            context['estatus'] = proyecto.get_estatus_display()
+
+    elif rol == 'EVALUADOR':
+        from usuarios.models import Proyecto
+        proyectos_asignados = Proyecto.objects.filter(
+            evaluadores=request.user
+        ).count()
+        proyectos_evaluados = request.user.evaluaciones.filter(
+            calificacion_final__isnull=False
+        ).count()
+        context['proyectos_asignados'] = proyectos_asignados
+        context['proyectos_evaluados'] = proyectos_evaluados
+        context['proyectos_pendientes'] = proyectos_asignados - proyectos_evaluados
+
+    return render(request, 'seguridad/index.html', context)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -531,7 +572,7 @@ def evaluar_proyecto_view(request, pk):
     evaluacion, created = Evaluacion.objects.get_or_create(
         proyecto=proyecto,
         evaluador=request.user,
-        defaults={'comentarios_evaluador': ''}
+        defaults={'comentarios': ''}
     )
     
     # Cargar detalles existentes de este evaluador
@@ -563,11 +604,17 @@ def evaluar_proyecto_view(request, pk):
             
             if not error_rubrica:
                 with transaction.atomic():
-                    # 1. Guardar la evaluación base
-                    evaluacion = form.save(commit=False)
-                    evaluacion.proyecto = proyecto
-                    evaluacion.evaluador = request.user
-                    evaluacion.save()
+                    # 1. Guardar o actualizar la evaluación base usando update_or_create
+                    comentarios = form.cleaned_data.get('comentarios', '')
+                    from django.utils import timezone
+                    evaluacion, created = Evaluacion.objects.update_or_create(
+                        proyecto=proyecto,
+                        evaluador=request.user,
+                        defaults={
+                            'comentarios': comentarios,
+                            'fecha_evaluacion': timezone.now(),
+                        }
+                    )
 
                     # 2. Guardar detalles de la rúbrica si existen
                     if criterios.exists():
@@ -596,21 +643,21 @@ def evaluar_proyecto_view(request, pk):
                             peso_total += Decimal(str(criterio_obj.peso))
                             
                         if peso_total > 0:
-                            evaluacion.calificacion = round(calificacion_total, 2)
-                            evaluacion.save()
-                            
-                        # Forzar recalculación para actualizar Evaluación y Proyecto
-                        evaluacion.recalcular_calificacion()
-                    else:
-                        # Si es evaluación directa, guardar la calificación ingresada y recalcular promedio
-                        proyecto.actualizar_calificacion_final()
+                            evaluacion.calificacion_final = round(calificacion_total, 2)
+
+                    # Después de guardar evaluacion
+                    evaluacion.save()
+
+                    # Recargar el proyecto desde BD y recalcular
+                    proyecto.refresh_from_db()
+                    proyecto.actualizar_calificacion_final()
 
                     # 🟢 Registrar log de auditoría
                     evaluacion.refresh_from_db()
                     LogActividad.objects.create(
                         usuario=request.user,
                         tipo='evaluacion',
-                        descripcion=f"Evaluación registrada/actualizada para proyecto '{proyecto.titulo}' (Código: {proyecto.codigo}) con calificación: {evaluacion.calificacion}",
+                        descripcion=f"Evaluación registrada/actualizada para proyecto '{proyecto.titulo}' (Código: {proyecto.codigo}) con calificación: {evaluacion.calificacion_final}",
                         ip=get_client_ip(request)
                     )
 
@@ -663,7 +710,7 @@ def panel_admin_view(request):
 
     # Filtros desde las tarjetas del dashboard
     if filtro == 'evaluados':
-        qs = qs.filter(calificacion__isnull=False)
+        qs = qs.filter(calificacion_final__isnull=False)
     elif filtro == 'sin_evaluador':
         qs = qs.filter(evaluadores__isnull=True)
 
@@ -691,7 +738,7 @@ def panel_admin_view(request):
     # Métricas del Dashboard Admin
     total_usuarios = Usuario.objects.filter(is_active=True).count()
     total_proyectos = Proyecto.objects.count()
-    proyectos_evaluados = Proyecto.objects.filter(calificacion__isnull=False).count()
+    proyectos_evaluados = Proyecto.objects.filter(calificacion_final__isnull=False).count()
     sin_evaluador_count = Proyecto.objects.filter(evaluadores__isnull=True).count()
 
     return render(request, 'usuarios/panel_admin.html', {

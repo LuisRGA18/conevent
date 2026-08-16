@@ -24,8 +24,8 @@ class DashboardReportView(APIView):
         # 1. Métricas generales
         total_usuarios = Usuario.objects.count()
         total_proyectos = Proyecto.objects.count()
-        proyectos_evaluados = Proyecto.objects.filter(calificacion__isnull=False).count()
-        proyectos_sin_evaluar = Proyecto.objects.filter(calificacion__isnull=True).count()
+        proyectos_evaluados = Proyecto.objects.filter(calificacion_final__isnull=False).count()
+        proyectos_sin_evaluar = Proyecto.objects.filter(calificacion_final__isnull=True).count()
         total_stands = Stand.objects.count()
         stands_ocupados = AsignacionStand.objects.count()
         stands_libres = Stand.objects.filter(esta_activo=True, asignacion__isnull=True).count()
@@ -70,7 +70,7 @@ class DashboardReportView(APIView):
         ]
         
         # 4. Calificación promedio por carrera
-        calif_carr = Proyecto.objects.filter(calificacion__isnull=False).values('carrera__nombre', 'carrera__clave').annotate(promedio=Avg('calificacion')).order_by('-promedio')
+        calif_carr = Proyecto.objects.filter(calificacion_final__isnull=False).values('carrera__nombre', 'carrera__clave').annotate(promedio=Avg('calificacion_final')).order_by('-promedio')
         calif_promedio_por_carrera = [
             {
                 'carrera_nombre': item['carrera__nombre'] or 'Sin Carrera',
@@ -81,7 +81,7 @@ class DashboardReportView(APIView):
         ]
         
         # 5. Top 5 Proyectos mejor calificados
-        top_proy_qs = Proyecto.objects.filter(calificacion__isnull=False).order_by('-calificacion', 'titulo')[:5]
+        top_proy_qs = Proyecto.objects.filter(calificacion_final__isnull=False).order_by('-calificacion_final', 'titulo')[:5]
         top_proyectos = [
             {
                 'id': p.id,
