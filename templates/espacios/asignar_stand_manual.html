@@ -34,10 +34,19 @@
             <option value="">— Dejar sin asignar (liberar stand) —</option>
             {% for proyecto in proyectos %}
               <option value="{{ proyecto.pk }}" {% if asignacion_actual and asignacion_actual.proyecto == proyecto %}selected{% endif %}>
-                {{ proyecto.titulo }} [{{ proyecto.carrera.clave }}]
+                {{ proyecto.titulo }} — {{ proyecto.carrera.clave }}
+                ({{ proyecto.mesas_requeridas|default:1 }} 
+                 mesa{{ proyecto.mesas_requeridas|default:1|pluralize }})
+                {% if proyecto.mesas_requeridas == 3 and not proyecto.mesas_autorizadas %}
+                  ⚠️ Sin autorizar
+                {% endif %}
               </option>
             {% endfor %}
           </select>
+          <p style="font-size:12px; color:#6b7a99; margin-top:6px;">
+            Si el proyecto requiere 2 o 3 mesas, se asignarán automáticamente 
+            los stands contiguos desde el stand seleccionado.
+          </p>
         </div>
         
         <div class="d-flex justify-content-end gap-2">

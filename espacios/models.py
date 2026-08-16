@@ -29,12 +29,10 @@ class Stand(models.Model):
 
 
 class AsignacionStand(models.Model):
-    # Un stand físico individual solo puede asignarse a un único proyecto para evitar colisiones.
-    # Sin embargo, un proyecto puede tener asignados múltiples stands (por ejemplo, si necesitan hasta 2 mesas/stands).
-    # Por lo tanto, stand es OneToOneField y proyecto es ForeignKey.
     stand = models.OneToOneField(
         Stand, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True,
         related_name='asignacion', 
         verbose_name="Stand / Mesa física",
         limit_choices_to={'esta_activo': True}
@@ -51,6 +49,7 @@ class AsignacionStand(models.Model):
     motivo_cambio = models.TextField(blank=True, verbose_name="Motivo de solicitud de cambio")
     cambio_autorizado = models.BooleanField(null=True, blank=True, verbose_name="Cambio autorizado por admin")
     motivo_rechazo = models.TextField(blank=True, verbose_name="Motivo de rechazo de cambio")
+    activa = models.BooleanField(default=True, verbose_name="Asignación activa")
 
     class Meta:
         verbose_name = "Asignación de Stand"
@@ -58,7 +57,7 @@ class AsignacionStand(models.Model):
         ordering = ['-fecha_asignacion']
 
     def __str__(self):
-        return f"Stand {self.stand.numero} -> {self.proyecto.titulo}"
+        return f"Stand {self.stand.numero if self.stand else 'N/A'} -> {self.proyecto.titulo}"
 
 # ──────────────────────────────────────────────────────────────
 # CARGA ACADÉMICA DOCENTE (Para Asignación Automática RF3)

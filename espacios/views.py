@@ -67,14 +67,19 @@ def toggle_stand_view(request, stand_id):
 @login_required(login_url='/auth/login/')
 def asignar_stands_automatico_view(request):
     if request.user.rol != 'ADMIN':
-        return HttpResponse("Acceso denegado", status=403)
+        return redirect('index')
         
     if request.method == 'POST':
+        from django.core.management import call_command
+        from io import StringIO
+        
+        out = StringIO()
         try:
-            call_command('asignar_stands')
-            messages.success(request, "¡Algoritmo de asignación automática contigua ejecutado con éxito!")
+            call_command('asignar_stands', stdout=out)
+            resultado = out.getvalue()
+            messages.success(request, f'Asignación completada. {resultado}')
         except Exception as e:
-            messages.error(request, f"Error al ejecutar la asignación: {str(e)}")
+            messages.error(request, f'Error en asignación: {str(e)}')
             
     return redirect('espacios:gestionar_stands')
 
@@ -85,7 +90,7 @@ def asignar_stand_manual_view(request, stand_pk):
     from .models import AsignacionStand
     
     if request.user.rol != 'ADMIN':
-        return HttpResponse("Acceso denegado", status=403)
+        return redirect('index')
         
     stand = get_object_or_404(Stand, pk=stand_pk)
     
@@ -94,47 +99,78 @@ def asignar_stand_manual_view(request, stand_pk):
         
         if proyecto_id:
             proyecto = get_object_or_404(Proyecto, pk=proyecto_id)
-            # Verificar si el proyecto ya tiene stand asignado
-            asignacion_existente = AsignacionStand.objects.filter(
-                proyecto=proyecto
-            ).first()
-            if asignacion_existente and asignacion_existente.stand != stand:
-                messages.warning(request, 
-                    f'El proyecto {proyecto.titulo} ya tiene asignado el stand '
-                    f'{asignacion_existente.stand.numero}. Se reasignará.')
-                asignacion_existente.delete()
+            mesas = proyecto.mesas_requeridas or 1
             
-            # Liberar stand si ya tenía otro proyecto
-            AsignacionStand.objects.filter(stand=stand).delete()
+            # Verificar autorización para 3 mesas
+            if mesas == 3 and not proyecto.mesas_autorizadas:
+                messages.error(request, 
+                    f'El proyecto {proyecto.titulo} solicita 3 mesas pero '
+                    f'no tiene autorización del admin.')
+                return redirect('espacios:gestionar_stands')
             
-            # Crear nueva asignación
-            AsignacionStand.objects.create(
-                stand=stand,
-                proyecto=proyecto
-            )
-            messages.success(request, 
-                f'Stand {stand.numero} asignado a {proyecto.titulo} correctamente.')
+            # Liberar stands anteriores del proyecto
+            AsignacionStand.objects.filter(
+                proyecto=proyecto, activa=True
+            ).update(activa=False, stand=None)
+            
+            # Liberar el stand seleccionado
+            AsignacionStand.objects.filter(
+                stand=stand, activa=True
+            ).update(activa=False, stand=None)
+            
+            if mesas == 1:
+                # Asignar solo este stand
+                AsignacionStand.objects.create(
+                    stand=stand, proyecto=proyecto, activa=True
+                )
+                messages.success(request, 
+                    f'Stand {stand.numero} asignado a {proyecto.titulo}.')
+            else:
+                # Para 2 o 3 mesas, asignar stands contiguos desde este
+                stands_contiguos = Stand.objects.filter(
+                    esta_activo=True,
+                    pos_fila=stand.pos_fila,
+                    pos_col__gte=stand.pos_col
+                ).exclude(
+                    asignacion__activa=True
+                ).order_by('pos_col')[:mesas]
+                
+                if stands_contiguos.count() < mesas:
+                    messages.error(request,
+                        f'No hay {mesas} stands contiguos disponibles desde '
+                        f'{stand.numero}. Elige otro stand de inicio.')
+                    return redirect('espacios:gestionar_stands')
+                
+                numeros = []
+                for s in stands_contiguos:
+                    AsignacionStand.objects.create(
+                        stand=s, proyecto=proyecto, activa=True
+                    )
+                    numeros.append(s.numero)
+                
+                messages.success(request,
+                    f'Stands {", ".join(numeros)} asignados a {proyecto.titulo} '
+                    f'({mesas} mesas).')
         else:
-            # Desasignar — liberar el stand
-            AsignacionStand.objects.filter(stand=stand).delete()
-            messages.success(request, f'Stand {stand.numero} liberado correctamente.')
+            AsignacionStand.objects.filter(stand=stand, activa=True).update(activa=False, stand=None)
+            messages.success(request, f'Stand {stand.numero} liberado.')
         
         return redirect('espacios:gestionar_stands')
     
-    proyectos_sin_stand = Proyecto.objects.exclude(
-        asignaciones_stands__isnull=False
+    proyectos_disponibles = Proyecto.objects.exclude(
+        asignaciones_stands__activa=True
     ).exclude(estatus='rechazado').order_by('carrera__clave', 'titulo')
     
     asignacion_actual = AsignacionStand.objects.filter(
-        stand=stand
+        stand=stand, activa=True
     ).first()
     
-    proyectos_list = list(proyectos_sin_stand)
+    proyectos_list = list(proyectos_disponibles)
     if asignacion_actual and asignacion_actual.proyecto not in proyectos_list:
         proyectos_list.insert(0, asignacion_actual.proyecto)
     
     return render(request, 'espacios/asignar_stand_manual.html', {
         'stand': stand,
         'proyectos': proyectos_list,
-        'asignacion_actual': asignacion_actual
+        'asignacion_actual': asignacion_actual,
     })

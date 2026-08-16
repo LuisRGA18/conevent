@@ -659,6 +659,13 @@ def panel_admin_view(request):
 
     q       = request.GET.get('q', '').strip()
     estatus = request.GET.get('estatus', '').strip()
+    filtro  = request.GET.get('filtro', '').strip()
+
+    # Filtros desde las tarjetas del dashboard
+    if filtro == 'evaluados':
+        qs = qs.filter(calificacion__isnull=False)
+    elif filtro == 'sin_evaluador':
+        qs = qs.filter(evaluadores__isnull=True)
 
     if q:
         qs = qs.filter(
@@ -681,6 +688,12 @@ def panel_admin_view(request):
         cambio_autorizado__isnull=True
     ).select_related('proyecto', 'stand')
 
+    # Métricas del Dashboard Admin
+    total_usuarios = Usuario.objects.filter(is_active=True).count()
+    total_proyectos = Proyecto.objects.count()
+    proyectos_evaluados = Proyecto.objects.filter(calificacion__isnull=False).count()
+    sin_evaluador_count = Proyecto.objects.filter(evaluadores__isnull=True).count()
+
     return render(request, 'usuarios/panel_admin.html', {
         'todos_los_proyectos': proyectos_list,
         'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
@@ -688,6 +701,11 @@ def panel_admin_view(request):
         'estatus_filtro':  estatus,
         'estatus_choices': Proyecto.ESTATUS_CHOICES,
         'solicitudes_cambio': solicitudes_cambio,
+        'total_usuarios':  total_usuarios,
+        'total_proyectos': total_proyectos,
+        'proyectos_evaluados': proyectos_evaluados,
+        'sin_evaluador':   sin_evaluador_count,
+        'filtro_activo':   filtro,
     })
 
 
