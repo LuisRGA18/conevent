@@ -49,6 +49,11 @@ urlpatterns = [
     path('dashboard/', usuarios_views.index_view, name='index'),
     path('contacto/enviar/', usuarios_views.contacto_view, name='contacto_enviar'),
 
+    # Eventos Académicos (Acceso raíz)
+    path('eventos/', usuarios_views.eventos_portal_view, name='eventos_portal_root'),
+    path('eventos/seleccionar/<int:evento_id>/', usuarios_views.seleccionar_evento_view, name='seleccionar_evento_root'),
+    path('eventos/crear/', usuarios_views.crear_evento_view, name='crear_evento_root'),
+
     # Evaluación Externa y QRs por Proyecto
     path('proyectos/<int:proyecto_id>/evaluar-externo/', usuarios_views.evaluar_externo_view, name='evaluar_externo'),
     path('proyectos/<int:proyecto_id>/qr-externo/', usuarios_views.qr_externo_view, name='qr_externo'),

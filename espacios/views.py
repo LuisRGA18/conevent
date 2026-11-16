@@ -44,12 +44,10 @@ def gestionar_stands_view(request):
             except ValueError:
                 messages.error(request, "Fila y Columna deben ser números enteros positivos.")
 
-    stands = Stand.objects.all().order_by('zona', 'numero').select_related('asignacion__proyecto')
-    zona_choices = Stand.ZONA_CHOICES
+    stands = Stand.objects.all().order_by('planta__nivel', 'numero').select_related('planta')
     
     return render(request, 'espacios/gestionar_stands.html', {
         'stands': stands,
-        'zona_choices': zona_choices,
     })
 
 @login_required(login_url='/auth/login/')
@@ -72,10 +70,16 @@ def asignar_stands_automatico_view(request):
     if request.method == 'POST':
         from django.core.management import call_command
         from io import StringIO
+        from usuarios.views import get_evento_activo
         
+        evento = get_evento_activo(request)
+        if not evento:
+            messages.error(request, 'No hay evento activo seleccionado. Elige uno en el portal.')
+            return redirect('eventos_portal')
+
         out = StringIO()
         try:
-            call_command('asignar_stands', stdout=out)
+            call_command('asignar_stands', evento=evento.pk, stdout=out)
             resultado = out.getvalue()
             messages.success(request, f'Asignación completada. {resultado}')
         except Exception as e:
@@ -88,11 +92,13 @@ def asignar_stands_automatico_view(request):
 def asignar_stand_manual_view(request, stand_pk):
     from usuarios.models import Proyecto
     from .models import AsignacionStand
+    from usuarios.views import get_evento_activo
     
     if request.user.rol != 'ADMIN':
         return redirect('index')
         
     stand = get_object_or_404(Stand, pk=stand_pk)
+    evento = get_evento_activo(request)
     
     if request.method == 'POST':
         proyecto_id = request.POST.get('proyecto_id')
@@ -126,13 +132,14 @@ def asignar_stand_manual_view(request, stand_pk):
                 messages.success(request, 
                     f'Stand {stand.numero} asignado a {proyecto.titulo}.')
             else:
-                # Para 2 o 3 mesas, asignar stands contiguos desde este
+                # Para 2 o 3 mesas, asignar stands contiguos desde este en la misma planta
                 stands_contiguos = Stand.objects.filter(
+                    planta=stand.planta,
                     esta_activo=True,
                     pos_fila=stand.pos_fila,
                     pos_col__gte=stand.pos_col
                 ).exclude(
-                    asignacion__activa=True
+                    asignacionstand_set__activa=True
                 ).order_by('pos_col')[:mesas]
                 
                 if stands_contiguos.count() < mesas:
@@ -157,7 +164,8 @@ def asignar_stand_manual_view(request, stand_pk):
         
         return redirect('espacios:gestionar_stands')
     
-    proyectos_disponibles = Proyecto.objects.exclude(
+    proyectos_qs = Proyecto.objects.filter(evento=evento) if evento else Proyecto.objects.all()
+    proyectos_disponibles = proyectos_qs.exclude(
         asignaciones_stands__activa=True
     ).exclude(estatus='rechazado').order_by('carrera__clave', 'titulo')
     

@@ -1,0 +1,56 @@
+[
+  {
+    "model": "espacios.recinto",
+    "pk": 1,
+    "fields": {
+      "nombre": "Auditorio UTEQ",
+      "descripcion": "Auditorio principal — 11.7m x 30m",
+      "direccion": "Av. Pie de la Cuesta No. 2501, UTEQ, Querétaro"
+    }
+  },
+  {
+    "model": "espacios.recinto",
+    "pk": 2,
+    "fields": {
+      "nombre": "Edificio DTAI",
+      "descripcion": "Edificio de Tecnologías — 2 plantas",
+      "direccion": "UTEQ, Querétaro"
+    }
+  },
+  {
+    "model": "espacios.planta",
+    "pk": 1,
+    "fields": {
+      "recinto": 1,
+      "nombre": "Planta Única",
+      "nivel": 0,
+      "filas": 10,
+      "columnas": 7,
+      "descripcion": "Distribución 7x10 — 70 stands"
+    }
+  },
+  {
+    "model": "espacios.planta",
+    "pk": 2,
+    "fields": {
+      "recinto": 2,
+      "nombre": "Planta Baja",
+      "nivel": 0,
+      "filas": 9,
+      "columnas": 3,
+      "descripcion": "Cuerpo principal 5x18m + extensión L 5x7m — 27 stands aprox."
+    }
+  },
+  {
+    "model": "espacios.planta",
+    "pk": 3,
+    "fields": {
+      "recinto": 2,
+      "nombre": "Planta Alta",
+      "nivel": 1,
+      "filas": 7,
+      "columnas": 3,
+      "descripcion": "5x18m rectangular — 21 stands aprox."
+    }
+  }
+]

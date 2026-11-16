@@ -1,37 +1,55 @@
 from django.core.management.base import BaseCommand
-from espacios.models import Stand
+from espacios.models import Recinto, Planta, Stand
 
 class Command(BaseCommand):
-    help = 'Pobla el auditorio principal con stands estándar en las filas 1 a 10 con coordenadas correctas.'
+    help = 'Pobla stands para todas las plantas de un recinto'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--recinto', type=int, default=1,
+            help='ID del recinto a poblar (default: 1 Auditorio)'
+        )
 
     def handle(self, *args, **options):
-        created_count = 0
-        for fila in range(1, 11):
-            # Zona A: filas 1-4, Zona B: filas 5-8, Zona C: filas 9-10
-            if 1 <= fila <= 4:
-                zona_letra = 'A'
-                base_idx = (fila - 1) * 7
-            elif 5 <= fila <= 8:
-                zona_letra = 'B'
-                base_idx = (fila - 5) * 7
-            else:
-                zona_letra = 'C'
-                base_idx = (fila - 9) * 7
-                
-            for col in range(1, 8):
-                numero_identificador = f"{zona_letra}-{base_idx + col:02d}"
-                stand, created = Stand.objects.get_or_create(
-                    numero=numero_identificador,
-                    defaults={
-                        'zona': 'auditorio',
-                        'pos_fila': fila,
-                        'pos_col': col,
-                        'capacidad_proyectos': 1,
-                        'esta_activo': True,
-                        'descripcion': f'Stand estándar {numero_identificador} en fila {fila}, columna {col}'
-                    }
-                )
-                if created:
-                    created_count += 1
-                    
-        self.stdout.write(self.style.SUCCESS(f"Se crearon {created_count} stands nuevos en el auditorio principal."))
+        recinto_id = options.get('recinto') or 1
+        recinto, _ = Recinto.objects.get_or_create(
+            pk=recinto_id,
+            defaults={
+                'nombre': 'Auditorio UTEQ' if recinto_id == 1 else f'Recinto {recinto_id}',
+                'descripcion': 'Auditorio principal — 11.7m x 30m',
+                'direccion': 'Av. Pie de la Cuesta No. 2501, UTEQ, Querétaro'
+            }
+        )
+
+        plantas = list(recinto.plantas.all())
+        if not plantas:
+            p = Planta.objects.create(
+                recinto=recinto,
+                nombre='Planta Única',
+                nivel=0,
+                filas=10,
+                columnas=7,
+                descripcion='Distribución 7x10 — 70 stands'
+            )
+            plantas = [p]
+
+        for planta in plantas:
+            creados = 0
+            for fila in range(1, planta.filas + 1):
+                for col in range(1, planta.columnas + 1):
+                    zona = 'A' if fila <= 4 else 'B' if fila <= 7 else 'C'
+                    numero = f"{zona}-{str((fila-1)*planta.columnas + col).zfill(2)}"
+                    Stand.objects.get_or_create(
+                        planta=planta,
+                        pos_fila=fila,
+                        pos_col=col,
+                        defaults={
+                            'numero': numero,
+                            'zona': zona,
+                            'esta_activo': True
+                        }
+                    )
+                    creados += 1
+            self.stdout.write(
+                f'{planta.nombre}: {creados} stands creados'
+            )

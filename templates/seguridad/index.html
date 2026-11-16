@@ -112,6 +112,20 @@
             </span>
         </div>
 
+        {% if request.session.evento_activo_nombre %}
+        <div style="background:#0b3c5d; border-radius:8px; padding:8px 12px;
+                    margin-bottom:16px; font-size:12px; color:#a8b2d1;">
+          <span style="display:block; font-size:10px; color:#6b7a99; margin-bottom:2px;">
+            EVENTO ACTIVO
+          </span>
+          <strong style="color:#ffffff;">{{ request.session.evento_activo_nombre }}</strong>
+          <a href="{% url 'eventos_portal' %}" 
+             style="display:block; font-size:11px; color:#328cc1; margin-top:4px; text-decoration:none;">
+            Cambiar evento →
+          </a>
+        </div>
+        {% endif %}
+
         <ul class="nav flex-column">
             <li><a href="{% url 'index' %}" class="nav-link-custom">
                 <i class="fas fa-home me-2"></i> Inicio

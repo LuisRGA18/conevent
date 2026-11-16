@@ -23,6 +23,10 @@ class ItemInventario(models.Model):
         related_name='items_inventario',
         verbose_name="Stand asignado"
     )
+    evento = models.ForeignKey(
+        'usuarios.Evento', on_delete=models.SET_NULL,
+        related_name='inventario', null=True, blank=True
+    )
     fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
 
     class Meta:

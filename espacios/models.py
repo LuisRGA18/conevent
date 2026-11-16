@@ -1,6 +1,36 @@
 from django.db import models
 from django.conf import settings
 
+class Recinto(models.Model):
+    nombre = models.CharField(max_length=150)
+    descripcion = models.TextField(blank=True)
+    direccion = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = "Recinto"
+
+
+class Planta(models.Model):
+    recinto = models.ForeignKey(
+        Recinto, on_delete=models.CASCADE, related_name='plantas'
+    )
+    nombre = models.CharField(max_length=100)  # "Planta Baja", "Planta Alta"
+    nivel = models.PositiveIntegerField(default=0)  # 0=PB, 1=PA
+    filas = models.PositiveIntegerField(default=7)
+    columnas = models.PositiveIntegerField(default=3)
+    descripcion = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.recinto.nombre} — {self.nombre}"
+
+    class Meta:
+        ordering = ['nivel']
+        verbose_name = "Planta"
+
+
 class Stand(models.Model):
     ZONA_CHOICES = [
         ('gimnasio', 'Gimnasio UTEQ'),
@@ -11,29 +41,36 @@ class Stand(models.Model):
         ('otro', 'Otro / Sala alterna'),
     ]
 
-    numero = models.CharField(max_length=20, unique=True, verbose_name="Número / Identificador del Stand")
-    zona = models.CharField(max_length=20, choices=ZONA_CHOICES, default='gimnasio', verbose_name="Zona física")
-    capacidad_proyectos = models.PositiveIntegerField(default=1, verbose_name="Capacidad de proyectos simultáneos")
-    descripcion = models.TextField(blank=True, verbose_name="Detalles adicionales del espacio")
-    esta_activo = models.BooleanField(default=True, verbose_name="Disponible para asignación")
-    pos_fila = models.PositiveIntegerField(default=0, verbose_name="Posición Fila (Coordenada Y)")
-    pos_col = models.PositiveIntegerField(default=0, verbose_name="Posición Columna (Coordenada X)")
-
-    class Meta:
-        verbose_name = "Stand / Espacio"
-        verbose_name_plural = "Stands / Espacios"
-        ordering = ['zona', 'numero']
+    planta = models.ForeignKey(
+        Planta, on_delete=models.CASCADE,
+        related_name='stands', null=True, blank=True
+    )
+    numero = models.CharField(max_length=20)
+    zona = models.CharField(max_length=100, blank=True)
+    pos_fila = models.PositiveIntegerField(default=0)
+    pos_col = models.PositiveIntegerField(default=0)
+    capacidad_proyectos = models.PositiveIntegerField(default=1)
+    descripcion = models.TextField(blank=True)
+    esta_activo = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.get_zona_display()} - Stand {self.numero}"
+        return f"Stand {self.numero}"
+
+    def get_zona_display(self):
+        return dict(self.ZONA_CHOICES).get(self.zona, self.zona or "General")
+
+    @property
+    def asignacion(self):
+        return self.asignacionstand_set.filter(activa=True).first()
 
 
 class AsignacionStand(models.Model):
-    stand = models.OneToOneField(
+    stand = models.ForeignKey(
         Stand, 
         on_delete=models.SET_NULL, 
         null=True, blank=True,
-        related_name='asignacion', 
+        related_name='asignacionstand_set', 
+        related_query_name='asignacion',
         verbose_name="Stand / Mesa física",
         limit_choices_to={'esta_activo': True}
     )
@@ -41,6 +78,7 @@ class AsignacionStand(models.Model):
         'usuarios.Proyecto', 
         on_delete=models.CASCADE, 
         related_name='asignaciones_stands', 
+        related_query_name='asignacionstand',
         verbose_name="Proyecto asignado"
     )
     fecha_asignacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de asignación")

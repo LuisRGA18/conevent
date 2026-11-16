@@ -283,52 +283,135 @@ def landing_contacto_view(request):
 
 
 # ──────────────────────────────────────────────────────────────
-# DASHBOARD PRINCIPAL (CON CONTADORES REALES)
+# HELPER Y GESTIÓN DE EVENTOS MULTI-EVENTO (RF-10)
+# ──────────────────────────────────────────────────────────────
+
+def get_evento_activo(request):
+    """Obtiene el objeto Evento activo configurado en la sesión del usuario."""
+    from usuarios.models import Evento
+    evento_id = request.session.get('evento_activo_id')
+    if evento_id:
+        try:
+            return Evento.objects.select_related('recinto').get(pk=evento_id)
+        except Evento.DoesNotExist:
+            pass
+    return None
+
+
+def eventos_portal_view(request):
+    """Portal público/inicio de selección de eventos académicos."""
+    if not request.user.is_authenticated:
+        return redirect('landing')
+
+    from usuarios.models import Evento
+    eventos_activos = Evento.objects.filter(
+        estatus='activo'
+    ).select_related('recinto').order_by('-fecha_inicio')
+
+    eventos_borrador = []
+    if request.user.rol == 'ADMIN':
+        eventos_borrador = Evento.objects.filter(
+            estatus='borrador'
+        ).select_related('recinto')
+
+    return render(request, 'usuarios/eventos_portal.html', {
+        'eventos_activos': eventos_activos,
+        'eventos_borrador': eventos_borrador,
+    })
+
+
+def seleccionar_evento_view(request, evento_id):
+    """Selecciona un evento y lo guarda en la sesión HTTP."""
+    from usuarios.models import Evento
+    evento = get_object_or_404(Evento, pk=evento_id)
+    request.session['evento_activo_id'] = evento_id
+    request.session['evento_activo_nombre'] = evento.nombre
+    return redirect('index')
+
+
+def crear_evento_view(request):
+    """Permite al administrador crear un nuevo evento en estado borrador."""
+    if request.user.rol != 'ADMIN':
+        return redirect('index')
+
+    from espacios.models import Recinto
+    from usuarios.models import Evento
+    recintos = Recinto.objects.all()
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion', '')
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin')
+        recinto_id = request.POST.get('recinto_id')
+
+        evento = Evento.objects.create(
+            nombre=nombre,
+            descripcion=descripcion,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            recinto_id=recinto_id,
+            creado_por=request.user,
+            estatus='borrador'
+        )
+        messages.success(request, f'Evento "{evento.nombre}" creado. Ahora actívalo cuando esté listo.')
+        return redirect('seleccionar_evento', evento_id=evento.pk)
+
+    return render(request, 'usuarios/crear_evento.html', {
+        'recintos': recintos,
+    })
+
+
+# ──────────────────────────────────────────────────────────────
+# DASHBOARD PRINCIPAL (CON CONTADORES REALES FILTRADOS POR EVENTO)
 # ──────────────────────────────────────────────────────────────
 
 def index_view(request):
     if not request.user.is_authenticated:
         return redirect('landing')
 
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
     if request.session.pop('mostrar_bienvenida', False):
         nombre = request.user.first_name or request.user.username
         messages.success(request, f"¡Bienvenido de nuevo, {nombre}!")
 
-    context = {}
+    context = {'evento_activo': evento}
     rol = request.user.rol
 
     if request.user.es_admin or rol == 'ADMIN':
         context['stats'] = {
             'total_usuarios': Usuario.objects.filter(is_active=True).count(),
-            'total_proyectos': Proyecto.objects.count(),
-            'evaluados': Proyecto.objects.filter(calificacion_final__isnull=False).count(),
-            'sin_evaluador': Proyecto.objects.filter(evaluadores__isnull=True).count()
+            'total_proyectos': Proyecto.objects.filter(evento=evento).count(),
+            'evaluados': Proyecto.objects.filter(evento=evento, calificacion_final__isnull=False).count(),
+            'sin_evaluador': Proyecto.objects.filter(evento=evento, evaluadores__isnull=True).count()
         }
 
     elif rol == 'ALUMNO':
-        # Buscar proyecto donde el alumno es creador O integrante
+        # Buscar proyecto donde el alumno es creador O integrante para este evento
         from usuarios.models import Proyecto, Integrante
-        
-        proyecto = None
-        
-        # Primero buscar como creador
+
         proyecto = Proyecto.objects.filter(
-            creado_por=request.user
+            creado_por=request.user,
+            evento=evento
         ).select_related('carrera').prefetch_related(
             'miembros', 'evaluadores', 'evaluaciones'
         ).first()
-        
+
         # Si no es creador, buscar como integrante
         if not proyecto:
             integrante = Integrante.objects.filter(
-                matricula=request.user.username
+                matricula=request.user.username,
+                proyecto__evento=evento
             ).select_related('proyecto').first()
             if integrante:
                 proyecto = integrante.proyecto
-        
+
         context['proyecto'] = proyecto
         context['tiene_proyecto'] = proyecto is not None
-        
+
         if proyecto:
             context['num_integrantes'] = proyecto.miembros.count()
             context['calificacion'] = proyecto.calificacion_final
@@ -337,9 +420,11 @@ def index_view(request):
     elif rol == 'EVALUADOR':
         from usuarios.models import Proyecto
         proyectos_asignados = Proyecto.objects.filter(
+            evento=evento,
             evaluadores=request.user
         ).count()
         proyectos_evaluados = request.user.evaluaciones.filter(
+            proyecto__evento=evento,
             calificacion_final__isnull=False
         ).count()
         context['proyectos_asignados'] = proyectos_asignados
@@ -372,17 +457,21 @@ def panel_alumno_view(request):
     """🟢 Home/Dashboard del Alumno: Resuelve el bug del POST y envía variables exactas."""
     if request.user.rol != 'ALUMNO':
         return redirect('index')
-        
+
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
     if request.method == 'POST':
         # Procesamos la creación/edición del proyecto delegando a la vista unificada
         return registrar_proyecto_view(request)
-        
-    proyecto = Proyecto.objects.filter(creado_por=request.user).prefetch_related('miembros').first()
+
+    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).prefetch_related('miembros').first()
     carreras = Carrera.objects.all()
-    
+
     form = ProyectoForm(instance=proyecto) if proyecto else None
     formset = IntegranteFormSet(instance=proyecto) if proyecto else None
-    
+
     return render(request, 'usuarios/registrar_proyecto.html', {
         'proyecto': proyecto,
         'proyecto_registrado': proyecto,
@@ -390,6 +479,7 @@ def panel_alumno_view(request):
         'carreras': carreras,
         'form': form,
         'formset': formset,
+        'evento_activo': evento,
     })
 
 
@@ -400,11 +490,15 @@ def registrar_proyecto_view(request):
         messages.error(request, "Solo los alumnos pueden acceder a esta sección.")
         return redirect('index')
 
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
     # Contingencia carreras vacías
     if not Carrera.objects.exists():
         messages.error(request, "No hay carreras registradas. Contacta al administrador del evento.")
 
-    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).first()
 
     if request.method == 'POST':
         # Caso A: El proyecto ya existe y se está editando
@@ -417,7 +511,7 @@ def registrar_proyecto_view(request):
                     if f.instance.pk and f.instance.es_lider:
                         f.cleaned_data['DELETE'] = False
                         f.cleaned_data['es_lider'] = True
-                        
+
                 with transaction.atomic():
                     form.save()
                     formset.save()
@@ -425,7 +519,7 @@ def registrar_proyecto_view(request):
                 return redirect('mi_proyecto')
             else:
                 messages.error(request, "Por favor, corrige los errores en el formulario.")
-        
+
         # Caso B: El proyecto no existe y se está creando desde cero
         else:
             titulo = request.POST.get('titulo')
@@ -438,10 +532,11 @@ def registrar_proyecto_view(request):
 
             if titulo and descripcion and carrera_id and grupo:
                 carrera_obj = Carrera.objects.get(id=carrera_id)
-                
+
                 with transaction.atomic():
-                    # 1. Creamos el proyecto limpio
+                    # 1. Creamos el proyecto limpio asociado al evento
                     nuevo_proyecto = Proyecto.objects.create(
+                        evento=evento,
                         titulo=titulo,
                         descripcion=descripcion,
                         carrera=carrera_obj,
@@ -526,13 +621,24 @@ def eliminar_proyecto_view(request, pk):
 
 @login_required(login_url='login')
 def ver_calificacion_view(request):
-    proyecto = Proyecto.objects.filter(creado_por=request.user).first()
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
+    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).first()
+    if not proyecto:
+        from usuarios.models import Integrante
+        integrante = Integrante.objects.filter(matricula=request.user.username, proyecto__evento=evento).select_related('proyecto').first()
+        if integrante:
+            proyecto = integrante.proyecto
+
     evaluaciones = proyecto.evaluaciones.all() if proyecto else []
 
     context = {
         'proyecto': proyecto,
         'evaluaciones': evaluaciones,
         'evaluacion': evaluaciones.first() if evaluaciones.exists() else None,
+        'evento_activo': evento,
     }
     return render(request, 'seguridad/mis_calificaciones.html', context)
 
@@ -547,7 +653,12 @@ def proyectos_asignados_view(request):
         messages.error(request, "No tienes permiso para acceder a esta sección.")
         return redirect('index')
 
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
     proyectos = Proyecto.objects.filter(
+        evento=evento,
         evaluadores=request.user
     ).prefetch_related('miembros', 'evaluaciones').select_related('carrera')
 
@@ -556,7 +667,10 @@ def proyectos_asignados_view(request):
         proyecto.calificacion_display = proyecto.get_calificacion_promedio()
         proyecto.mi_evaluacion = proyecto.evaluaciones.filter(evaluador=request.user).first()
 
-    return render(request, 'usuarios/proyectos_asignados.html', {'proyectos': proyectos_list})
+    return render(request, 'usuarios/proyectos_asignados.html', {
+        'proyectos': proyectos_list,
+        'evento_activo': evento,
+    })
 
 
 @login_required(login_url='login')
@@ -566,7 +680,9 @@ def evaluar_proyecto_view(request, pk):
         return redirect('index')
 
     proyecto = get_object_or_404(Proyecto, pk=pk, evaluadores=request.user)
-    criterios = CriterioEvaluacion.objects.filter(activo=True)
+    criterios = CriterioEvaluacion.objects.filter(evento=proyecto.evento, activo=True)
+    if not criterios.exists():
+        criterios = CriterioEvaluacion.objects.filter(activo=True)
     
     # Buscar/crear evaluación existente de ESTE evaluador específico
     evaluacion, created = Evaluacion.objects.get_or_create(
@@ -686,6 +802,10 @@ def panel_admin_view(request):
         messages.error(request, "No tienes permiso.")
         return redirect('index')
 
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
     from django.db.models import Count, Avg, Case, When, Value, FloatField
 
     calificacion_numerica_expr = Case(
@@ -697,7 +817,7 @@ def panel_admin_view(request):
         output_field=FloatField()
     )
 
-    qs = Proyecto.objects.select_related(
+    qs = Proyecto.objects.filter(evento=evento).select_related(
         'creado_por', 'carrera'
     ).prefetch_related('miembros', 'evaluadores', 'asignaciones_stands__stand').annotate(
         num_externas=Count('evaluaciones_externas', distinct=True),
@@ -731,15 +851,16 @@ def panel_admin_view(request):
 
     from espacios.models import AsignacionStand
     solicitudes_cambio = AsignacionStand.objects.filter(
+        proyecto__evento=evento,
         cambio_solicitado=True,
         cambio_autorizado__isnull=True
     ).select_related('proyecto', 'stand')
 
     # Métricas del Dashboard Admin
     total_usuarios = Usuario.objects.filter(is_active=True).count()
-    total_proyectos = Proyecto.objects.count()
-    proyectos_evaluados = Proyecto.objects.filter(calificacion_final__isnull=False).count()
-    sin_evaluador_count = Proyecto.objects.filter(evaluadores__isnull=True).count()
+    total_proyectos = Proyecto.objects.filter(evento=evento).count()
+    proyectos_evaluados = Proyecto.objects.filter(evento=evento, calificacion_final__isnull=False).count()
+    sin_evaluador_count = Proyecto.objects.filter(evento=evento, evaluadores__isnull=True).count()
 
     return render(request, 'usuarios/panel_admin.html', {
         'todos_los_proyectos': proyectos_list,
@@ -753,6 +874,7 @@ def panel_admin_view(request):
         'proyectos_evaluados': proyectos_evaluados,
         'sin_evaluador':   sin_evaluador_count,
         'filtro_activo':   filtro,
+        'evento_activo':   evento,
     })
 
 

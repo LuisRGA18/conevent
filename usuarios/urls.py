@@ -9,6 +9,11 @@ urlpatterns = [
     path('verificar-2fa/', views.verificar_2fa_view, name='verificar_2fa'),
     path('activar-cuenta/', views.activar_cuenta_view, name='activar_cuenta'),
 
+    # ── Eventos Académicos (Multi-Evento RF-10) ──
+    path('eventos/', views.eventos_portal_view, name='eventos_portal'),
+    path('eventos/seleccionar/<int:evento_id>/', views.seleccionar_evento_view, name='seleccionar_evento'),
+    path('eventos/crear/', views.crear_evento_view, name='crear_evento'),
+
     # ── Alumno ─────────────────────────────────
     path('mi-proyecto/', views.panel_alumno_view, name='mi_proyecto'),
     path('mi-proyecto/<int:pk>/editar/', views.editar_proyecto_view, name='editar_proyecto'),

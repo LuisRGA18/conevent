@@ -30,45 +30,78 @@ class StandViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def mapa(self, request):
-        stands = self.get_queryset().filter(esta_activo=True)
-        data = []
-        for s in stands:
-            stand_data = {
-                'id': s.id,
-                'numero': s.numero,
-                'zona': s.zona,
-                'zona_display': s.get_zona_display(),
-                'pos_fila': s.pos_fila,
-                'pos_col': s.pos_col,
-                'esta_activo': s.esta_activo,
-                'proyecto_asignado': None
-            }
-            
-            asignacion = None
-            try:
-                asignacion = s.asignacion
-            except Stand.asignacion.RelatedObjectDoesNotExist:
-                pass
-                
-            if asignacion:
-                proyecto = asignacion.proyecto
-                evaluadores_list = [ev.get_full_name() or ev.username for ev in proyecto.evaluadores.all()]
-                evaluador_nombre = ", ".join(evaluadores_list) if evaluadores_list else "No asignado aún"
-                
-                creador_nombre = proyecto.creado_por.get_full_name() or proyecto.creado_por.username
-                
-                stand_data['proyecto_asignado'] = {
-                    'id': proyecto.id,
-                    'titulo': proyecto.titulo,
-                    'categoria': proyecto.categoria,
-                    'carrera_clave': proyecto.carrera.clave if proyecto.carrera else 'S/C',
-                    'carrera_nombre': proyecto.carrera.nombre if proyecto.carrera else 'Sin Carrera',
-                    'lider_nombre': creador_nombre,
-                    'evaluador_nombre': evaluador_nombre,
-                    'evaluadores': evaluadores_list,
-                }
-            data.append(stand_data)
-        return Response(data)
+        evento_id = request.session.get('evento_activo_id')
+        from usuarios.models import Evento
+        from django.shortcuts import get_object_or_404
+
+        if not evento_id:
+            evento = Evento.objects.filter(estatus='activo').first() or Evento.objects.first()
+            if not evento:
+                import datetime
+                from espacios.models import Recinto, Planta
+                recinto, _ = Recinto.objects.get_or_create(pk=1, defaults={'nombre': 'Auditorio UTEQ'})
+                if not recinto.plantas.exists():
+                    Planta.objects.create(recinto=recinto, nombre='Planta Única', nivel=0, filas=10, columnas=7)
+                evento, _ = Evento.objects.get_or_create(
+                    pk=1,
+                    defaults={
+                        'nombre': 'Evento Auditorio',
+                        'estatus': 'activo',
+                        'recinto': recinto,
+                        'fecha_inicio': datetime.date.today(),
+                        'fecha_fin': datetime.date.today()
+                    }
+                )
+        else:
+            evento = get_object_or_404(Evento, pk=evento_id)
+        
+        recinto = evento.recinto
+        plantas = recinto.plantas.prefetch_related(
+            'stands__asignacionstand_set__proyecto__carrera',
+            'stands__asignacionstand_set__proyecto__creado_por',
+            'stands__asignacionstand_set__proyecto__evaluadores'
+        ).all()
+        
+        resultado = []
+        for planta in plantas:
+            stands_data = []
+            for stand in planta.stands.filter(esta_activo=True):
+                asignacion = stand.asignacionstand_set.filter(activa=True).first()
+                proy_data = None
+                if asignacion and asignacion.proyecto:
+                    proy = asignacion.proyecto
+                    evaluadores_list = [ev.get_full_name() or ev.username for ev in proy.evaluadores.all()]
+                    eval_str = ", ".join(evaluadores_list) if evaluadores_list else "No asignado aún"
+                    creador_nombre = proy.creado_por.get_full_name() or proy.creado_por.username if proy.creado_por else "Desconocido"
+                    proy_data = {
+                        'id': proy.id,
+                        'titulo': proy.titulo,
+                        'categoria': proy.categoria,
+                        'carrera_clave': proy.carrera.clave if proy.carrera else 'S/C',
+                        'carrera_nombre': proy.carrera.nombre if proy.carrera else 'Sin Carrera',
+                        'lider_nombre': creador_nombre,
+                        'evaluador_nombre': eval_str,
+                        'evaluadores': evaluadores_list,
+                    }
+                stands_data.append({
+                    'id': stand.pk,
+                    'numero': stand.numero,
+                    'zona': stand.zona,
+                    'pos_fila': stand.pos_fila,
+                    'pos_col': stand.pos_col,
+                    'proyecto': proy_data,
+                    'proyecto_asignado': proy_data,
+                })
+            resultado.append({
+                'planta_id': planta.pk,
+                'planta_nombre': planta.nombre,
+                'nivel': planta.nivel,
+                'filas': planta.filas,
+                'columnas': planta.columnas,
+                'stands': stands_data
+            })
+        
+        return Response(resultado)
 
 class AsignacionStandViewSet(viewsets.ModelViewSet):
     queryset = AsignacionStand.objects.all()

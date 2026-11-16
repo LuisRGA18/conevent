@@ -57,6 +57,43 @@ class Carrera(models.Model):
 
 
 # ──────────────────────────────────────────────────────────────
+# EVENTO
+# ──────────────────────────────────────────────────────────────
+
+class Evento(models.Model):
+    ESTATUS_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('activo', 'Activo'),
+        ('finalizado', 'Finalizado'),
+        ('archivado', 'Archivado'),
+    ]
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+    fecha_inicio = models.DateField()
+    fecha_fin = models.DateField()
+    estatus = models.CharField(
+        max_length=20, choices=ESTATUS_CHOICES, default='borrador'
+    )
+    recinto = models.ForeignKey(
+        'espacios.Recinto',
+        on_delete=models.PROTECT,
+        related_name='eventos'
+    )
+    creado_por = models.ForeignKey(
+        'Usuario', on_delete=models.SET_NULL,
+        null=True, related_name='eventos_creados'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        ordering = ['-fecha_inicio']
+        verbose_name = "Evento"
+
+
+# ──────────────────────────────────────────────────────────────
 # PROYECTO
 # ──────────────────────────────────────────────────────────────
 
@@ -79,6 +116,10 @@ class Proyecto(models.Model):
         ('otro',      'Otro'),
     ]
 
+    evento = models.ForeignKey(
+        'Evento', on_delete=models.CASCADE,
+        related_name='proyectos', null=True, blank=True
+    )
     titulo      = models.CharField(max_length=200, verbose_name="Título del Proyecto")
     descripcion = models.TextField(verbose_name="Descripción o Resumen")
     carrera     = models.ForeignKey(
@@ -232,7 +273,11 @@ class Integrante(models.Model):
 # ──────────────────────────────────────────────────────────────
 
 class CriterioEvaluacion(models.Model):
-    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del criterio")
+    evento = models.ForeignKey(
+        'Evento', on_delete=models.CASCADE,
+        related_name='criterios', null=True, blank=True
+    )
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del criterio")
     descripcion = models.TextField(blank=True, verbose_name="Descripción o rúbrica de desempeño")
     peso = models.DecimalField(
         max_digits=3, 
