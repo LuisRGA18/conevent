@@ -1,0 +1,59 @@
+{% extends "landing_base.html" %}
+{% block content %}
+<div style="max-width:520px; margin:60px auto; padding:0 16px;">
+  <div style="background:#ffffff; border:1px solid #dce6f0; border-radius:18px; padding:32px; box-shadow:0 10px 30px rgba(10,25,47,0.08);">
+    
+    <div style="text-align:center; margin-bottom:24px;">
+      <div style="width:52px; height:52px; margin:0 auto 14px; background:#e8f4fb; color:#0b3c5d; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px;">
+        🔒
+      </div>
+      <span class="eyebrow" style="color:#328cc1; font-weight:700; text-transform:uppercase; font-size:12px; letter-spacing:1px;">Inscripción a Evento</span>
+      <h2 style="font-size:24px; color:#0a192f; margin:6px 0 8px; font-weight:800;">
+        {{ evento.nombre }}
+      </h2>
+      <p style="color:#6b7a99; font-size:13.5px; margin:0;">
+        📍 {{ evento.recinto.nombre }} &bull; {{ evento.fecha_inicio|date:"d/m/Y" }} a {{ evento.fecha_fin|date:"d/m/Y" }}
+      </p>
+    </div>
+
+    {% if evento.descripcion %}
+    <div style="background:#f8fafd; border-radius:10px; padding:12px 16px; margin-bottom:24px; font-size:13px; color:#4a5568; line-height:1.5;">
+      {{ evento.descripcion }}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      
+      {% if evento.clave_acceso %}
+      <div style="margin-bottom:20px;">
+        <label for="clave_acceso" style="display:block; font-weight:700; font-size:14px; color:#0a192f; margin-bottom:8px;">
+          Clave o PIN de Acceso *
+        </label>
+        <input type="text" id="clave_acceso" name="clave_acceso" required autofocus
+               placeholder="Ingresa la clave proporcionada por el coordinador"
+               style="width:100%; padding:12px 14px; border:1.5px solid #dce6f0; border-radius:10px; font-size:14px; outline:none; transition:border-color .15s;"
+               onfocus="this.style.borderColor='#328cc1'" onblur="this.style.borderColor='#dce6f0'">
+        <small style="display:block; color:#6b7a99; font-size:12px; margin-top:6px;">
+          Solicita este código al organizador o docente titular de la feria.
+        </small>
+      </div>
+      {% else %}
+      <div style="margin-bottom:24px; text-align:center; color:#2d3748; font-size:14px;">
+        Este evento es de <strong>acceso abierto</strong>. Haz clic a continuación para registrar tu participación y acceder al tablero.
+      </div>
+      {% endif %}
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button type="submit" style="width:100%; padding:12px; background:#0b3c5d; color:#ffffff; border:none; border-radius:10px; font-weight:700; font-size:14.5px; cursor:pointer; transition:opacity .15s;">
+          {% if evento.clave_acceso %}Validar Clave y Entrar{% else %}Confirmar e Ingresar{% endif %}
+        </button>
+        <a href="{% url 'eventos_portal' %}" style="text-align:center; padding:10px; color:#6b7a99; text-decoration:none; font-size:13px; font-weight:600;">
+          ← Volver al portal de eventos
+        </a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

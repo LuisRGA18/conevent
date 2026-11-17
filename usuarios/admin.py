@@ -37,13 +37,19 @@ class IntegranteAdmin(admin.ModelAdmin):
     list_filter = ('es_lider', 'proyecto__carrera')
     search_fields = ('nombre_completo', 'matricula', 'proyecto__titulo')
 
-from .models import Usuario, Carrera, Proyecto, Integrante, Evaluacion, CriterioEvaluacion, DetalleEvaluacion, Evento
+from .models import Usuario, Carrera, Proyecto, Integrante, Evaluacion, CriterioEvaluacion, DetalleEvaluacion, Evento, ParticipacionEvento
 
 @admin.register(Evento)
 class EventoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'estatus', 'recinto', 'fecha_inicio', 'fecha_fin', 'creado_por')
+    list_display = ('nombre', 'estatus', 'recinto', 'clave_acceso', 'fecha_inicio', 'fecha_fin', 'creado_por')
     list_filter = ('estatus', 'recinto', 'fecha_inicio')
     search_fields = ('nombre', 'descripcion')
+
+@admin.register(ParticipacionEvento)
+class ParticipacionEventoAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'evento', 'fecha_inscripcion')
+    list_filter = ('evento',)
+    search_fields = ('usuario__username', 'evento__nombre')
 
 class DetalleEvaluacionInline(admin.TabularInline):
     model = DetalleEvaluacion

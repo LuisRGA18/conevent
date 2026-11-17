@@ -22,13 +22,18 @@
         <input type="date" name="fecha_fin" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
       </div>
     </div>
-    <div style="margin-bottom:20px;">
+    <div style="margin-bottom:15px;">
       <label>Recinto Asignado:</label>
       <select name="recinto_id" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
         {% for recinto in recintos %}
           <option value="{{ recinto.id }}">{{ recinto.nombre }} — {{ recinto.descripcion }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label>Clave o PIN de Acceso (Opcional):</label>
+      <input type="text" name="clave_acceso" placeholder="Ej: FERIA2026 (dejar vacío para acceso libre)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+      <small style="color:#6b7a99; font-size:12px;">Si se deja en blanco, los participantes podrán unirse libremente sin requerir PIN.</small>
     </div>
     <button type="submit" style="background:#0b3c5d; color:#fff; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Crear Evento</button>
   </form>

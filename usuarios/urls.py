@@ -12,6 +12,7 @@ urlpatterns = [
     # ── Eventos Académicos (Multi-Evento RF-10) ──
     path('eventos/', views.eventos_portal_view, name='eventos_portal'),
     path('eventos/seleccionar/<int:evento_id>/', views.seleccionar_evento_view, name='seleccionar_evento'),
+    path('eventos/unirse/<int:evento_id>/', views.unirse_evento_view, name='unirse_evento'),
     path('eventos/crear/', views.crear_evento_view, name='crear_evento'),
 
     # ── Alumno ─────────────────────────────────

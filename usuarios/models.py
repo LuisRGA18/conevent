@@ -79,6 +79,10 @@ class Evento(models.Model):
         on_delete=models.PROTECT,
         related_name='eventos'
     )
+    clave_acceso = models.CharField(
+        max_length=20, blank=True, null=True,
+        help_text="Clave o PIN de inscripción para participantes"
+    )
     creado_por = models.ForeignKey(
         'Usuario', on_delete=models.SET_NULL,
         null=True, related_name='eventos_creados'
@@ -91,6 +95,20 @@ class Evento(models.Model):
     class Meta:
         ordering = ['-fecha_inicio']
         verbose_name = "Evento"
+
+
+class ParticipacionEvento(models.Model):
+    usuario = models.ForeignKey('Usuario', on_delete=models.CASCADE, related_name='participaciones_eventos')
+    evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name='participantes')
+    fecha_inscripcion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'evento')
+        verbose_name = "Participación en Evento"
+        verbose_name_plural = "Participaciones en Eventos"
+
+    def __str__(self):
+        return f"{self.usuario.username} en {self.evento.nombre}"
 
 
 # ──────────────────────────────────────────────────────────────

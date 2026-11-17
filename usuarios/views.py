@@ -25,6 +25,7 @@ from reportlab.lib import colors
 from .models import (
     Usuario,
     Evento,
+    ParticipacionEvento,
     Proyecto,
     Carrera,
     Integrante,
@@ -300,13 +301,38 @@ def get_evento_activo(request):
 
 
 def eventos_portal_view(request):
-    """Portal público/inicio de selección de eventos académicos."""
+    """Portal público/inicio de selección de eventos académicos con verificación de acceso."""
     if not request.user.is_authenticated:
         return redirect('landing')
 
-    eventos_activos = Evento.objects.filter(
-        estatus='activo'
-    ).select_related('recinto').order_by('-fecha_inicio')
+    eventos = Evento.objects.filter(estatus='activo').select_related('recinto').order_by('-fecha_inicio')
+    
+    # Obtener los IDs de eventos en los que el usuario ya participa activamente
+    eventos_usuario_ids = set()
+    
+    if request.user.rol == 'ADMIN':
+        # El Admin tiene acceso automático a todos
+        eventos_usuario_ids = set(eventos.values_list('id', flat=True))
+    else:
+        # 1. Por inscripción previa guardada
+        inscritos = ParticipacionEvento.objects.filter(usuario=request.user).values_list('evento_id', flat=True)
+        eventos_usuario_ids.update(inscritos)
+        
+        # 2. Por ser creador de un proyecto en el evento
+        proyectos_propios = Proyecto.objects.filter(creado_por=request.user).values_list('evento_id', flat=True)
+        eventos_usuario_ids.update(proyectos_propios)
+        
+        # 3. Por ser integrante de un proyecto en el evento
+        integraciones = Integrante.objects.filter(matricula=request.user.username).values_list('proyecto__evento_id', flat=True)
+        eventos_usuario_ids.update(integraciones)
+        
+        # 4. Por ser evaluador asignado en el evento
+        evaluaciones = Proyecto.objects.filter(evaluadores=request.user).values_list('evento_id', flat=True)
+        eventos_usuario_ids.update(evaluaciones)
+
+    # Adjuntar bandera de acceso a cada objeto evento
+    for e in eventos:
+        e.tiene_acceso = (e.id in eventos_usuario_ids)
 
     eventos_borrador = []
     if request.user.rol == 'ADMIN':
@@ -315,17 +341,65 @@ def eventos_portal_view(request):
         ).select_related('recinto')
 
     return render(request, 'usuarios/eventos_portal.html', {
-        'eventos_activos': eventos_activos,
+        'eventos': eventos,
         'eventos_borrador': eventos_borrador,
     })
 
 
 def seleccionar_evento_view(request, evento_id):
-    """Selecciona un evento y lo guarda en la sesión HTTP."""
+    """Selecciona un evento y lo guarda en la sesión HTTP si el usuario tiene acceso."""
     evento = get_object_or_404(Evento, pk=evento_id)
+
+    if request.user.rol != 'ADMIN':
+        tiene_acceso = (
+            ParticipacionEvento.objects.filter(usuario=request.user, evento=evento).exists() or
+            Proyecto.objects.filter(creado_por=request.user, evento=evento).exists() or
+            Integrante.objects.filter(matricula=request.user.username, proyecto__evento=evento).exists() or
+            Proyecto.objects.filter(evaluadores=request.user, evento=evento).exists()
+        )
+        if not tiene_acceso:
+            return redirect('unirse_evento', evento_id=evento.id)
+
     request.session['evento_activo_id'] = evento_id
     request.session['evento_activo_nombre'] = evento.nombre
     return redirect('index')
+
+
+@login_required(login_url='login')
+def unirse_evento_view(request, evento_id):
+    evento = get_object_or_404(Evento, pk=evento_id)
+
+    # Si ya tiene acceso o es admin, redirigir directo
+    if request.user.rol == 'ADMIN':
+        request.session['evento_activo_id'] = evento.id
+        request.session['evento_activo_nombre'] = evento.nombre
+        return redirect('index')
+
+    tiene_acceso_previo = (
+        ParticipacionEvento.objects.filter(usuario=request.user, evento=evento).exists() or
+        Proyecto.objects.filter(creado_por=request.user, evento=evento).exists() or
+        Integrante.objects.filter(matricula=request.user.username, proyecto__evento=evento).exists() or
+        Proyecto.objects.filter(evaluadores=request.user, evento=evento).exists()
+    )
+    if tiene_acceso_previo:
+        request.session['evento_activo_id'] = evento.id
+        request.session['evento_activo_nombre'] = evento.nombre
+        return redirect('index')
+
+    if request.method == 'POST':
+        clave_ingresada = request.POST.get('clave_acceso', '').strip()
+
+        # Si el evento no requiere clave o la clave coincide
+        if not evento.clave_acceso or clave_ingresada == evento.clave_acceso:
+            ParticipacionEvento.objects.get_or_create(usuario=request.user, evento=evento)
+            request.session['evento_activo_id'] = evento.id
+            request.session['evento_activo_nombre'] = evento.nombre
+            messages.success(request, f'¡Te has unido exitosamente a "{evento.nombre}"!')
+            return redirect('index')
+        else:
+            messages.error(request, 'La clave de acceso del evento es incorrecta.')
+
+    return render(request, 'usuarios/unirse_evento.html', {'evento': evento})
 
 
 def crear_evento_view(request):
@@ -341,6 +415,7 @@ def crear_evento_view(request):
         fecha_inicio = request.POST.get('fecha_inicio')
         fecha_fin = request.POST.get('fecha_fin')
         recinto_id = request.POST.get('recinto_id')
+        clave_acceso = request.POST.get('clave_acceso', '').strip() or None
 
         evento = Evento.objects.create(
             nombre=nombre,
@@ -348,6 +423,7 @@ def crear_evento_view(request):
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             recinto_id=recinto_id,
+            clave_acceso=clave_acceso,
             creado_por=request.user,
             estatus='borrador'
         )
