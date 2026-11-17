@@ -1,65 +1,36 @@
-{% extends "seguridad/index.html" %}
+{% extends "landing_base.html" %}
 {% block content %}
-<div class="container-fluid py-4" style="max-width: 800px;">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold text-white mb-0">Crear Nuevo Evento Académico</h4>
-      <small class="text-muted">Configura un nuevo evento asociándolo a un recinto con plantas predeterminadas.</small>
+<div style="max-width:600px; margin:40px auto; padding:20px; background:#fff; border-radius:12px; border:1px solid #dce6f0;">
+  <h2>Crear Nuevo Evento Académico</h2>
+  <form method="POST">
+    {% csrf_token %}
+    <div style="margin-bottom:15px;">
+      <label>Nombre del Evento:</label>
+      <input type="text" name="nombre" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
     </div>
-    <a href="{% url 'eventos_portal' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-arrow-left me-1"></i> Volver a Eventos
-    </a>
-  </div>
-
-  <div class="card bg-dark border-secondary shadow-sm">
-    <div class="card-body p-4 text-white">
-      <form method="POST" action="{% url 'crear_evento' %}">
-        {% csrf_token %}
-
-        <div class="mb-3">
-          <label for="nombre" class="form-label text-light fw-semibold">Nombre del Evento *</label>
-          <input type="text" class="form-control bg-secondary text-white border-0" id="nombre" name="nombre" placeholder="Ej: Feria de Innovación y Proyectos 2026" required>
-        </div>
-
-        <div class="mb-3">
-          <label for="descripcion" class="form-label text-light fw-semibold">Descripción o Resumen</label>
-          <textarea class="form-control bg-secondary text-white border-0" id="descripcion" name="descripcion" rows="3" placeholder="Detalles de la convocatoria, objetivos o disciplinas convocadas..."></textarea>
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="fecha_inicio" class="form-label text-light fw-semibold">Fecha de Inicio *</label>
-            <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_inicio" name="fecha_inicio" required>
-          </div>
-          <div class="col-md-6">
-            <label for="fecha_fin" class="form-label text-light fw-semibold">Fecha de Fin *</label>
-            <input type="date" class="form-control bg-secondary text-white border-0" id="fecha_fin" name="fecha_fin" required>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label for="recinto_id" class="form-label text-light fw-semibold">Recinto / Sede Física *</label>
-          <select class="form-select bg-secondary text-white border-0" id="recinto_id" name="recinto_id" required>
-            <option value="" disabled selected>Selecciona un recinto...</option>
-            {% for r in recintos %}
-              <option value="{{ r.id }}">
-                {{ r.nombre }} — ({{ r.plantas.count }} planta{{ r.plantas.count|pluralize:"s" }}) — {{ r.descripcion }}
-              </option>
-            {% endfor %}
-          </select>
-          <div class="form-text text-muted">
-            Los recintos son fijos e incluyen las plantas y la capacidad física de stands del campus.
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2">
-          <a href="{% url 'eventos_portal' %}" class="btn btn-outline-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-primary px-4">
-            <i class="fas fa-calendar-plus me-1"></i> Crear evento
-          </button>
-        </div>
-      </form>
+    <div style="margin-bottom:15px;">
+      <label>Descripción:</label>
+      <textarea name="descripcion" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;"></textarea>
     </div>
-  </div>
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+      <div style="flex:1;">
+        <label>Fecha Inicio:</label>
+        <input type="date" name="fecha_inicio" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="flex:1;">
+        <label>Fecha Fin:</label>
+        <input type="date" name="fecha_fin" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label>Recinto Asignado:</label>
+      <select name="recinto_id" required style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;">
+        {% for recinto in recintos %}
+          <option value="{{ recinto.id }}">{{ recinto.nombre }} — {{ recinto.descripcion }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" style="background:#0b3c5d; color:#fff; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">Crear Evento</button>
+  </form>
 </div>
 {% endblock %}

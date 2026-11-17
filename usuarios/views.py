@@ -23,16 +23,11 @@ from reportlab.lib import colors
 
 # 🟢 Aseguramos todos los modelos importados correctamente
 from .models import (
-    Usuario,
-    Proyecto,
-    Carrera,
-    Integrante,
-    CriterioEvaluacion,
-    Evaluacion,
-    DetalleEvaluacion,
-    EvaluacionExterna,
-    LogActividad,
+    Usuario, Evento, Proyecto, Carrera, Integrante, 
+    CriterioEvaluacion, Evaluacion, DetalleEvaluacion, 
+    EvaluacionExterna, LogActividad
 )
+from espacios.models import Recinto, Planta, Stand
 from .forms import (
     ProyectoForm, RegistroForm,
     IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
@@ -354,7 +349,7 @@ def crear_evento_view(request):
             creado_por=request.user,
             estatus='borrador'
         )
-        messages.success(request, f'Evento "{evento.nombre}" creado. Ahora actívalo cuando esté listo.')
+        messages.success(request, f'Evento "{evento.nombre}" creado exitosamente.')
         return redirect('seleccionar_evento', evento_id=evento.pk)
 
     return render(request, 'usuarios/crear_evento.html', {

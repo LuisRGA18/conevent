@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from espacios.models import Recinto, Planta, Stand
 
 class Command(BaseCommand):
     help = 'Pobla stands para todas las plantas de un recinto'
@@ -11,29 +10,14 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        recinto_id = options.get('recinto') or 1
-        recinto, _ = Recinto.objects.get_or_create(
-            pk=recinto_id,
-            defaults={
-                'nombre': 'Auditorio UTEQ' if recinto_id == 1 else f'Recinto {recinto_id}',
-                'descripcion': 'Auditorio principal — 11.7m x 30m',
-                'direccion': 'Av. Pie de la Cuesta No. 2501, UTEQ, Querétaro'
-            }
-        )
+        from espacios.models import Recinto, Stand
+        try:
+            recinto = Recinto.objects.get(pk=options['recinto'])
+        except Recinto.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f"No existe el recinto con ID {options['recinto']}"))
+            return
 
-        plantas = list(recinto.plantas.all())
-        if not plantas:
-            p = Planta.objects.create(
-                recinto=recinto,
-                nombre='Planta Única',
-                nivel=0,
-                filas=10,
-                columnas=7,
-                descripcion='Distribución 7x10 — 70 stands'
-            )
-            plantas = [p]
-
-        for planta in plantas:
+        for planta in recinto.plantas.all():
             creados = 0
             for fila in range(1, planta.filas + 1):
                 for col in range(1, planta.columnas + 1):
@@ -50,6 +34,4 @@ class Command(BaseCommand):
                         }
                     )
                     creados += 1
-            self.stdout.write(
-                f'{planta.nombre}: {creados} stands creados'
-            )
+            self.stdout.write(self.style.SUCCESS(f'{planta.nombre}: {creados} stands verificados/creados'))
