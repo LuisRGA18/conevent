@@ -23,9 +23,16 @@ from reportlab.lib import colors
 
 # 🟢 Aseguramos todos los modelos importados correctamente
 from .models import (
-    Usuario, Evento, Proyecto, Carrera, Integrante, 
-    CriterioEvaluacion, Evaluacion, DetalleEvaluacion, 
-    EvaluacionExterna, LogActividad
+    Usuario,
+    Evento,
+    Proyecto,
+    Carrera,
+    Integrante,
+    CriterioEvaluacion,
+    Evaluacion,
+    DetalleEvaluacion,
+    EvaluacionExterna,
+    LogActividad,
 )
 from espacios.models import Recinto, Planta, Stand
 from .forms import (
@@ -283,7 +290,6 @@ def landing_contacto_view(request):
 
 def get_evento_activo(request):
     """Obtiene el objeto Evento activo configurado en la sesión del usuario."""
-    from usuarios.models import Evento
     evento_id = request.session.get('evento_activo_id')
     if evento_id:
         try:
@@ -298,7 +304,6 @@ def eventos_portal_view(request):
     if not request.user.is_authenticated:
         return redirect('landing')
 
-    from usuarios.models import Evento
     eventos_activos = Evento.objects.filter(
         estatus='activo'
     ).select_related('recinto').order_by('-fecha_inicio')
@@ -317,7 +322,6 @@ def eventos_portal_view(request):
 
 def seleccionar_evento_view(request, evento_id):
     """Selecciona un evento y lo guarda en la sesión HTTP."""
-    from usuarios.models import Evento
     evento = get_object_or_404(Evento, pk=evento_id)
     request.session['evento_activo_id'] = evento_id
     request.session['evento_activo_nombre'] = evento.nombre
@@ -329,8 +333,6 @@ def crear_evento_view(request):
     if request.user.rol != 'ADMIN':
         return redirect('index')
 
-    from espacios.models import Recinto
-    from usuarios.models import Evento
     recintos = Recinto.objects.all()
 
     if request.method == 'POST':
@@ -385,9 +387,6 @@ def index_view(request):
         }
 
     elif rol == 'ALUMNO':
-        # Buscar proyecto donde el alumno es creador O integrante para este evento
-        from usuarios.models import Proyecto, Integrante
-
         proyecto = Proyecto.objects.filter(
             creado_por=request.user,
             evento=evento
@@ -395,12 +394,12 @@ def index_view(request):
             'miembros', 'evaluadores', 'evaluaciones'
         ).first()
 
-        # Si no es creador, buscar como integrante
         if not proyecto:
             integrante = Integrante.objects.filter(
                 matricula=request.user.username,
                 proyecto__evento=evento
             ).select_related('proyecto').first()
+
             if integrante:
                 proyecto = integrante.proyecto
 
@@ -413,7 +412,6 @@ def index_view(request):
             context['estatus'] = proyecto.get_estatus_display()
 
     elif rol == 'EVALUADOR':
-        from usuarios.models import Proyecto
         proyectos_asignados = Proyecto.objects.filter(
             evento=evento,
             evaluadores=request.user
@@ -622,7 +620,6 @@ def ver_calificacion_view(request):
 
     proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).first()
     if not proyecto:
-        from usuarios.models import Integrante
         integrante = Integrante.objects.filter(matricula=request.user.username, proyecto__evento=evento).select_related('proyecto').first()
         if integrante:
             proyecto = integrante.proyecto
