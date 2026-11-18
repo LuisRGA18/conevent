@@ -1,0 +1,227 @@
+{% extends "seguridad/index.html" %}
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px;">
+
+  <!-- Header con navegación y acciones -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <a href="{% url 'panel_admin' %}" class="btn btn-outline-secondary btn-sm px-2 py-1">
+          <i class="fas fa-arrow-left"></i>
+        </a>
+        <h4 class="fw-bold text-white mb-0">Rúbrica y Criterios de Evaluación</h4>
+      </div>
+      <small class="text-muted">
+        Evento: <strong class="text-info">{{ evento.nombre }}</strong> &bull; {{ evento.recinto.nombre }}
+      </small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'panel_admin' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Volver al Panel Admin
+      </a>
+    </div>
+  </div>
+
+  <!-- Resumen de Estado de la Rúbrica -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card bg-dark border-secondary p-3">
+        <span class="text-muted small uppercase">Ponderación Activa Total</span>
+        <div class="d-flex align-items-center justify-content-between mt-1">
+          <h2 class="fw-bold mb-0 {% if porcentaje_actual == 100 %}text-success{% else %}text-warning{% endif %}" id="live-total-peso">
+            {{ porcentaje_actual }}%
+          </h2>
+          <span class="badge {% if porcentaje_actual == 100 %}bg-success{% else %}bg-warning text-dark{% endif %}" id="live-peso-badge">
+            {% if porcentaje_actual == 100 %}100% Completo{% else %}Debe sumar 100%{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-dark border-secondary p-3">
+        <span class="text-muted small uppercase">Cantidad de Criterios</span>
+        <div class="d-flex align-items-center justify-content-between mt-1">
+          <h2 class="fw-bold text-white mb-0" id="live-total-count">
+            {{ total_criterios }} / 10
+          </h2>
+          <span class="badge bg-secondary">
+            Máx. 10 criterios
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-dark border-secondary p-3">
+        <span class="text-muted small uppercase">Guía de Ponderación</span>
+        <p class="small text-muted mb-0 mt-1" style="font-size: 12px;">
+          Ingresa decimal (ej. <code class="text-info">0.25</code>) o entero (ej. <code class="text-info">25</code>). El sistema lo normaliza automáticamente.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario FormSet -->
+  <div class="card bg-dark border-secondary shadow-sm">
+    <div class="card-header bg-black bg-opacity-25 border-secondary d-flex justify-content-between align-items-center py-3">
+      <h5 class="mb-0 text-white fw-bold">
+        <i class="fas fa-list-check text-warning me-2"></i>Criterios Configurados
+      </h5>
+      <span class="text-muted small">
+        Marca la casilla "Eliminar" para descartar un criterio al guardar.
+      </span>
+    </div>
+
+    <div class="card-body p-4">
+      <form method="post" id="criterios-form">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        {% if formset.non_form_errors %}
+          <div class="alert alert-danger mb-4">
+            {% for error in formset.non_form_errors %}
+              <div><i class="fas fa-exclamation-circle me-1"></i> {{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="table-responsive mb-4">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead class="text-muted small border-secondary">
+              <tr>
+                <th style="width: 32%;">Nombre del Criterio *</th>
+                <th style="width: 38%;">Descripción / Rúbrica</th>
+                <th style="width: 14%;">Ponderación *</th>
+                <th style="width: 8%;" class="text-center">Activo</th>
+                <th style="width: 8%;" class="text-center">Eliminar</th>
+              </tr>
+            </thead>
+            <tbody id="criterios-tbody" class="border-secondary">
+              {% for form in formset %}
+              <tr class="criterio-row">
+                <td>
+                  {{ form.id }}
+                  {{ form.nombre }}
+                  {% if form.nombre.errors %}
+                    <div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ form.descripcion }}
+                  {% if form.descripcion.errors %}
+                    <div class="text-danger small mt-1">{{ form.descripcion.errors.0 }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="input-group input-group-sm">
+                    {{ form.peso }}
+                    <span class="input-group-text bg-secondary text-white border-secondary">%</span>
+                  </div>
+                  {% if form.peso.errors %}
+                    <div class="text-danger small mt-1">{{ form.peso.errors.0 }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="form-check d-flex justify-content-center m-0">
+                    {{ form.activo }}
+                  </div>
+                </td>
+                <td class="text-center">
+                  {% if form.instance.pk %}
+                    <div class="form-check d-flex justify-content-center m-0">
+                      {{ form.DELETE }}
+                    </div>
+                  {% else %}
+                    <span class="text-muted small">Nuevo</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-3 border-top border-secondary">
+          <div class="text-muted small">
+            <i class="fas fa-info-circle text-info me-1"></i>
+            La suma de las ponderaciones de los criterios activos debe ser exactamente <strong>100%</strong> para calificar de 0 a 10.
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'panel_admin' %}" class="btn btn-outline-secondary px-4">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary px-4 fw-bold">
+              <i class="fas fa-save me-1"></i> Guardar Criterios
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- JavaScript para cálculo reactivo de la suma de porcentajes -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function recalcularTotal() {
+    let total = 0;
+    const rows = document.querySelectorAll('.criterio-row');
+
+    rows.forEach(function (row) {
+      const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      if (deleteCheckbox && deleteCheckbox.checked) {
+        return; // Omitir eliminados
+      }
+
+      const activoCheckbox = row.querySelector('input[type="checkbox"][name$="-activo"]');
+      const isActivo = activoCheckbox ? activoCheckbox.checked : true;
+
+      const pesoInput = row.querySelector('.criterio-peso-input');
+      if (pesoInput && isActivo) {
+        let val = parseFloat(pesoInput.value) || 0;
+        if (val > 1) {
+          // Si el usuario escribió 25 para 25%
+          total += val;
+        } else {
+          // Si el usuario escribió 0.25 para 25%
+          total += val * 100;
+        }
+      }
+    });
+
+    total = Math.round(total * 100) / 100;
+
+    const totalEl = document.getElementById('live-total-peso');
+    const badgeEl = document.getElementById('live-peso-badge');
+
+    if (totalEl) {
+      totalEl.textContent = total + '%';
+      if (total === 100) {
+        totalEl.className = 'fw-bold mb-0 text-success';
+      } else {
+        totalEl.className = 'fw-bold mb-0 text-warning';
+      }
+    }
+
+    if (badgeEl) {
+      if (total === 100) {
+        badgeEl.textContent = '100% Completo';
+        badgeEl.className = 'badge bg-success';
+      } else {
+        badgeEl.textContent = 'Actual: ' + total + '% (Debe ser 100%)';
+        badgeEl.className = 'badge bg-warning text-dark';
+      }
+    }
+  }
+
+  // Escuchar cambios en inputs de peso, activos y eliminación
+  document.querySelectorAll('.criterio-peso-input, input[type="checkbox"]').forEach(function (input) {
+    input.addEventListener('input', recalcularTotal);
+    input.addEventListener('change', recalcularTotal);
+  });
+
+  recalcularTotal();
+});
+</script>
+{% endblock %}

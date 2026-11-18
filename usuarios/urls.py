@@ -30,6 +30,7 @@ urlpatterns = [
 
     # ── Administrador ──────────────────────────
     path('panel-admin/', views.panel_admin_view, name='panel_admin'),
+    path('panel-admin/criterios/', views.gestionar_criterios_view, name='gestionar_criterios'),
     path('panel-admin/estatus/<int:pk>/', views.cambiar_estatus_proyecto_view, name='cambiar_estatus_proyecto'),
     path('panel-admin/asignar/<int:pk>/', views.asignar_evaluador_view, name='asignar_evaluador'),
     path('panel-admin/desasignar/<int:pk>/', views.desasignar_evaluador_view, name='desasignar_evaluador'),

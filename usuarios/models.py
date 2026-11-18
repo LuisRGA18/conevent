@@ -313,6 +313,10 @@ class CriterioEvaluacion(models.Model):
     def __str__(self):
         return f"{self.nombre} ({int(self.peso * 100)}%)"
 
+    @property
+    def peso_porcentaje(self):
+        return int(self.peso * 100)
+
 
 # ──────────────────────────────────────────────────────────────
 # EVALUACION  (modelo separado — una por proyecto por evaluador)

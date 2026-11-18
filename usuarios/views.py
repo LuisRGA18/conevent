@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Avg, Count
 from django.db import transaction
+from decimal import Decimal
 import unicodedata
 import random
 from django.core.mail import send_mail
@@ -38,7 +39,8 @@ from .models import (
 from espacios.models import Recinto, Planta, Stand
 from .forms import (
     ProyectoForm, RegistroForm,
-    IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm
+    IntegranteFormSet, EvaluacionForm, AsignacionEvaluadorForm,
+    CriterioEvaluacionForm, BaseCriterioFormSet
 )
 
 def get_client_ip(request):
@@ -427,7 +429,31 @@ def crear_evento_view(request):
             creado_por=request.user,
             estatus='borrador'
         )
-        messages.success(request, f'Evento "{evento.nombre}" creado exitosamente.')
+
+        # 🟢 Poblado automático de los 3 criterios predeterminados para el nuevo evento
+        CriterioEvaluacion.objects.create(
+            evento=evento,
+            nombre="Presentación y Exposición",
+            descripcion="Claridad, desenvolvimiento, apoyo visual y respuesta a preguntas.",
+            peso=Decimal('0.25'),
+            activo=True
+        )
+        CriterioEvaluacion.objects.create(
+            evento=evento,
+            nombre="Funcionalidad Técnica",
+            descripcion="Operatividad del proyecto, arquitectura y buenas prácticas técnicas.",
+            peso=Decimal('0.25'),
+            activo=True
+        )
+        CriterioEvaluacion.objects.create(
+            evento=evento,
+            nombre="Innovación y Propuesta de Valor",
+            descripcion="Originalidad, impacto, viabilidad y relevancia de la solución.",
+            peso=Decimal('0.50'),
+            activo=True
+        )
+
+        messages.success(request, f'Evento "{evento.nombre}" creado exitosamente con sus 3 criterios base.')
         return redirect('seleccionar_evento', evento_id=evento.pk)
 
     return render(request, 'usuarios/crear_evento.html', {
@@ -789,7 +815,7 @@ def evaluar_proyecto_view(request, pk):
             if not error_rubrica:
                 with transaction.atomic():
                     # 1. Guardar o actualizar la evaluación base usando update_or_create
-                    comentarios = form.cleaned_data.get('comentarios', '')
+                    comentarios = form.cleaned_data.get('comentarios') or request.POST.get('comentarios', '').strip() or request.POST.get('comentarios_evaluador', '').strip() or ''
                     from django.utils import timezone
                     evaluacion, created = Evaluacion.objects.update_or_create(
                         proyecto=proyecto,
@@ -930,6 +956,10 @@ def panel_admin_view(request):
     proyectos_evaluados = Proyecto.objects.filter(evento=evento, calificacion_final__isnull=False).count()
     sin_evaluador_count = Proyecto.objects.filter(evento=evento, evaluadores__isnull=True).count()
 
+    criterios_evento = CriterioEvaluacion.objects.filter(evento=evento, activo=True)
+    suma_rubrica = sum(c.peso for c in criterios_evento)
+    porcentaje_rubrica = int(suma_rubrica * 100)
+
     return render(request, 'usuarios/panel_admin.html', {
         'todos_los_proyectos': proyectos_list,
         'todos_los_docentes':  Usuario.objects.filter(rol='EVALUADOR'),
@@ -943,6 +973,8 @@ def panel_admin_view(request):
         'sin_evaluador':   sin_evaluador_count,
         'filtro_activo':   filtro,
         'evento_activo':   evento,
+        'criterios_evento': criterios_evento,
+        'porcentaje_rubrica': porcentaje_rubrica,
     })
 
 
@@ -979,6 +1011,91 @@ def eliminar_proyecto_admin_view(request, pk):
         messages.success(request, f'Proyecto "{titulo}" eliminado correctamente.')
     
     return redirect('panel_admin')
+
+
+@login_required(login_url='login')
+def gestionar_criterios_view(request):
+    """Permite al administrador configurar, editar y añadir criterios para el evento activo."""
+    if not request.user.es_admin and request.user.rol != 'ADMIN':
+        messages.error(request, "No tienes permiso para acceder a esta sección.")
+        return redirect('index')
+
+    evento = get_evento_activo(request)
+    if not evento:
+        return redirect('eventos_portal')
+
+    # Si el evento no tiene criterios registrados, inicializar automáticamente los 3 predeterminados
+    if not evento.criterios.exists():
+        CriterioEvaluacion.objects.bulk_create([
+            CriterioEvaluacion(
+                evento=evento,
+                nombre="Presentación y Exposición",
+                descripcion="Claridad, desenvolvimiento, apoyo visual y respuesta a preguntas.",
+                peso=Decimal('0.25'),
+                activo=True
+            ),
+            CriterioEvaluacion(
+                evento=evento,
+                nombre="Funcionalidad Técnica",
+                descripcion="Operatividad del proyecto, arquitectura y buenas prácticas técnicas.",
+                peso=Decimal('0.25'),
+                activo=True
+            ),
+            CriterioEvaluacion(
+                evento=evento,
+                nombre="Innovación y Propuesta de Valor",
+                descripcion="Originalidad, impacto, viabilidad y relevancia de la solución.",
+                peso=Decimal('0.50'),
+                activo=True
+            ),
+        ])
+
+    num_criterios = evento.criterios.count()
+    extra_forms = 1 if num_criterios < 10 else 0
+
+    from django.forms import inlineformset_factory
+    CriterioFormSet = inlineformset_factory(
+        Evento,
+        CriterioEvaluacion,
+        form=CriterioEvaluacionForm,
+        formset=BaseCriterioFormSet,
+        extra=extra_forms,
+        can_delete=True,
+        max_num=10,
+        validate_max=True
+    )
+
+    if request.method == 'POST':
+        formset = CriterioFormSet(request.POST, instance=evento)
+        if formset.is_valid():
+            formset.save()
+            criterios_activos = evento.criterios.filter(activo=True)
+            suma_pesos = sum(c.peso for c in criterios_activos)
+            if suma_pesos != Decimal('1.00'):
+                messages.warning(
+                    request,
+                    f"Criterios guardados. Atención: Las ponderaciones activas suman {int(suma_pesos * 100)}% (deben sumar 100%)."
+                )
+            else:
+                messages.success(request, "Criterios de evaluación actualizados exitosamente (Suma: 100%).")
+            return redirect('gestionar_criterios')
+        else:
+            messages.error(request, "Por favor corrige los errores indicados en el formulario de criterios.")
+    else:
+        formset = CriterioFormSet(instance=evento)
+
+    criterios_activos = evento.criterios.filter(activo=True)
+    suma_pesos = sum(c.peso for c in criterios_activos)
+    porcentaje_actual = int(suma_pesos * 100)
+
+    return render(request, 'usuarios/gestionar_criterios.html', {
+        'evento': evento,
+        'evento_activo': evento,
+        'formset': formset,
+        'total_criterios': evento.criterios.count(),
+        'porcentaje_actual': porcentaje_actual,
+        'puede_agregar': evento.criterios.count() < 10,
+    })
 
 
 

@@ -1,6 +1,7 @@
 from django import forms
-from django.forms import inlineformset_factory
-from .models import Proyecto, Usuario, Integrante, Evaluacion
+from django.forms import inlineformset_factory, BaseInlineFormSet
+from decimal import Decimal
+from .models import Proyecto, Usuario, Integrante, Evaluacion, CriterioEvaluacion, Evento
 import re
 from decouple import config
 
@@ -80,19 +81,104 @@ IntegranteFormSet = inlineformset_factory(
 
 class EvaluacionForm(forms.ModelForm):
     """Formulario para que el evaluador califique y comente un proyecto."""
+    comentarios = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': TEXTAREA_CLASS,
+            'rows': 4,
+            'placeholder': 'Observaciones o retroalimentación sobre el proyecto (opcional)...'
+        }),
+        label='Comentarios generales / observaciones (opcional)'
+    )
+
     class Meta:
         model = Evaluacion
         fields = ['comentarios']
-        widgets = {
-            'comentarios': forms.Textarea(attrs={
-                'class': TEXTAREA_CLASS,
-                'rows': 4,
-                'placeholder': 'Observaciones sobre el proyecto...'
-            }),
-        }
-        labels = {
-            'comentarios': 'Comentarios generales / observaciones',
-        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'comentarios' in self.fields:
+            self.fields['comentarios'].required = False
+            self.fields['comentarios_evaluador'] = self.fields['comentarios']
+
+
+class CriterioEvaluacionForm(forms.ModelForm):
+    """Formulario para editar o agregar un criterio de evaluación individual."""
+    nombre = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Ej. Presentación y Exposición'
+        }),
+        label='Nombre del Criterio'
+    )
+    descripcion = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'Descripción o rúbrica de desempeño (opcional)'
+        }),
+        label='Descripción / Rúbrica'
+    )
+    peso = forms.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': INPUT_CLASS + ' criterio-peso-input',
+            'step': '0.01',
+            'min': '0.01',
+            'max': '100',
+            'placeholder': '0.25 (o 25%)'
+        }),
+        label='Ponderación'
+    )
+    activo = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        label='Activo'
+    )
+
+    class Meta:
+        model = CriterioEvaluacion
+        fields = ['nombre', 'descripcion', 'peso', 'activo']
+
+    def clean_peso(self):
+        peso = self.cleaned_data.get('peso')
+        if peso is not None:
+            # Si el usuario ingresó un valor en porcentaje > 1 (ej. 25 en vez de 0.25)
+            if peso > 1:
+                peso = round(Decimal(str(peso)) / Decimal('100'), 2)
+            if peso <= 0 or peso > 1:
+                raise forms.ValidationError("La ponderación debe ser entre 0.01 (1%) y 1.00 (100%).")
+        return peso
+
+
+class BaseCriterioFormSet(BaseInlineFormSet):
+    """FormSet para validar la cantidad máxima de 10 criterios."""
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        total_validos = 0
+        criterios_activos = 0
+        total_peso = Decimal('0')
+
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+            total_validos += 1
+            if form.cleaned_data.get('activo', True):
+                criterios_activos += 1
+                total_peso += form.cleaned_data.get('peso') or Decimal('0')
+
+        if total_validos > 10:
+            raise forms.ValidationError("No es posible configurar más de 10 criterios de evaluación por evento.")
+        if total_validos == 0:
+            raise forms.ValidationError("Debe existir al menos un criterio de evaluación para el evento.")
 
 
 class AsignacionEvaluadorForm(forms.ModelForm):

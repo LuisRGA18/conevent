@@ -7,7 +7,10 @@
       <h4 class="fw-bold text-white mb-0">Panel Administrativo</h4>
       <small class="text-muted">Gestión de proyectos y evaluadores — CONEVENT</small>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'gestionar_criterios' %}" class="btn btn-outline-warning btn-sm">
+        <i class="fas fa-clipboard-check me-1"></i> Rúbrica / Criterios
+      </a>
       <a href="{% url 'espacios:gestionar_stands' %}" class="btn btn-outline-info btn-sm">
         <i class="fas fa-map-marker-alt me-1"></i> Gestionar Stands / Mesas
       </a>
@@ -87,6 +90,42 @@
           <span style="font-size:11px; color:#dc2626; display:block;">Asignar ahora →</span>
         </div>
       </a>
+    </div>
+  </div>
+
+  <!-- Rúbrica de Evaluación del Evento Activo -->
+  <div class="card bg-dark border-secondary mb-4 shadow-sm">
+    <div class="card-header bg-black bg-opacity-25 border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fas fa-clipboard-check text-warning fs-5"></i>
+        <h6 class="mb-0 text-white fw-bold">Rúbrica de Evaluación — {{ evento_activo.nombre }}</h6>
+        <span class="badge {% if porcentaje_rubrica == 100 %}bg-success{% else %}bg-warning text-dark{% endif %}">
+          Ponderación activa: {{ porcentaje_rubrica|default:100 }}%
+        </span>
+      </div>
+      <a href="{% url 'gestionar_criterios' %}" class="btn btn-warning btn-sm fw-semibold">
+        <i class="fas fa-sliders-h me-1"></i> Configurar Rúbrica (Máx. 10 Criterios)
+      </a>
+    </div>
+    <div class="card-body p-3">
+      <div class="row g-2">
+        {% for c in criterios_evento %}
+        <div class="col-md-4">
+          <div class="p-2 rounded bg-black bg-opacity-30 border border-secondary d-flex justify-content-between align-items-center">
+            <div>
+              <span class="fw-semibold text-white d-block small">{{ c.nombre }}</span>
+              <span class="text-muted" style="font-size:11px;">{{ c.descripcion|truncatewords:8|default:"Sin descripción" }}</span>
+            </div>
+            <span class="badge bg-primary fs-6">{{ c.peso_porcentaje }}%</span>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted py-2 small">
+          <i class="fas fa-info-circle me-1 text-info"></i> No hay criterios configurados para este evento.
+          <a href="{% url 'gestionar_criterios' %}" class="text-info fw-bold ms-1">Configurar rúbrica inicial →</a>
+        </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
