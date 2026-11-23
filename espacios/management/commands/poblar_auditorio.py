@@ -41,8 +41,8 @@ class Command(BaseCommand):
                         creados += 1
 
             elif recinto.pk == 2 and planta.nivel == 0:
-                # Edificio K — Planta Baja (L invertida)
-                # Sección A: pasillo principal (filas 1-24, 2 columnas = orillas)
+                # Edificio K — Planta Baja (L invertida orientada a la izquierda)
+                # Sección A: pasillo principal de 29m (filas 1-24, 2 columnas en orillas: izquierda y derecha)
                 for fila in range(1, 25):
                     for col in [1, 2]:
                         Stand.objects.create(
@@ -54,7 +54,8 @@ class Command(BaseCommand):
                             esta_activo=True
                         )
                         creados += 1
-                # Sección B: extensión L (filas 25-37, 2 columnas)
+                # Sección B: extensión L de 16m x 6.67m (filas 25-37, 2 columnas en orillas perimetrales: superior e inferior)
+                # Sin celdas atravesando el centro del pasillo de tránsito
                 for fila in range(25, 38):
                     for col in [1, 2]:
                         Stand.objects.create(
@@ -69,7 +70,7 @@ class Command(BaseCommand):
 
             elif recinto.pk == 2 and planta.nivel == 1:
                 # Edificio K — Planta Alta (rectángulo con ensanchamiento)
-                # Tramo recto (filas 1-24, 2 columnas)
+                # Tramo recto alargado (filas 1-24, 2 columnas en orillas: izq col 1, der col 2)
                 for fila in range(1, 25):
                     for col in [1, 2]:
                         Stand.objects.create(
@@ -81,9 +82,10 @@ class Command(BaseCommand):
                             esta_activo=True
                         )
                         creados += 1
-                # Ensanchamiento (filas 25-29, 3 columnas)
+                # Ensanchamiento final (filas 25-29, EXCLUSIVAMENTE en muros perimetrales: izq col 1, der col 2)
+                # Se eliminan stands flotantes en el centro para dejar libre el tránsito
                 for fila in range(25, 30):
-                    for col in [1, 2, 3]:
+                    for col in [1, 2]:
                         Stand.objects.create(
                             planta=planta,
                             numero=f"PA-{str(creados + 1).zfill(2)}",
@@ -93,7 +95,7 @@ class Command(BaseCommand):
                             esta_activo=True
                         )
                         creados += 1
-                # Fondo del ensanchamiento (fila 30, 6 stands)
+                # Fila de cierre del fondo (fila 30, 6 stands horizontales sobre muro posterior)
                 for col in range(1, 7):
                     Stand.objects.create(
                         planta=planta,

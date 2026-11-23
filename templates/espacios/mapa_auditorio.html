@@ -424,11 +424,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // MOTOR 2 — EDIFICIO K PLANTA BAJA (Nivel 0 — L invertida)
-  //   Stands EXCLUSIVAMENTE en las orillas (col 1 = izq/arriba, col 2 = der/abajo)
-  //   Pasillo central amplio (>60px) totalmente despejado para tránsito
-  //   Sección A: filas 1-24 (pasillo principal 29m x 5m)
-  //   Sección B: filas 25-37 (extensión L 16m x 6.67m)
+  // MOTOR 2 — EDIFICIO K PLANTA BAJA (Nivel 0 — L invertida a la izquierda)
+  //   Extensión L (16m x 6.67m) se proyecta hacia la IZQUIERDA
+  //   Stands EXCLUSIVAMENTE en las orillas/perímetro de la L
+  //   Pasillo central de tránsito completamente despejado (>70px)
+  //   Entrada ubicada en el extremo inferior izquierdo sobre el frente de 6.67m
   // ═══════════════════════════════════════════════════════════
 
   function renderizarEdificioKPlantaBaja(planta, stands) {
@@ -439,82 +439,83 @@ document.addEventListener("DOMContentLoaded", function () {
     const filasA = 24;    // 24 filas pasillo principal
     const filasB = 13;    // 13 filas extensión en L
 
-    // Sección A (pasillo vertical principal): 29m x 5m
+    // Sección A (pasillo vertical principal de 29m x 5m)
     const pasilloAlto = filasA * CELDA;           // 576px
     const pasilloAncho = CELDA * 2 + PASILLO;     // 24 + 70 + 24 = 118px
 
-    // Sección B (extensión L perpendicular hacia la derecha): 16m x 6.67m
+    // Sección B (extensión L perpendicular hacia la IZQUIERDA: 16m x 6.67m)
     const extAncho = filasB * CELDA;              // 312px
     const extAlto = CELDA * 2 + PASILLO;          // 118px
 
-    // Coordenadas contorno
-    const x0 = PAD;
+    // Coordenadas con la L extendida hacia la IZQUIERDA:
+    const extX = PAD;
+    const xPasillo = PAD + extAncho;
     const y0 = PAD;
-    const x1 = PAD + pasilloAncho;
     const y1 = PAD + pasilloAlto;
-    const extX = x1;
     const extY = y1 - extAlto;
-    const x2 = extX + extAncho;
-    const y2 = extY;
+    const xMax = xPasillo + pasilloAncho;
 
-    const svgWidth = PAD * 2 + pasilloAncho + extAncho + 50;
+    const svgWidth = PAD * 2 + extAncho + pasilloAncho + 40;
     const svgHeight = PAD * 2 + pasilloAlto + 60;
 
     let svg = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 640px;" xmlns="http://www.w3.org/2000/svg">`;
     svg += renderDefsSVG();
 
-    // Fondo / Contorno arquitectónico en forma de "L" invertida
-    const lPoints = `${x0},${y0} ${x1},${y0} ${x1},${y2} ${x2},${y2} ${x2},${y1} ${x0},${y1}`;
+    // Fondo / Contorno arquitectónico en forma de "L" orientada a la izquierda
+    const lPoints = `${xPasillo},${y0} ${xMax},${y0} ${xMax},${y1} ${extX},${y1} ${extX},${extY} ${xPasillo},${extY}`;
     svg += `
       <g id="contorno-edificio-k-pb">
-        <!-- Relleno del edificio en L -->
+        <!-- Relleno del edificio en L reflejada a la izquierda -->
         <polygon points="${lPoints}" fill="#111827" stroke="#38bdf8" stroke-width="2.5" />
-        <!-- Pasillo central marcado con textura sutil -->
-        <rect x="${x0 + CELDA}" y="${y0}" width="${PASILLO}" height="${pasilloAlto - extAlto}" fill="#1e293b" fill-opacity="0.4" />
-        <rect x="${x0 + CELDA}" y="${extY + CELDA}" width="${pasilloAncho - CELDA + extAncho - CELDA}" height="${PASILLO}" fill="#1e293b" fill-opacity="0.4" />
+        <!-- Pasillo central vertical despejado -->
+        <rect x="${xPasillo + CELDA}" y="${y0}" width="${PASILLO}" height="${pasilloAlto - extAlto}" fill="#1e293b" fill-opacity="0.4" />
+        <!-- Pasillo de tránsito horizontal en la extensión L hacia la izquierda -->
+        <rect x="${extX + CELDA}" y="${extY + CELDA}" width="${extAncho + pasilloAncho - CELDA * 2}" height="${PASILLO}" fill="#1e293b" fill-opacity="0.4" />
         <!-- Línea arquitectónica de unión pasillo-extensión -->
-        <line x1="${x1}" y1="${y2}" x2="${x1}" y2="${y1}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+        <line x1="${xPasillo}" y1="${extY}" x2="${xPasillo}" y2="${y1}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
       </g>
     `;
 
     // Cotas métricas
-    svg += renderCotaSVG(x0 - 25, y0, x0 - 25, y1, "29.00 m (Sección A)", -15, 0, true);
-    svg += renderCotaSVG(x0, y0 - 18, x1, y0 - 18, "5.00 m");
-    svg += renderCotaSVG(extX, y1 + 22, x2, y1 + 22, "16.00 m (Extensión L)");
-    svg += renderCotaSVG(x2 + 20, y2, x2 + 20, y1, "6.67 m", 15, 0, true);
+    svg += renderCotaSVG(xPasillo, y0 - 18, xMax, y0 - 18, "5.00 m");
+    svg += renderCotaSVG(xMax + 20, y0, xMax + 20, y1, "29.00 m (Pasillo Principal)", 15, 0, true);
+    svg += renderCotaSVG(extX - 22, extY, extX - 22, y1, "6.67 m (Frente)", -15, 0, true);
+    svg += renderCotaSVG(extX, y1 + 22, xMax, y1 + 22, "16.00 m (Extensión L)");
 
-    // Texto visual "PASILLO CENTRAL" en la zona vacía del pasillo vertical
-    const pasilloCX = x0 + CELDA + PASILLO / 2;
+    // Texto visual "PASILLO CENTRAL" en la zona vertical
+    const pasilloCX = xPasillo + CELDA + PASILLO / 2;
     const pasilloCY = y0 + (pasilloAlto - extAlto) / 2;
     svg += `<text x="${pasilloCX}" y="${pasilloCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
                   text-anchor="middle" transform="rotate(-90 ${pasilloCX} ${pasilloCY})" letter-spacing="3">PASILLO CENTRAL</text>`;
 
-    // Texto visual "EXTENSIÓN L" en la zona vacía del pasillo horizontal
+    // Texto visual "EXTENSIÓN L" en la zona de tránsito horizontal
     const extCX = extX + extAncho / 2;
     const extCY = extY + CELDA + PASILLO / 2 + 4;
     svg += `<text x="${extCX}" y="${extCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
                   text-anchor="middle" letter-spacing="3">EXTENSIÓN L</text>`;
 
-    // Etiqueta "ENTRADA" con flecha (↑) en la parte inferior
-    svg += `<text x="${pasilloCX}" y="${y1 + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
+    // Indicador visual "↑ ENTRADA" ubicado en el extremo inferior izquierdo (frente de 6.67m)
+    const entradaX = extX + CELDA + PASILLO / 2;
+    svg += `<text x="${entradaX}" y="${y1 + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
                   text-anchor="middle" letter-spacing="2">↑ ENTRADA</text>`;
 
     // Títulos de secciones
-    svg += renderLabelSVG(x0 + pasilloAncho / 2, y0 + 15, "SECCIÓN A (29m × 5m)", 9, '#38bdf8', 'middle', 1);
-    svg += renderLabelSVG(extCX, y2 + 15, "SECCIÓN B (16m × 6.67m)", 9, '#38bdf8', 'middle', 1);
+    svg += renderLabelSVG(xPasillo + pasilloAncho / 2, y0 + 15, "SECCIÓN A (29m × 5m)", 9, '#38bdf8', 'middle', 1);
+    svg += renderLabelSVG(extCX, extY + 15, "SECCIÓN B (16m × 6.67m)", 9, '#38bdf8', 'middle', 1);
 
     // DIBUJO DE STANDS: EXCLUSIVAMENTE EN LAS ORILLAS/PERÍMETRO
+    // Sin ninguna celda obstruyendo los pasillos de tránsito
     stands.forEach(s => {
       let x, y;
       if (s.pos_fila <= 24) {
-        // Pasillo principal:
-        // pos_col = 1 -> Orilla izquierda pegada al borde
-        // pos_col = 2 -> Orilla derecha pegada al borde
-        x = (s.pos_col === 1) ? x0 : x0 + CELDA + PASILLO;
+        // Pasillo principal vertical (Sección A):
+        // pos_col = 1 -> Orilla izquierda (borde xPasillo)
+        // pos_col = 2 -> Orilla derecha (borde xMax - CELDA)
+        x = (s.pos_col === 1) ? xPasillo : xPasillo + CELDA + PASILLO;
         y = y0 + (s.pos_fila - 1) * CELDA;
       } else {
-        // Extensión L (Filas 25 a 37):
-        // Distribuidos a lo largo del contorno de la L:
+        // Extensión L hacia la izquierda (Sección B):
+        // Filas 25 a 37 distribuidas en los bordes perimetrales:
         // pos_col = 1 -> Orilla superior de la extensión L
         // pos_col = 2 -> Orilla inferior de la extensión L
         const fExt = s.pos_fila - 24; // 1 a 13
@@ -530,10 +531,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ═══════════════════════════════════════════════════════════
   // MOTOR 3 — EDIFICIO K PLANTA ALTA (Nivel 1 — rectángulo con ensanchamiento)
-  //   Stands EXCLUSIVAMENTE en las orillas (col 1 = orilla izq, col 2 = orilla der)
-  //   Pasillo central amplio totalmente vacío para tránsito
-  //   Tramo recto alargado: filas 1-24 (29m x 5m)
-  //   Ensanchamiento final: filas 25-30 (se abre a 7.33m)
+  //   Stands EXCLUSIVAMENTE en las orillas (col 1 = izq, col 2 = der)
+  //   Eliminadas celdas flotantes en el centro del ensanchamiento
+  //   Indicador "↑ LLEGADA DE ESCALERAS / ENTRADA" en la base de 6.67m
   // ═══════════════════════════════════════════════════════════
 
   function renderizarEdificioKPlantaAlta(planta, stands) {
@@ -541,17 +541,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const PASILLO = 70;   // px ancho libre del pasillo central
     const PAD = 50;
 
-    const filasRectas = 24; // Filas 1 a 24
-    const filasEns = 5;     // Filas 25 a 29
+    const filasRectas = 24;  // Filas 1 a 24
+    const filasEns = 5;      // Filas 25 a 29
     const fondoAlto = CELDA; // Fila 30 de fondo
 
     // Tramo alargado (29m x 5m): 2 columnas en las orillas
     const rectoAlto = filasRectas * CELDA;          // 576px
     const rectoAncho = CELDA * 2 + PASILLO;         // 118px
 
-    // Ensanchamiento final (abre a 7.33m):
-    // El pasillo central se ensancha o se agregan celdas en el nuevo perímetro
-    const ensPasillo = PASILLO + 60;                // 130px pasillo aún más amplio
+    // Ensanchamiento final (abre a 7.33m / 6.67m base)
+    const ensPasillo = PASILLO + 60;                // pasillo amplio
     const ensAncho = CELDA * 2 + ensPasillo;        // 178px
     const ensAlto = filasEns * CELDA;               // 120px
 
@@ -568,7 +567,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let svg = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 720px;" xmlns="http://www.w3.org/2000/svg">`;
     svg += renderDefsSVG();
 
-    // Contorno exterior: pasillo largo de 29m x 5m que al final se ensancha a 7.33m
+    // Contorno exterior: pasillo largo de 29m x 5m que al final se ensancha
     const contorno = `${x0},${y0} ${x1},${y0} ${x1},${yEns} ${x2},${yEns} ${x2},${yFondo} ${x0},${yFondo}`;
     svg += `
       <g id="contorno-edificio-k-pa">
@@ -584,10 +583,10 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
 
     // Cotas métricas
-    svg += renderCotaSVG(x0 - 25, y0, x0 - 25, yEns, "29.00 m (Tramo Alargado)", -15, 0, true);
+    svg += renderCotaSVG(x0 - 25, y0, x0 - 25, yEns, "29.00 m (Tramo Recto)", -15, 0, true);
     svg += renderCotaSVG(x0, y0 - 18, x1, y0 - 18, "5.00 m");
     svg += renderCotaSVG(x2 + 20, yEns, x2 + 20, yFondo, "6.67 m", 15, 0, true);
-    svg += renderCotaSVG(x0, yFondo + 22, x2, yFondo + 22, "7.33 m (Ensanchamiento)");
+    svg += renderCotaSVG(x0, yFondo + 22, x2, yFondo + 22, "7.33 m (Base Ensanchada)");
 
     // Texto "PASILLO CENTRAL" en la zona vacía del tramo alargado
     const pasilloCX = x0 + CELDA + PASILLO / 2;
@@ -595,49 +594,39 @@ document.addEventListener("DOMContentLoaded", function () {
     svg += `<text x="${pasilloCX}" y="${pasilloCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
                   text-anchor="middle" transform="rotate(-90 ${pasilloCX} ${pasilloCY})" letter-spacing="3">PASILLO CENTRAL</text>`;
 
-    // Texto "ENSANCHAMIENTO" en el área del pasillo ensanchado
+    // Texto "ENSANCHAMIENTO" en el área del pasillo ensanchado despejado
     const ensCX = x0 + CELDA + ensPasillo / 2;
     const ensCY = yEns + ensAlto / 2 + 4;
     svg += `<text x="${ensCX}" y="${ensCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
                   text-anchor="middle" letter-spacing="3">ENSANCHAMIENTO</text>`;
 
-    // Etiqueta "ENTRADA" con flecha (↑) en la parte inferior
+    // Etiqueta "↑ LLEGADA DE ESCALERAS / ENTRADA" en la base ensanchada de 6.67m
     svg += `<text x="${ensCX}" y="${yFondo + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
-                  text-anchor="middle" letter-spacing="2">↑ ENTRADA</text>`;
+                  text-anchor="middle" letter-spacing="1.5">↑ LLEGADA DE ESCALERAS / ENTRADA</text>`;
 
     // Títulos de zonas
     svg += renderLabelSVG(x0 + rectoAncho / 2, y0 + 15, "TRAMO ALARGADO (29m × 5m)", 9, '#38bdf8', 'middle', 1);
     svg += renderLabelSVG(ensCX, yEns + 15, "ZONA ENSANCHADA (7.33m)", 9, '#38bdf8', 'middle', 1);
 
-    // DIBUJO DE STANDS: EXCLUSIVAMENTE EN LAS ORILLAS/PERÍMETRO
+    // DIBUJO DE STANDS: EXCLUSIVAMENTE EN LAS ORILLAS/MUROS PERIMETRALES
+    // Ningún stand flotando en medio del ensanchamiento
     stands.forEach(s => {
       let x, y;
       if (s.pos_fila <= 24) {
-        // Tramo Alargado (Filas 1 a 24):
+        // Tramo Recto (Filas 1 a 24):
         // pos_col = 1 -> Orilla izquierda
         // pos_col = 2 -> Orilla derecha
-        // Centro completamente libre como pasillo de tránsito
         x = (s.pos_col === 1) ? x0 : x0 + CELDA + PASILLO;
         y = y0 + (s.pos_fila - 1) * CELDA;
       } else if (s.pos_fila <= 29) {
         // Ensanchamiento Final (Filas 25 a 29):
-        // Se posicionan en el perímetro ensanchado:
-        // pos_col = 1 -> Borde izquierdo
-        // pos_col = 2 -> Borde derecho ensanchado
-        // pos_col = 3 -> Isla perimetral lateral intermedia
+        // ÚNICAMENTE en muros perimetrales izquierdo y derecho
         const fEns = s.pos_fila - 24; // 1 a 5
-        if (s.pos_col === 1) {
-          x = x0;
-        } else if (s.pos_col === 2) {
-          x = x2 - CELDA;
-        } else {
-          // Borde intermedio derecho del escalón
-          x = x1 - CELDA;
-        }
+        x = (s.pos_col === 1) ? x0 : x2 - CELDA;
         y = yEns + (fEns - 1) * CELDA;
       } else {
-        // Fondo de cierre (Fila 30):
-        // 6 stands alineados horizontalmente en la pared posterior de cierre
+        // Fila de cierre del fondo (Fila 30):
+        // 6 stands alineados horizontalmente en el muro posterior
         const colIdx = s.pos_col - 1; // 0 a 5
         const spacing = (ensAncho - CELDA) / 5;
         x = x0 + colIdx * spacing;
