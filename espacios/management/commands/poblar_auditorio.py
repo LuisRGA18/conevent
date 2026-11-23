@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 
+
 class Command(BaseCommand):
     help = 'Pobla stands para todas las plantas de un recinto'
 
@@ -18,20 +19,92 @@ class Command(BaseCommand):
             return
 
         for planta in recinto.plantas.all():
+            # Eliminar stands existentes de esta planta
+            Stand.objects.filter(planta=planta).delete()
             creados = 0
-            for fila in range(1, planta.filas + 1):
-                for col in range(1, planta.columnas + 1):
-                    zona = 'A' if fila <= 4 else 'B' if fila <= 7 else 'C'
-                    numero = f"{zona}-{str((fila-1)*planta.columnas + col).zfill(2)}"
-                    Stand.objects.get_or_create(
+
+            if recinto.pk == 1:
+                # Auditorio — distribución grid estándar 7x10
+                zonas = {range(1, 5): 'A', range(5, 9): 'B', range(9, 11): 'C'}
+                for fila in range(1, planta.filas + 1):
+                    zona = next((z for r, z in zonas.items() if fila in r), 'C')
+                    for col in range(1, planta.columnas + 1):
+                        num = (fila - 1) * planta.columnas + col
+                        Stand.objects.create(
+                            planta=planta,
+                            numero=f"{zona}-{str(num).zfill(2)}",
+                            zona=zona,
+                            pos_fila=fila,
+                            pos_col=col,
+                            esta_activo=True
+                        )
+                        creados += 1
+
+            elif recinto.pk == 2 and planta.nivel == 0:
+                # Edificio K — Planta Baja (L invertida)
+                # Sección A: pasillo principal (filas 1-24, 2 columnas = orillas)
+                for fila in range(1, 25):
+                    for col in [1, 2]:
+                        Stand.objects.create(
+                            planta=planta,
+                            numero=f"PB-{str(creados + 1).zfill(2)}",
+                            zona='A',
+                            pos_fila=fila,
+                            pos_col=col,
+                            esta_activo=True
+                        )
+                        creados += 1
+                # Sección B: extensión L (filas 25-37, 2 columnas)
+                for fila in range(25, 38):
+                    for col in [1, 2]:
+                        Stand.objects.create(
+                            planta=planta,
+                            numero=f"PB-{str(creados + 1).zfill(2)}",
+                            zona='B',
+                            pos_fila=fila,
+                            pos_col=col,
+                            esta_activo=True
+                        )
+                        creados += 1
+
+            elif recinto.pk == 2 and planta.nivel == 1:
+                # Edificio K — Planta Alta (rectángulo con ensanchamiento)
+                # Tramo recto (filas 1-24, 2 columnas)
+                for fila in range(1, 25):
+                    for col in [1, 2]:
+                        Stand.objects.create(
+                            planta=planta,
+                            numero=f"PA-{str(creados + 1).zfill(2)}",
+                            zona='A',
+                            pos_fila=fila,
+                            pos_col=col,
+                            esta_activo=True
+                        )
+                        creados += 1
+                # Ensanchamiento (filas 25-29, 3 columnas)
+                for fila in range(25, 30):
+                    for col in [1, 2, 3]:
+                        Stand.objects.create(
+                            planta=planta,
+                            numero=f"PA-{str(creados + 1).zfill(2)}",
+                            zona='B',
+                            pos_fila=fila,
+                            pos_col=col,
+                            esta_activo=True
+                        )
+                        creados += 1
+                # Fondo del ensanchamiento (fila 30, 6 stands)
+                for col in range(1, 7):
+                    Stand.objects.create(
                         planta=planta,
-                        pos_fila=fila,
+                        numero=f"PA-{str(creados + 1).zfill(2)}",
+                        zona='C',
+                        pos_fila=30,
                         pos_col=col,
-                        defaults={
-                            'numero': numero,
-                            'zona': zona,
-                            'esta_activo': True
-                        }
+                        esta_activo=True
                     )
                     creados += 1
-            self.stdout.write(self.style.SUCCESS(f'{planta.nombre}: {creados} stands verificados/creados'))
+
+            self.stdout.write(
+                self.style.SUCCESS(f'{planta.nombre}: {creados} stands creados')
+            )

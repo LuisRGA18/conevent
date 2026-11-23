@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from usuarios.models import Proyecto, Carrera
-from .models import Stand, AsignacionStand
+from usuarios.models import Proyecto, Carrera, Evento
+from .models import Stand, AsignacionStand, Recinto, Planta
 
 User = get_user_model()
 
@@ -35,7 +35,7 @@ class EspaciosTestCase(TestCase):
             zona='gimnasio',
             capacidad_proyectos=1
         )
-        self.assertEqual(str(stand), 'Gimnasio UTEQ - Stand A-10')
+        self.assertEqual(str(stand), 'Stand A-10')
 
     def test_asignacion_stand(self):
         stand = Stand.objects.create(
@@ -66,41 +66,52 @@ class EspaciosAPITestCase(APITestCase):
         self.alumno = User.objects.create_user(
             username='alumno.test', password='Password123!', rol='ALUMNO'
         )
+        # Recinto, Planta y Evento
+        self.recinto = Recinto.objects.create(nombre='Auditorio UTEQ')
+        self.planta = Planta.objects.create(
+            recinto=self.recinto, nombre='Planta Única', nivel=0, filas=10, columnas=7
+        )
+        self.evento = Evento.objects.create(
+            nombre='Evento Test', recinto=self.recinto, estatus='activo'
+        )
+
         # Carreras
         self.carrera_dsm = Carrera.objects.create(nombre='DSM', clave='DSM')
         self.carrera_iric = Carrera.objects.create(nombre='IRIC', clave='IRIC')
         
         # Proyectos aprobados
         self.p1 = Proyecto.objects.create(
-            titulo='DSM Proy 1', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado'
+            titulo='DSM Proy 1', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado', evento=self.evento
         )
         self.p2 = Proyecto.objects.create(
-            titulo='DSM Proy 2', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado'
+            titulo='DSM Proy 2', carrera=self.carrera_dsm, creado_por=self.alumno, estatus='aprobado', evento=self.evento
         )
         self.p3 = Proyecto.objects.create(
-            titulo='IRIC Proy 1', carrera=self.carrera_iric, creado_por=self.alumno, estatus='aprobado'
+            titulo='IRIC Proy 1', carrera=self.carrera_iric, creado_por=self.alumno, estatus='aprobado', evento=self.evento
         )
         
-        # Stands con coordenadas en orden geométrico
-        self.s1 = Stand.objects.create(numero='M-01', pos_fila=1, pos_col=1, zona='auditorio')
-        self.s2 = Stand.objects.create(numero='M-02', pos_fila=1, pos_col=2, zona='auditorio')
-        self.s3 = Stand.objects.create(numero='M-03', pos_fila=1, pos_col=3, zona='auditorio')
+        # Stands con coordenadas en orden geométrico asignados a la planta
+        self.s1 = Stand.objects.create(planta=self.planta, numero='M-01', pos_fila=1, pos_col=1, zona='auditorio')
+        self.s2 = Stand.objects.create(planta=self.planta, numero='M-02', pos_fila=1, pos_col=2, zona='auditorio')
+        self.s3 = Stand.objects.create(planta=self.planta, numero='M-03', pos_fila=1, pos_col=3, zona='auditorio')
 
     def test_mapa_api_endpoint(self):
         # Autenticar
         self.client.force_authenticate(user=self.alumno)
-        response = self.client.get('/api/stands/mapa/')
+        response = self.client.get(f'/api/stands/mapa/?recinto={self.recinto.id}')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
-        self.assertEqual(response.data[0]['numero'], 'M-01')
-        self.assertIsNone(response.data[0]['proyecto_asignado'])
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['planta_nombre'], 'Planta Única')
+        self.assertEqual(len(response.data[0]['stands']), 3)
+        self.assertEqual(response.data[0]['stands'][0]['numero'], 'M-01')
+        self.assertIsNone(response.data[0]['stands'][0]['proyecto'])
 
     def test_asignar_stands_command(self):
         # Verificar que no existen asignaciones previas
         self.assertEqual(AsignacionStand.objects.count(), 0)
         
-        # Ejecutar el comando
-        call_command('asignar_stands')
+        # Ejecutar el comando para el evento
+        call_command('asignar_stands', evento=self.evento.id)
         
         # Verificar asignaciones creadas
         self.assertEqual(AsignacionStand.objects.count(), 3)
@@ -205,13 +216,23 @@ class EspaciosMejorasTestCase(TestCase):
         )
         self.carrera = Carrera.objects.create(nombre='ISC', clave='ISC')
 
+        # Recinto, Planta y Evento
+        self.recinto = Recinto.objects.create(id=1, nombre='Auditorio UTEQ')
+        self.planta = Planta.objects.create(
+            id=1, recinto=self.recinto, nombre='Planta Única', nivel=0, filas=10, columnas=7
+        )
+        self.evento = Evento.objects.create(
+            nombre='Evento Mejoras', recinto=self.recinto, estatus='activo'
+        )
+
         # Proyectos
         self.p_2mesas = Proyecto.objects.create(
             titulo='Proyecto 2 Mesas',
             carrera=self.carrera,
             creado_por=self.alumno,
             estatus='aprobado',
-            mesas_requeridas=2
+            mesas_requeridas=2,
+            evento=self.evento
         )
         self.p_3mesas_unauth = Proyecto.objects.create(
             titulo='Proyecto 3 Mesas Unauth',
@@ -219,7 +240,8 @@ class EspaciosMejorasTestCase(TestCase):
             creado_por=self.alumno2,
             estatus='aprobado',
             mesas_requeridas=3,
-            mesas_autorizadas=False
+            mesas_autorizadas=False,
+            evento=self.evento
         )
         self.p_3mesas_auth = Proyecto.objects.create(
             titulo='Proyecto 3 Mesas Auth',
@@ -227,40 +249,42 @@ class EspaciosMejorasTestCase(TestCase):
             creado_por=self.admin, # just a different user
             estatus='aprobado',
             mesas_requeridas=3,
-            mesas_autorizadas=True
+            mesas_autorizadas=True,
+            evento=self.evento
         )
 
     def test_poblar_auditorio_command(self):
         # Eliminar stands previos para verificar conteo exacto
-        Stand.objects.filter(zona='auditorio').delete()
-        call_command('poblar_auditorio')
+        Stand.objects.all().delete()
+        call_command('poblar_auditorio', recinto=1)
         
-        self.assertEqual(Stand.objects.filter(zona='auditorio').count(), 70)
+        self.assertEqual(Stand.objects.filter(planta__recinto_id=1).count(), 70)
         
         # Verificar coordenadas y nombres de los extremos
-        s_a01 = Stand.objects.get(numero='A-01')
+        s_a01 = Stand.objects.get(numero='A-01', planta=self.planta)
         self.assertEqual(s_a01.pos_fila, 1)
         self.assertEqual(s_a01.pos_col, 1)
         
-        s_c14 = Stand.objects.get(numero='C-14')
+        s_c14 = Stand.objects.get(numero='C-70', planta=self.planta)
         self.assertEqual(s_c14.pos_fila, 10)
         self.assertEqual(s_c14.pos_col, 7)
 
     def test_asignar_stands_multimesas_contiguas(self):
-        # Crear stands libres consecutivos
+        # Crear stands libres consecutivos en la planta del evento
         Stand.objects.all().delete()
         stands = []
         for col in range(1, 8):
             stands.append(Stand.objects.create(
+                planta=self.planta,
                 numero=f"M-{col:02d}",
                 pos_fila=1,
                 pos_col=col,
-                zona='auditorio',
+                zona='A',
                 esta_activo=True
             ))
 
-        # Ejecutar asignación
-        call_command('asignar_stands')
+        # Ejecutar asignación para el evento
+        call_command('asignar_stands', evento=self.evento.id)
 
         # 1. Proyecto 3 mesas sin autorización: omitido, no tiene stands asignados
         self.assertEqual(self.p_3mesas_unauth.asignaciones_stands.count(), 0)

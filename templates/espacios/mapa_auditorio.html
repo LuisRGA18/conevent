@@ -10,9 +10,17 @@
       <h4 class="text-white fw-bold mb-0">
         <i class="fas fa-map-marked-alt text-info me-2"></i>Mapa Interactivo del Recinto
       </h4>
-      <small class="text-muted">Visualiza la ubicación física de los stands por planta y su distribución de proyectos.</small>
+      <small class="text-muted" id="recinto-subtitulo">Visualiza la ubicación física de los stands por planta y su distribución de proyectos.</small>
     </div>
-    <div class="text-end">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="btn-group btn-group-sm" id="recinto-switcher">
+        <a href="?recinto=1" class="btn btn-sm btn-outline-secondary" id="btn-rec-1">
+          <i class="fas fa-theater-masks me-1"></i> Auditorio UTEQ
+        </a>
+        <a href="?recinto=2" class="btn btn-sm btn-outline-secondary" id="btn-rec-2">
+          <i class="fas fa-building me-1"></i> Edificio K / DTAI
+        </a>
+      </div>
       <span class="badge bg-secondary p-2 shadow-sm" id="stats-summary">Cargando stands...</span>
     </div>
   </div>
@@ -143,16 +151,16 @@
     transition: transform 0.15s ease, opacity 0.2s ease;
   }
   .stand-node:hover rect {
-    filter: brightness(1.2);
+    filter: brightness(1.25);
     stroke-width: 2.5px !important;
   }
   .stand-node.dimmed {
     opacity: 0.15;
   }
   .stand-node.highlighted rect {
-    stroke: #ffffff !important;
+    stroke: #38bdf8 !important;
     stroke-width: 3px !important;
-    filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4));
+    filter: drop-shadow(0px 0px 8px rgba(56, 189, 248, 0.6));
   }
   .tab-planta-btn {
     border-radius: 8px;
@@ -162,6 +170,12 @@
     transition: all 0.2s;
     cursor: pointer;
   }
+  .cota-metrica text {
+    user-select: none;
+  }
+  .cota-metrica line {
+    pointer-events: none;
+  }
 </style>
 
 <script>
@@ -169,6 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const mapaContenedor = document.getElementById("mapa-contenedor");
   const statsSummary = document.getElementById("stats-summary");
   const plantaHeaderTitle = document.getElementById("planta-header-title");
+  const recintoSubtitulo = document.getElementById("recinto-subtitulo");
   
   const detailEmpty = document.getElementById("detail-empty");
   const detailContent = document.getElementById("detail-content");
@@ -188,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let dataMapa = [];
   let currentFilter = "all";
 
-  // Color Palette by Career
+  // Career color palette
   const careerColors = {
     'IA':    { fill: '#D1FAE5', stroke: '#059669', text: '#064E3B', label: 'Ingeniería Ambiental' },
     'IASP':  { fill: '#A7F3D0', stroke: '#047857', text: '#022C22', label: 'Agricultura Sustentable y Protegida' },
@@ -204,9 +219,14 @@ document.addEventListener("DOMContentLoaded", function () {
     'free':  { fill: '#4b5563', stroke: '#9ca3af', text: '#ffffff', label: 'Libre' }
   };
 
+  // ═══════════════════════════════════════════════════════════
+  // CARGA DE DATOS Y NAVEGACIÓN
+  // ═══════════════════════════════════════════════════════════
+
   async function cargarMapa() {
     try {
-      const resp = await fetch("/api/stands/mapa/");
+      const query = window.location.search;
+      const resp = await fetch(`/api/stands/mapa/${query}`);
       if (!resp.ok) {
         throw new Error("No hay evento activo o error al consultar el mapa.");
       }
@@ -217,7 +237,26 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // Generar pestañas de plantas
+      // Marcar botón activo de recinto
+      const currentRecintoId = dataMapa[0]?.recinto_id;
+      const btnRec1 = document.getElementById("btn-rec-1");
+      const btnRec2 = document.getElementById("btn-rec-2");
+      if (btnRec1 && btnRec2 && currentRecintoId) {
+        if (currentRecintoId === 1) {
+          btnRec1.className = "btn btn-sm btn-info text-white";
+          btnRec2.className = "btn btn-sm btn-outline-secondary";
+        } else if (currentRecintoId === 2) {
+          btnRec2.className = "btn btn-sm btn-info text-white";
+          btnRec1.className = "btn btn-sm btn-outline-secondary";
+        }
+      }
+
+      const recNombre = dataMapa[0]?.recinto_nombre || "Recinto";
+      if (recintoSubtitulo) {
+        recintoSubtitulo.innerText = `Distribución espacial de stands para ${recNombre}.`;
+      }
+
+      // Generar pestañas de plantas dinámicas
       const tabsDiv = document.getElementById("tabs-plantas");
       tabsDiv.innerHTML = "";
       dataMapa.forEach((planta, idx) => {
@@ -237,19 +276,383 @@ document.addEventListener("DOMContentLoaded", function () {
           <i class="fas fa-exclamation-circle fs-1 mb-2"></i>
           <h6>Error al cargar el mapa</h6>
           <p class="text-muted small">${err.message}</p>
-          <a href="/eventos/" class="btn btn-outline-info btn-sm mt-2">Seleccionar Evento</a>
+          <a href="/auth/eventos/" class="btn btn-outline-info btn-sm mt-2">Seleccionar Evento</a>
         </div>`;
     }
   }
 
   function cambiarPlanta(idx, btn) {
     plantaActiva = idx;
+    // Resaltar pestaña activa
     document.querySelectorAll("#tabs-plantas button").forEach(b => {
       b.className = "btn btn-sm tab-planta-btn btn-outline-secondary";
     });
     btn.className = "btn btn-sm tab-planta-btn btn-info text-white";
+
+    // Limpiar panel de detalle
+    detailEmpty.classList.remove("d-none");
+    detailContent.classList.add("d-none");
+
+    // Resetear filtros al estado "Todos"
+    currentFilter = "all";
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+    if (allBtn) allBtn.classList.add("active");
+
     renderizarPlanta(idx);
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // ELEMENTOS SVG COMUNES
+  // ═══════════════════════════════════════════════════════════
+
+  function renderDefsSVG() {
+    return `
+      <defs>
+        <marker id="arrow-start" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#94a3b8" />
+        </marker>
+        <marker id="arrow-end" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#94a3b8" />
+        </marker>
+        <pattern id="hatch-outside" width="16" height="16" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="16" stroke="#334155" stroke-width="1.5" />
+        </pattern>
+      </defs>
+    `;
+  }
+
+  // Generador de nodo individual de Stand
+  function renderStandNodeSVG(s, x, y, width, height) {
+    let colorObj = careerColors.free;
+    let careerKey = "free";
+
+    const proy = s.proyecto || s.proyecto_asignado;
+    if (proy) {
+      const key = (proy.carrera_clave || "").toUpperCase();
+      careerKey = careerColors[key] ? key : 'IDGS';
+      colorObj = careerColors[careerKey];
+    }
+
+    const tooltipText = `Stand ${s.numero} (${s.zona ? 'Zona ' + s.zona : 'General'}) - ${careerKey === 'free' ? 'Libre' : (proy.titulo || careerKey)}`;
+
+    return `
+      <g class="stand-node" id="node-${s.id}" data-id="${s.id}" data-carrera="${careerKey}">
+        <title>${tooltipText}</title>
+        <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="4" 
+              fill="${colorObj.fill}" fill-opacity="0.95" stroke="${colorObj.stroke}" stroke-width="1.5" />
+        <text x="${x + width/2}" y="${y + height/2 + 4}" 
+              fill="${colorObj.text}" font-size="10" font-weight="bold" text-anchor="middle">${s.numero}</text>
+      </g>
+    `;
+  }
+
+  // Generador de cotas métricas arquitectónicas
+  function renderCotaSVG(x1, y1, x2, y2, label, textOffsetX, textOffsetY, isVertical) {
+    textOffsetX = textOffsetX || 0;
+    textOffsetY = textOffsetY || -8;
+    isVertical = isVertical || false;
+    const mx = (x1 + x2) / 2 + textOffsetX;
+    const my = (y1 + y2) / 2 + textOffsetY;
+    const rot = isVertical ? `transform="rotate(-90 ${mx} ${my})"` : '';
+    return `
+      <g class="cota-metrica">
+        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
+              stroke="#94a3b8" stroke-width="1.2"
+              marker-start="url(#arrow-start)" marker-end="url(#arrow-end)" />
+        <text x="${mx}" y="${my}" fill="#94a3b8" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle" ${rot}>
+          ${label}
+        </text>
+      </g>
+    `;
+  }
+
+  // Etiqueta SVG de texto decorativa
+  function renderLabelSVG(x, y, text, fontSize, color, anchor, letterSpacing) {
+    fontSize = fontSize || 10;
+    color = color || '#38bdf8';
+    anchor = anchor || 'middle';
+    letterSpacing = letterSpacing || 1;
+    return `<text x="${x}" y="${y}" fill="${color}" font-size="${fontSize}" font-weight="bold" 
+                  text-anchor="${anchor}" letter-spacing="${letterSpacing}">${text}</text>`;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MOTOR 1 — AUDITORIO UTEQ (Recinto 1 — grid estándar 7x10)
+  // ═══════════════════════════════════════════════════════════
+
+  function renderizarAuditorio(planta, stands) {
+    const nodeWidth = 100;
+    const nodeHeight = 22;
+    const gapX = 36;
+    const gapY = 12;
+    const marginX = 40;
+    const marginY = 60;
+
+    const cols = Math.max(planta.columnas || 7, 7);
+    const filas = Math.max(planta.filas || 10, 10);
+
+    const svgWidth = Math.max(760, marginX * 2 + cols * (nodeWidth + gapX));
+    const svgHeight = Math.max(380, marginY + filas * (nodeHeight + gapY) + 40);
+
+    let svgHTML = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 520px;" xmlns="http://www.w3.org/2000/svg">`;
+    svgHTML += renderDefsSVG();
+
+    // Escenario decorativo superior
+    svgHTML += `
+      <g id="escenario-decorativo">
+        <rect x="40" y="10" width="${svgWidth - 80}" height="32" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+        <text x="${svgWidth / 2}" y="30" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="2">ESCENARIO / ZONA PRINCIPAL — AUDITORIO UTEQ</text>
+      </g>
+    `;
+
+    // Grilla guía decorativa
+    for (let f = 1; f <= filas; f++) {
+      const y = marginY + (f - 1) * (nodeHeight + gapY) + nodeHeight / 2;
+      svgHTML += `<line x1="40" y1="${y}" x2="${svgWidth - 40}" y2="${y}" stroke="#1e293b" stroke-dasharray="2 4" stroke-width="0.5" />`;
+    }
+
+    // Dibujar Stands
+    stands.forEach(s => {
+      const x = marginX + (s.pos_col - 1) * (nodeWidth + gapX);
+      const y = marginY + (s.pos_fila - 1) * (nodeHeight + gapY);
+      svgHTML += renderStandNodeSVG(s, x, y, nodeWidth, nodeHeight);
+    });
+
+    svgHTML += `</svg>`;
+    return svgHTML;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MOTOR 2 — EDIFICIO K PLANTA BAJA (Nivel 0 — L invertida)
+  //   Stands EXCLUSIVAMENTE en las orillas (col 1 = izq/arriba, col 2 = der/abajo)
+  //   Pasillo central amplio (>60px) totalmente despejado para tránsito
+  //   Sección A: filas 1-24 (pasillo principal 29m x 5m)
+  //   Sección B: filas 25-37 (extensión L 16m x 6.67m)
+  // ═══════════════════════════════════════════════════════════
+
+  function renderizarEdificioKPlantaBaja(planta, stands) {
+    const CELDA = 24;     // px tamaño del stand
+    const PASILLO = 70;   // px ancho libre de pasillo central (mínimo 60px)
+    const PAD = 50;       // padding exterior
+
+    const filasA = 24;    // 24 filas pasillo principal
+    const filasB = 13;    // 13 filas extensión en L
+
+    // Sección A (pasillo vertical principal): 29m x 5m
+    const pasilloAlto = filasA * CELDA;           // 576px
+    const pasilloAncho = CELDA * 2 + PASILLO;     // 24 + 70 + 24 = 118px
+
+    // Sección B (extensión L perpendicular hacia la derecha): 16m x 6.67m
+    const extAncho = filasB * CELDA;              // 312px
+    const extAlto = CELDA * 2 + PASILLO;          // 118px
+
+    // Coordenadas contorno
+    const x0 = PAD;
+    const y0 = PAD;
+    const x1 = PAD + pasilloAncho;
+    const y1 = PAD + pasilloAlto;
+    const extX = x1;
+    const extY = y1 - extAlto;
+    const x2 = extX + extAncho;
+    const y2 = extY;
+
+    const svgWidth = PAD * 2 + pasilloAncho + extAncho + 50;
+    const svgHeight = PAD * 2 + pasilloAlto + 60;
+
+    let svg = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 640px;" xmlns="http://www.w3.org/2000/svg">`;
+    svg += renderDefsSVG();
+
+    // Fondo / Contorno arquitectónico en forma de "L" invertida
+    const lPoints = `${x0},${y0} ${x1},${y0} ${x1},${y2} ${x2},${y2} ${x2},${y1} ${x0},${y1}`;
+    svg += `
+      <g id="contorno-edificio-k-pb">
+        <!-- Relleno del edificio en L -->
+        <polygon points="${lPoints}" fill="#111827" stroke="#38bdf8" stroke-width="2.5" />
+        <!-- Pasillo central marcado con textura sutil -->
+        <rect x="${x0 + CELDA}" y="${y0}" width="${PASILLO}" height="${pasilloAlto - extAlto}" fill="#1e293b" fill-opacity="0.4" />
+        <rect x="${x0 + CELDA}" y="${extY + CELDA}" width="${pasilloAncho - CELDA + extAncho - CELDA}" height="${PASILLO}" fill="#1e293b" fill-opacity="0.4" />
+        <!-- Línea arquitectónica de unión pasillo-extensión -->
+        <line x1="${x1}" y1="${y2}" x2="${x1}" y2="${y1}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+      </g>
+    `;
+
+    // Cotas métricas
+    svg += renderCotaSVG(x0 - 25, y0, x0 - 25, y1, "29.00 m (Sección A)", -15, 0, true);
+    svg += renderCotaSVG(x0, y0 - 18, x1, y0 - 18, "5.00 m");
+    svg += renderCotaSVG(extX, y1 + 22, x2, y1 + 22, "16.00 m (Extensión L)");
+    svg += renderCotaSVG(x2 + 20, y2, x2 + 20, y1, "6.67 m", 15, 0, true);
+
+    // Texto visual "PASILLO CENTRAL" en la zona vacía del pasillo vertical
+    const pasilloCX = x0 + CELDA + PASILLO / 2;
+    const pasilloCY = y0 + (pasilloAlto - extAlto) / 2;
+    svg += `<text x="${pasilloCX}" y="${pasilloCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
+                  text-anchor="middle" transform="rotate(-90 ${pasilloCX} ${pasilloCY})" letter-spacing="3">PASILLO CENTRAL</text>`;
+
+    // Texto visual "EXTENSIÓN L" en la zona vacía del pasillo horizontal
+    const extCX = extX + extAncho / 2;
+    const extCY = extY + CELDA + PASILLO / 2 + 4;
+    svg += `<text x="${extCX}" y="${extCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
+                  text-anchor="middle" letter-spacing="3">EXTENSIÓN L</text>`;
+
+    // Etiqueta "ENTRADA" con flecha (↑) en la parte inferior
+    svg += `<text x="${pasilloCX}" y="${y1 + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
+                  text-anchor="middle" letter-spacing="2">↑ ENTRADA</text>`;
+
+    // Títulos de secciones
+    svg += renderLabelSVG(x0 + pasilloAncho / 2, y0 + 15, "SECCIÓN A (29m × 5m)", 9, '#38bdf8', 'middle', 1);
+    svg += renderLabelSVG(extCX, y2 + 15, "SECCIÓN B (16m × 6.67m)", 9, '#38bdf8', 'middle', 1);
+
+    // DIBUJO DE STANDS: EXCLUSIVAMENTE EN LAS ORILLAS/PERÍMETRO
+    stands.forEach(s => {
+      let x, y;
+      if (s.pos_fila <= 24) {
+        // Pasillo principal:
+        // pos_col = 1 -> Orilla izquierda pegada al borde
+        // pos_col = 2 -> Orilla derecha pegada al borde
+        x = (s.pos_col === 1) ? x0 : x0 + CELDA + PASILLO;
+        y = y0 + (s.pos_fila - 1) * CELDA;
+      } else {
+        // Extensión L (Filas 25 a 37):
+        // Distribuidos a lo largo del contorno de la L:
+        // pos_col = 1 -> Orilla superior de la extensión L
+        // pos_col = 2 -> Orilla inferior de la extensión L
+        const fExt = s.pos_fila - 24; // 1 a 13
+        x = extX + (fExt - 1) * CELDA;
+        y = (s.pos_col === 1) ? extY : extY + CELDA + PASILLO;
+      }
+      svg += renderStandNodeSVG(s, x, y, CELDA, CELDA);
+    });
+
+    svg += `</svg>`;
+    return svg;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MOTOR 3 — EDIFICIO K PLANTA ALTA (Nivel 1 — rectángulo con ensanchamiento)
+  //   Stands EXCLUSIVAMENTE en las orillas (col 1 = orilla izq, col 2 = orilla der)
+  //   Pasillo central amplio totalmente vacío para tránsito
+  //   Tramo recto alargado: filas 1-24 (29m x 5m)
+  //   Ensanchamiento final: filas 25-30 (se abre a 7.33m)
+  // ═══════════════════════════════════════════════════════════
+
+  function renderizarEdificioKPlantaAlta(planta, stands) {
+    const CELDA = 24;     // px tamaño del stand
+    const PASILLO = 70;   // px ancho libre del pasillo central
+    const PAD = 50;
+
+    const filasRectas = 24; // Filas 1 a 24
+    const filasEns = 5;     // Filas 25 a 29
+    const fondoAlto = CELDA; // Fila 30 de fondo
+
+    // Tramo alargado (29m x 5m): 2 columnas en las orillas
+    const rectoAlto = filasRectas * CELDA;          // 576px
+    const rectoAncho = CELDA * 2 + PASILLO;         // 118px
+
+    // Ensanchamiento final (abre a 7.33m):
+    // El pasillo central se ensancha o se agregan celdas en el nuevo perímetro
+    const ensPasillo = PASILLO + 60;                // 130px pasillo aún más amplio
+    const ensAncho = CELDA * 2 + ensPasillo;        // 178px
+    const ensAlto = filasEns * CELDA;               // 120px
+
+    const x0 = PAD;
+    const y0 = PAD;
+    const x1 = x0 + rectoAncho;
+    const yEns = y0 + rectoAlto;
+    const x2 = x0 + ensAncho;
+    const yFondo = yEns + ensAlto + fondoAlto;
+
+    const svgWidth = PAD * 2 + ensAncho + 60;
+    const svgHeight = PAD * 2 + rectoAlto + ensAlto + fondoAlto + 60;
+
+    let svg = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 720px;" xmlns="http://www.w3.org/2000/svg">`;
+    svg += renderDefsSVG();
+
+    // Contorno exterior: pasillo largo de 29m x 5m que al final se ensancha a 7.33m
+    const contorno = `${x0},${y0} ${x1},${y0} ${x1},${yEns} ${x2},${yEns} ${x2},${yFondo} ${x0},${yFondo}`;
+    svg += `
+      <g id="contorno-edificio-k-pa">
+        <!-- Relleno poligonal del edificio -->
+        <polygon points="${contorno}" fill="#111827" stroke="#38bdf8" stroke-width="2.5" />
+        <!-- Área vacía de tránsito del pasillo central -->
+        <rect x="${x0 + CELDA}" y="${y0}" width="${PASILLO}" height="${rectoAlto}" fill="#1e293b" fill-opacity="0.4" />
+        <rect x="${x0 + CELDA}" y="${yEns}" width="${ensPasillo}" height="${ensAlto}" fill="#1e293b" fill-opacity="0.4" />
+        <!-- Línea indicadora del inicio del ensanchamiento -->
+        <line x1="${x0}" y1="${yEns}" x2="${x2}" y2="${yEns}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+        <line x1="${x1}" y1="${yEns}" x2="${x1}" y2="${yFondo}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+      </g>
+    `;
+
+    // Cotas métricas
+    svg += renderCotaSVG(x0 - 25, y0, x0 - 25, yEns, "29.00 m (Tramo Alargado)", -15, 0, true);
+    svg += renderCotaSVG(x0, y0 - 18, x1, y0 - 18, "5.00 m");
+    svg += renderCotaSVG(x2 + 20, yEns, x2 + 20, yFondo, "6.67 m", 15, 0, true);
+    svg += renderCotaSVG(x0, yFondo + 22, x2, yFondo + 22, "7.33 m (Ensanchamiento)");
+
+    // Texto "PASILLO CENTRAL" en la zona vacía del tramo alargado
+    const pasilloCX = x0 + CELDA + PASILLO / 2;
+    const pasilloCY = y0 + rectoAlto / 2;
+    svg += `<text x="${pasilloCX}" y="${pasilloCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
+                  text-anchor="middle" transform="rotate(-90 ${pasilloCX} ${pasilloCY})" letter-spacing="3">PASILLO CENTRAL</text>`;
+
+    // Texto "ENSANCHAMIENTO" en el área del pasillo ensanchado
+    const ensCX = x0 + CELDA + ensPasillo / 2;
+    const ensCY = yEns + ensAlto / 2 + 4;
+    svg += `<text x="${ensCX}" y="${ensCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
+                  text-anchor="middle" letter-spacing="3">ENSANCHAMIENTO</text>`;
+
+    // Etiqueta "ENTRADA" con flecha (↑) en la parte inferior
+    svg += `<text x="${ensCX}" y="${yFondo + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
+                  text-anchor="middle" letter-spacing="2">↑ ENTRADA</text>`;
+
+    // Títulos de zonas
+    svg += renderLabelSVG(x0 + rectoAncho / 2, y0 + 15, "TRAMO ALARGADO (29m × 5m)", 9, '#38bdf8', 'middle', 1);
+    svg += renderLabelSVG(ensCX, yEns + 15, "ZONA ENSANCHADA (7.33m)", 9, '#38bdf8', 'middle', 1);
+
+    // DIBUJO DE STANDS: EXCLUSIVAMENTE EN LAS ORILLAS/PERÍMETRO
+    stands.forEach(s => {
+      let x, y;
+      if (s.pos_fila <= 24) {
+        // Tramo Alargado (Filas 1 a 24):
+        // pos_col = 1 -> Orilla izquierda
+        // pos_col = 2 -> Orilla derecha
+        // Centro completamente libre como pasillo de tránsito
+        x = (s.pos_col === 1) ? x0 : x0 + CELDA + PASILLO;
+        y = y0 + (s.pos_fila - 1) * CELDA;
+      } else if (s.pos_fila <= 29) {
+        // Ensanchamiento Final (Filas 25 a 29):
+        // Se posicionan en el perímetro ensanchado:
+        // pos_col = 1 -> Borde izquierdo
+        // pos_col = 2 -> Borde derecho ensanchado
+        // pos_col = 3 -> Isla perimetral lateral intermedia
+        const fEns = s.pos_fila - 24; // 1 a 5
+        if (s.pos_col === 1) {
+          x = x0;
+        } else if (s.pos_col === 2) {
+          x = x2 - CELDA;
+        } else {
+          // Borde intermedio derecho del escalón
+          x = x1 - CELDA;
+        }
+        y = yEns + (fEns - 1) * CELDA;
+      } else {
+        // Fondo de cierre (Fila 30):
+        // 6 stands alineados horizontalmente en la pared posterior de cierre
+        const colIdx = s.pos_col - 1; // 0 a 5
+        const spacing = (ensAncho - CELDA) / 5;
+        x = x0 + colIdx * spacing;
+        y = yEns + ensAlto;
+      }
+      svg += renderStandNodeSVG(s, x, y, CELDA, CELDA);
+    });
+
+    svg += `</svg>`;
+    return svg;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // DESPACHADOR PRINCIPAL
+  // ═══════════════════════════════════════════════════════════
 
   function renderizarPlanta(idx) {
     const planta = dataMapa[idx];
@@ -265,61 +668,23 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const nodeWidth = 100;
-    const nodeHeight = 22;
-    const gapX = 36;
-    const gapY = 12;
-    const marginX = 40;
-    const marginY = 60;
+    const recintoId = planta.recinto_id;
+    const nombre = (planta.planta_nombre || "").toLowerCase();
+    const esAuditorio = recintoId === 1 || nombre.includes("auditorio") || (planta.filas === 10 && planta.columnas === 7);
+    const esPlantaBaja = !esAuditorio && (planta.nivel === 0 || nombre.includes("baja"));
+    const esPlantaAlta = !esAuditorio && (planta.nivel === 1 || nombre.includes("alta"));
 
-    const cols = Math.max(planta.columnas || 3, 3);
-    const filas = Math.max(planta.filas || 7, 7);
-
-    const svgWidth = Math.max(760, marginX * 2 + cols * (nodeWidth + gapX));
-    const svgHeight = Math.max(380, marginY + filas * (nodeHeight + gapY) + 40);
-
-    let svgHTML = `<svg id="mapa-svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-100 h-100" style="max-height: 520px;" xmlns="http://www.w3.org/2000/svg">`;
-
-    // Escenario decorativo superior
-    svgHTML += `
-      <g id="escenario-decorativo">
-        <rect x="40" y="10" width="${svgWidth - 80}" height="32" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
-        <text x="${svgWidth / 2}" y="30" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" letter-spacing="2">ESCENARIO / ZONA PRINCIPAL — ${planta.planta_nombre.toUpperCase()}</text>
-      </g>
-    `;
-
-    // Grilla guía decorativa
-    for (let f = 1; f <= filas; f++) {
-      const y = marginY + (f - 1) * (nodeHeight + gapY) + nodeHeight / 2;
-      svgHTML += `<line x1="40" y1="${y}" x2="${svgWidth - 40}" y2="${y}" stroke="#1e293b" stroke-dasharray="2 4" stroke-width="0.5" />`;
+    let svgHTML = "";
+    if (esAuditorio) {
+      svgHTML = renderizarAuditorio(planta, stands);
+    } else if (esPlantaBaja) {
+      svgHTML = renderizarEdificioKPlantaBaja(planta, stands);
+    } else if (esPlantaAlta) {
+      svgHTML = renderizarEdificioKPlantaAlta(planta, stands);
+    } else {
+      svgHTML = renderizarAuditorio(planta, stands);
     }
 
-    // Dibujar Stands
-    stands.forEach(s => {
-      const x = marginX + (s.pos_col - 1) * (nodeWidth + gapX);
-      const y = marginY + (s.pos_fila - 1) * (nodeHeight + gapY);
-
-      let colorObj = careerColors.free;
-      let careerKey = "free";
-
-      const proy = s.proyecto || s.proyecto_asignado;
-      if (proy) {
-        const key = (proy.carrera_clave || "").toUpperCase();
-        careerKey = careerColors[key] ? key : 'IDGS';
-        colorObj = careerColors[careerKey];
-      }
-
-      svgHTML += `
-        <g class="stand-node" id="node-${s.id}" data-id="${s.id}" data-carrera="${careerKey}">
-          <rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="4" 
-                fill="${colorObj.fill}" fill-opacity="0.95" stroke="${colorObj.stroke}" stroke-width="1.5" />
-          <text x="${x + nodeWidth/2}" y="${y + nodeHeight/2 + 4}" 
-                fill="${colorObj.text}" font-size="10" font-weight="bold" text-anchor="middle">${s.numero}</text>
-        </g>
-      `;
-    });
-
-    svgHTML += `</svg>`;
     mapaContenedor.innerHTML = svgHTML;
 
     // Listeners de clic en stands
@@ -341,6 +706,10 @@ document.addEventListener("DOMContentLoaded", function () {
     aplicarFiltro(currentFilter);
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // UTILIDADES: Stats, Details, Filtros
+  // ═══════════════════════════════════════════════════════════
+
   function updateStats(stands, nombrePlanta) {
     const total = stands.length;
     const ocupados = stands.filter(s => (s.proyecto || s.proyecto_asignado) !== null).length;
@@ -353,7 +722,7 @@ document.addEventListener("DOMContentLoaded", function () {
     detailContent.classList.remove("d-none");
 
     detStandNum.innerText = `Stand ${stand.numero}`;
-    detZona.innerText = stand.zona || "General";
+    detZona.innerText = stand.zona ? `Zona ${stand.zona}` : "General";
 
     const proy = stand.proyecto || stand.proyecto_asignado;
     if (proy) {
@@ -403,7 +772,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Filter functionality
+  // Filtro por carrera
   document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.addEventListener("click", function () {
       document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));

@@ -30,15 +30,35 @@ class StandViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def mapa(self, request):
-        evento_id = request.session.get('evento_activo_id')
         from usuarios.models import Evento
+        from espacios.models import Recinto, Planta
         from django.shortcuts import get_object_or_404
+        import datetime
 
-        if not evento_id:
-            evento = Evento.objects.filter(estatus='activo').first() or Evento.objects.first()
-            if not evento:
-                import datetime
-                from espacios.models import Recinto, Planta
+        evento_id = request.GET.get('evento') or request.session.get('evento_activo_id')
+        recinto_id = request.GET.get('recinto')
+
+        recinto = None
+        evento = None
+
+        if recinto_id:
+            try:
+                recinto = Recinto.objects.get(pk=recinto_id)
+            except (Recinto.DoesNotExist, ValueError):
+                pass
+
+        if not recinto and evento_id:
+            try:
+                evento = Evento.objects.select_related('recinto').get(pk=evento_id)
+                recinto = evento.recinto
+            except (Evento.DoesNotExist, ValueError):
+                pass
+
+        if not recinto:
+            evento = Evento.objects.filter(estatus='activo').select_related('recinto').first() or Evento.objects.select_related('recinto').first()
+            if evento and evento.recinto:
+                recinto = evento.recinto
+            else:
                 recinto, _ = Recinto.objects.get_or_create(pk=1, defaults={'nombre': 'Auditorio UTEQ'})
                 if not recinto.plantas.exists():
                     Planta.objects.create(recinto=recinto, nombre='Planta Única', nivel=0, filas=10, columnas=7)
@@ -52,20 +72,17 @@ class StandViewSet(viewsets.ModelViewSet):
                         'fecha_fin': datetime.date.today()
                     }
                 )
-        else:
-            evento = get_object_or_404(Evento, pk=evento_id)
-        
-        recinto = evento.recinto
+
         plantas = recinto.plantas.prefetch_related(
             'stands__asignacionstand_set__proyecto__carrera',
             'stands__asignacionstand_set__proyecto__creado_por',
             'stands__asignacionstand_set__proyecto__evaluadores'
-        ).all()
+        ).order_by('nivel', 'id').all()
         
         resultado = []
         for planta in plantas:
             stands_data = []
-            for stand in planta.stands.filter(esta_activo=True):
+            for stand in planta.stands.filter(esta_activo=True).order_by('pos_fila', 'pos_col', 'numero'):
                 asignacion = stand.asignacionstand_set.filter(activa=True).first()
                 proy_data = None
                 if asignacion and asignacion.proyecto:
@@ -93,11 +110,14 @@ class StandViewSet(viewsets.ModelViewSet):
                     'proyecto_asignado': proy_data,
                 })
             resultado.append({
+                'recinto_id': recinto.pk,
+                'recinto_nombre': recinto.nombre,
                 'planta_id': planta.pk,
                 'planta_nombre': planta.nombre,
                 'nivel': planta.nivel,
                 'filas': planta.filas,
                 'columnas': planta.columnas,
+                'geometria': planta.descripcion,
                 'stands': stands_data
             })
         
