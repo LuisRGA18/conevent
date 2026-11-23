@@ -473,6 +473,12 @@ document.addEventListener("DOMContentLoaded", function () {
         <rect x="${extX + CELDA}" y="${extY + CELDA}" width="${extAncho + pasilloAncho - CELDA * 2}" height="${PASILLO}" fill="#1e293b" fill-opacity="0.4" />
         <!-- Línea arquitectónica de unión pasillo-extensión -->
         <line x1="${xPasillo}" y1="${extY}" x2="${xPasillo}" y2="${y1}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+
+        <!-- CUBO DE ESCALERAS EN PLANTA BAJA (Área desobstruida en el pasillo) -->
+        <rect x="${xPasillo}" y="${y0 + 20 * CELDA}" width="${pasilloAncho}" height="${4 * CELDA}" 
+              fill="#1e1b4b" fill-opacity="0.8" stroke="#6366f1" stroke-dasharray="4 4" stroke-width="1.5" rx="4" />
+        <text x="${xPasillo + pasilloAncho / 2}" y="${y0 + 22 * CELDA + 4}" fill="#a5b4fc" font-size="10" font-weight="bold" 
+              text-anchor="middle" letter-spacing="1">ÁREA DE ESCALERAS</text>
       </g>
     `;
 
@@ -494,10 +500,10 @@ document.addEventListener("DOMContentLoaded", function () {
     svg += `<text x="${extCX}" y="${extCY}" fill="#94a3b8" font-size="11" font-weight="bold" 
                   text-anchor="middle" letter-spacing="3">EXTENSIÓN L</text>`;
 
-    // Indicador visual "↑ ENTRADA" ubicado en el extremo inferior izquierdo (frente de 6.67m)
+    // Indicador visual "↑ ENTRADA PRINCIPAL" sobre el frente de 6.67m
     const entradaX = extX + CELDA + PASILLO / 2;
     svg += `<text x="${entradaX}" y="${y1 + 42}" fill="#f59e0b" font-size="12" font-weight="bold" 
-                  text-anchor="middle" letter-spacing="2">↑ ENTRADA</text>`;
+                  text-anchor="middle" letter-spacing="2">↑ ENTRADA PRINCIPAL</text>`;
 
     // Títulos de secciones
     svg += renderLabelSVG(xPasillo + pasilloAncho / 2, y0 + 15, "SECCIÓN A (29m × 5m)", 9, '#38bdf8', 'middle', 1);
@@ -579,6 +585,12 @@ document.addEventListener("DOMContentLoaded", function () {
         <!-- Línea indicadora del inicio del ensanchamiento -->
         <line x1="${x0}" y1="${yEns}" x2="${x2}" y2="${yEns}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
         <line x1="${x1}" y1="${yEns}" x2="${x1}" y2="${yFondo}" stroke="#334155" stroke-dasharray="4 4" stroke-width="1.5" />
+
+        <!-- LLEGADA DE ESCALERAS EN PLANTA ALTA (Área desobstruida en la orilla derecha) -->
+        <rect x="${x2 - CELDA}" y="${yEns}" width="${CELDA}" height="${3 * CELDA}" 
+              fill="#1e1b4b" fill-opacity="0.8" stroke="#6366f1" stroke-dasharray="3 3" stroke-width="1.5" rx="3" />
+        <text x="${x2 - CELDA / 2}" y="${yEns + 1.5 * CELDA + 3}" fill="#a5b4fc" font-size="8" font-weight="bold" 
+              text-anchor="middle" transform="rotate(-90 ${x2 - CELDA / 2} ${yEns + 1.5 * CELDA + 3})">ESCALERAS</text>
       </g>
     `;
 

@@ -42,8 +42,9 @@ class Command(BaseCommand):
 
             elif recinto.pk == 2 and planta.nivel == 0:
                 # Edificio K — Planta Baja (L invertida orientada a la izquierda)
-                # Sección A: pasillo principal de 29m (filas 1-24, 2 columnas en orillas: izquierda y derecha)
-                for fila in range(1, 25):
+                # Sección A: pasillo principal de 29m (filas 1-20, orillas: col 1 izq, col 2 der)
+                # NOTA: Las filas 21-24 están ocupadas por el cubo de escaleras (omitiendo celdas PB-41 a PB-48)
+                for fila in range(1, 21):
                     for col in [1, 2]:
                         Stand.objects.create(
                             planta=planta,
@@ -54,8 +55,9 @@ class Command(BaseCommand):
                             esta_activo=True
                         )
                         creados += 1
-                # Sección B: extensión L de 16m x 6.67m (filas 25-37, 2 columnas en orillas perimetrales: superior e inferior)
-                # Sin celdas atravesando el centro del pasillo de tránsito
+
+                # Sección B: extensión L de 16m x 6.67m (filas 25-37, orillas: col 1 sup, col 2 inf)
+                # Sin celdas atravesando el centro del pasillo de tránsito ni el cubo de escaleras
                 for fila in range(25, 38):
                     for col in [1, 2]:
                         Stand.objects.create(
@@ -70,7 +72,7 @@ class Command(BaseCommand):
 
             elif recinto.pk == 2 and planta.nivel == 1:
                 # Edificio K — Planta Alta (rectángulo con ensanchamiento)
-                # Tramo recto alargado (filas 1-24, 2 columnas en orillas: izq col 1, der col 2)
+                # Tramo recto alargado (filas 1-24, orillas col 1 y col 2)
                 for fila in range(1, 25):
                     for col in [1, 2]:
                         Stand.objects.create(
@@ -82,19 +84,34 @@ class Command(BaseCommand):
                             esta_activo=True
                         )
                         creados += 1
-                # Ensanchamiento final (filas 25-29, EXCLUSIVAMENTE en muros perimetrales: izq col 1, der col 2)
-                # Se eliminan stands flotantes en el centro para dejar libre el tránsito
+
+                # Ensanchamiento final (filas 25-29)
+                # NOTA: Se omiten celdas de la orilla derecha en la zona de llegada de escaleras (col 2 en filas 25-27, PA-52, 54, 56)
+                # para dejar la franja libre de escaleras/acceso.
                 for fila in range(25, 30):
-                    for col in [1, 2]:
+                    # En muro izquierdo (col 1): stands normales
+                    Stand.objects.create(
+                        planta=planta,
+                        numero=f"PA-{str(creados + 1).zfill(2)}",
+                        zona='B',
+                        pos_fila=fila,
+                        pos_col=1,
+                        esta_activo=True
+                    )
+                    creados += 1
+
+                    # En muro derecho (col 2): sólo filas 28 y 29 (desobstruyendo filas 25-27 de escaleras)
+                    if fila in [28, 29]:
                         Stand.objects.create(
                             planta=planta,
                             numero=f"PA-{str(creados + 1).zfill(2)}",
                             zona='B',
                             pos_fila=fila,
-                            pos_col=col,
+                            pos_col=2,
                             esta_activo=True
                         )
                         creados += 1
+
                 # Fila de cierre del fondo (fila 30, 6 stands horizontales sobre muro posterior)
                 for col in range(1, 7):
                     Stand.objects.create(
