@@ -313,9 +313,9 @@ def eventos_portal_view(request):
     if not request.user.is_authenticated:
         return redirect('landing')
 
-    # Solo eventos con estatus publicado/activo son visibles para usuarios generales
+    # Solo eventos con estatus publicado/activo son visibles para Alumnos y Evaluadores
     eventos = Evento.objects.filter(
-        Q(estatus='activo') | Q(estatus='PUBLICADO')
+        Q(estatus='PUBLICADO') | Q(estatus='activo')
     ).select_related('recinto').order_by('-fecha_inicio')
     
     # Obtener los IDs de eventos en los que el usuario ya participa activamente
@@ -348,7 +348,7 @@ def eventos_portal_view(request):
     eventos_borrador = []
     if request.user.rol == 'ADMIN':
         eventos_borrador = Evento.objects.filter(
-            Q(estatus='borrador') | Q(estatus='BORRADOR')
+            Q(estatus='BORRADOR') | Q(estatus='borrador') | Q(estatus='INACTIVO') | Q(estatus='inactivo')
         ).select_related('recinto')
 
     return render(request, 'usuarios/eventos_portal.html', {
@@ -358,29 +358,32 @@ def eventos_portal_view(request):
 
 
 @login_required(login_url='login')
-def publicar_evento_view(request, evento_id):
-    """Permite al Administrador publicar un evento que se encuentra en borrador."""
+def cambiar_estatus_evento_view(request, evento_id):
+    """Permite al Administrador cambiar el estatus de un evento a PUBLICADO (soporta GET y POST)."""
     if request.user.rol != 'ADMIN':
         messages.error(request, "Acceso restringido a administradores.")
         return redirect('index')
 
     evento = get_object_or_404(Evento, pk=evento_id)
-    if request.method == 'POST':
-        evento.estatus = 'PUBLICADO'
-        evento.save(update_fields=['estatus'])
-        LogActividad.objects.create(
-            usuario=request.user,
-            tipo='cambio_estatus',
-            descripcion=f"Evento '{evento.nombre}' publicado para toda la comunidad.",
-            ip=get_client_ip(request)
-        )
-        messages.success(request, f'¡El evento "{evento.nombre}" ha sido publicado exitosamente!')
+    evento.estatus = 'PUBLICADO'
+    evento.save(update_fields=['estatus'])
 
-    # Si la petición proviene del portal de eventos o del panel
+    LogActividad.objects.create(
+        usuario=request.user,
+        tipo='cambio_estatus',
+        descripcion=f"Evento '{evento.nombre}' publicado para toda la comunidad.",
+        ip=get_client_ip(request)
+    )
+    messages.success(request, 'El evento ha sido publicado exitosamente.')
+
     next_url = request.POST.get('next') or request.GET.get('next')
     if next_url:
         return redirect(next_url)
     return redirect('eventos_portal')
+
+
+# Alias de compatibilidad
+publicar_evento_view = cambiar_estatus_evento_view
 
 
 def seleccionar_evento_view(request, evento_id):

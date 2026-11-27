@@ -55,7 +55,7 @@ class StandViewSet(viewsets.ModelViewSet):
                 pass
 
         if not recinto:
-            evento = Evento.objects.filter(estatus='activo').select_related('recinto').first() or Evento.objects.select_related('recinto').first()
+            evento = Evento.objects.filter(estatus__in=['PUBLICADO', 'activo']).select_related('recinto').first() or Evento.objects.select_related('recinto').first()
             if evento and evento.recinto:
                 recinto = evento.recinto
             else:
