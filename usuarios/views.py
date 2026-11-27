@@ -210,6 +210,12 @@ def registro_view(request):
             user.first_name = nombres
             user.last_name  = apellidos
             user.email      = form.cleaned_data['email']
+
+            # Extraer matrícula del correo institucional si aplica (ej. 2023123456@uteq.edu.mx)
+            matricula_match = re.search(r'\d+', user.email.split('@')[0])
+            if matricula_match and not user.matricula_empleado:
+                user.matricula_empleado = matricula_match.group(0)
+
             user.set_password(form.cleaned_data['password'])
             user.is_active  = False   
             user.save()
@@ -643,10 +649,19 @@ def registrar_proyecto_view(request):
                     )
 
                     # 2. AUTOMÁTICO: Insertamos al creador logueado como Integrante Líder
+                    # Obtener matrícula real: desde matricula_empleado o extrayendo dígitos de email/username
+                    matricula_lider = request.user.matricula_empleado
+                    if not matricula_lider and request.user.email:
+                        match_mat = re.search(r'\d+', request.user.email.split('@')[0])
+                        if match_mat:
+                            matricula_lider = match_mat.group(0)
+                    if not matricula_lider:
+                        matricula_lider = request.user.username
+
                     Integrante.objects.create(
                         proyecto=nuevo_proyecto,
                         nombre_completo=f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
-                        matricula=request.user.matricula_empleado or "2023XXXXXX",
+                        matricula=matricula_lider,
                         correo=request.user.email,
                         es_lider=True
                     )
