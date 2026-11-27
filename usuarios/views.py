@@ -313,13 +313,16 @@ def eventos_portal_view(request):
     if not request.user.is_authenticated:
         return redirect('landing')
 
-    eventos = Evento.objects.filter(estatus='activo').select_related('recinto').order_by('-fecha_inicio')
+    # Solo eventos con estatus publicado/activo son visibles para usuarios generales
+    eventos = Evento.objects.filter(
+        Q(estatus='activo') | Q(estatus='PUBLICADO')
+    ).select_related('recinto').order_by('-fecha_inicio')
     
     # Obtener los IDs de eventos en los que el usuario ya participa activamente
     eventos_usuario_ids = set()
     
     if request.user.rol == 'ADMIN':
-        # El Admin tiene acceso automático a todos
+        # El Admin tiene acceso automático a todos los eventos publicados
         eventos_usuario_ids = set(eventos.values_list('id', flat=True))
     else:
         # 1. Por inscripción previa guardada
@@ -345,7 +348,7 @@ def eventos_portal_view(request):
     eventos_borrador = []
     if request.user.rol == 'ADMIN':
         eventos_borrador = Evento.objects.filter(
-            estatus='borrador'
+            Q(estatus='borrador') | Q(estatus='BORRADOR')
         ).select_related('recinto')
 
     return render(request, 'usuarios/eventos_portal.html', {
@@ -354,11 +357,42 @@ def eventos_portal_view(request):
     })
 
 
+@login_required(login_url='login')
+def publicar_evento_view(request, evento_id):
+    """Permite al Administrador publicar un evento que se encuentra en borrador."""
+    if request.user.rol != 'ADMIN':
+        messages.error(request, "Acceso restringido a administradores.")
+        return redirect('index')
+
+    evento = get_object_or_404(Evento, pk=evento_id)
+    if request.method == 'POST':
+        evento.estatus = 'PUBLICADO'
+        evento.save(update_fields=['estatus'])
+        LogActividad.objects.create(
+            usuario=request.user,
+            tipo='cambio_estatus',
+            descripcion=f"Evento '{evento.nombre}' publicado para toda la comunidad.",
+            ip=get_client_ip(request)
+        )
+        messages.success(request, f'¡El evento "{evento.nombre}" ha sido publicado exitosamente!')
+
+    # Si la petición proviene del portal de eventos o del panel
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('eventos_portal')
+
+
 def seleccionar_evento_view(request, evento_id):
     """Selecciona un evento y lo guarda en la sesión HTTP si el usuario tiene acceso."""
     evento = get_object_or_404(Evento, pk=evento_id)
 
     if request.user.rol != 'ADMIN':
+        # Los usuarios no administradores no pueden acceder a eventos en borrador
+        if evento.estatus in ['borrador', 'BORRADOR']:
+            messages.error(request, "Este evento aún no ha sido publicado.")
+            return redirect('eventos_portal')
+
         tiene_acceso = (
             ParticipacionEvento.objects.filter(usuario=request.user, evento=evento).exists() or
             Proyecto.objects.filter(creado_por=request.user, evento=evento).exists() or
@@ -376,6 +410,11 @@ def seleccionar_evento_view(request, evento_id):
 @login_required(login_url='login')
 def unirse_evento_view(request, evento_id):
     evento = get_object_or_404(Evento, pk=evento_id)
+
+    # Si el evento no está publicado y el usuario no es admin, denegar acceso
+    if request.user.rol != 'ADMIN' and evento.estatus in ['borrador', 'BORRADOR']:
+        messages.error(request, "Este evento se encuentra en borrador y no admite registros aún.")
+        return redirect('eventos_portal')
 
     # Si ya tiene acceso o es admin, redirigir directo
     if request.user.rol == 'ADMIN':

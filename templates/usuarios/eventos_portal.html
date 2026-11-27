@@ -76,11 +76,20 @@
           {{ evento.recinto.nombre }}
         </span>
       </div>
-      <a href="{% url 'seleccionar_evento' evento.pk %}"
-         style="background:#0b3c5d; color:#fff; padding:6px 14px;
-                border-radius:6px; font-size:12px; text-decoration:none;">
-        Gestionar →
-      </a>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <form method="post" action="{% url 'publicar_evento' evento.pk %}" style="display:inline;" onsubmit="return confirm('¿Estás seguro de publicar este evento? Será visible inmediatamente para alumnos y evaluadores.');">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'eventos_portal' %}">
+          <button type="submit" style="background:#10b981; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+            Publicar Evento 🚀
+          </button>
+        </form>
+        <a href="{% url 'seleccionar_evento' evento.pk %}"
+           style="background:#0b3c5d; color:#fff; padding:6px 14px;
+                  border-radius:6px; font-size:12px; text-decoration:none;">
+          Gestionar →
+        </a>
+      </div>
     </div>
     {% endfor %}
   </div>

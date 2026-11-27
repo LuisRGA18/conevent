@@ -63,7 +63,9 @@ class Carrera(models.Model):
 class Evento(models.Model):
     ESTATUS_CHOICES = [
         ('borrador', 'Borrador'),
-        ('activo', 'Activo'),
+        ('activo', 'Publicado / Activo'),
+        ('PUBLICADO', 'Publicado'),
+        ('BORRADOR', 'Borrador'),
         ('finalizado', 'Finalizado'),
         ('archivado', 'Archivado'),
     ]

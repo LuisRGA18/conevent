@@ -268,15 +268,14 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label text-white-50 small">Logotipo del Proyecto</label>
-                            {% if proyecto_registrado.logo %}
-                                <div class="mb-2">
-                                    <img src="{{ proyecto_registrado.logo.url }}" 
-                                         alt="Logo {{ proyecto_registrado.titulo }}" 
-                                         style="height:60px; border-radius:6px; object-fit:contain;"
-                                         onerror="this.style.display='none'">
-                                </div>
-                            {% else %}
-                                <span style="color:#aaa; font-size:12px;" class="d-block mb-2">Sin logo registrado</span>
+                            <div id="edit-logo-preview-container" class="mb-2" style="{% if not proyecto_registrado.logo %}display:none;{% endif %}">
+                                <img id="edit-logo-preview" 
+                                     src="{% if proyecto_registrado.logo %}{{ proyecto_registrado.logo.url }}{% endif %}" 
+                                     alt="Logo {{ proyecto_registrado.titulo }}" 
+                                     style="height:60px; border-radius:6px; object-fit:contain; border:1px solid #3d4351; padding:2px; background:#111;">
+                            </div>
+                            {% if not proyecto_registrado.logo %}
+                                <span id="edit-sin-logo" style="color:#aaa; font-size:12px;" class="d-block mb-2">Sin logo registrado</span>
                             {% endif %}
                             <div class="input-group">
                                 <span class="input-group-text bg-secondary text-white border-secondary"><i class="bi bi-image"></i></span>
@@ -429,9 +428,12 @@
 
                 <div class="form-group">
                     <label for="logo_empresa">Logotipo del Proyecto</label>
+                    <div id="wizard-logo-preview-container" class="mb-2 text-center" style="display:none;">
+                        <img id="wizard-logo-preview" src="" alt="Vista previa" style="height:70px; max-width:200px; border-radius:6px; object-fit:contain; border:1px solid #3d4351; background:#0b0f19; padding:4px;">
+                    </div>
                     <div class="file-drop-area">
                         <span class="file-btn">Seleccionar Imagen</span>
-                        <span class="file-message">o arrastra y suelta el logo aquí</span>
+                        <span class="file-message" id="wizard-file-msg">o arrastra y suelta el logo aquí</span>
                         <input type="file" id="logo_empresa" name="logo" accept="image/*" class="file-input">
                     </div>
                 </div>
@@ -565,6 +567,39 @@
         radio.addEventListener("change", updateWarnings);
     });
     
+    // Previsualización de logotipo (Wizard y Edición)
+    const wizardLogoInput = document.getElementById("logo_empresa");
+    const wizardPreviewContainer = document.getElementById("wizard-logo-preview-container");
+    const wizardPreview = document.getElementById("wizard-logo-preview");
+    const wizardFileMsg = document.getElementById("wizard-file-msg");
+
+    if (wizardLogoInput && wizardPreview) {
+        wizardLogoInput.addEventListener("change", function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file && file.type.startsWith("image/")) {
+                wizardPreview.src = URL.createObjectURL(file);
+                if (wizardPreviewContainer) wizardPreviewContainer.style.display = "block";
+                if (wizardFileMsg) wizardFileMsg.innerText = file.name;
+            }
+        });
+    }
+
+    const editLogoInput = document.querySelector('#seccion-editar input[type="file"][name="logo"], #id_logo');
+    const editPreviewContainer = document.getElementById("edit-logo-preview-container");
+    const editPreview = document.getElementById("edit-logo-preview");
+    const editSinLogo = document.getElementById("edit-sin-logo");
+
+    if (editLogoInput && editPreview) {
+        editLogoInput.addEventListener("change", function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file && file.type.startsWith("image/")) {
+                editPreview.src = URL.createObjectURL(file);
+                if (editPreviewContainer) editPreviewContainer.style.display = "block";
+                if (editSinLogo) editSinLogo.style.display = "none";
+            }
+        });
+    }
+
     // Ejecutar al cargar la página
     updateWarnings();
 </script>

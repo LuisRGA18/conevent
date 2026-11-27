@@ -14,6 +14,7 @@ urlpatterns = [
     path('eventos/seleccionar/<int:evento_id>/', views.seleccionar_evento_view, name='seleccionar_evento'),
     path('eventos/unirse/<int:evento_id>/', views.unirse_evento_view, name='unirse_evento'),
     path('eventos/crear/', views.crear_evento_view, name='crear_evento'),
+    path('eventos/publicar/<int:evento_id>/', views.publicar_evento_view, name='publicar_evento'),
 
     # ── Alumno ─────────────────────────────────
     path('mi-proyecto/', views.panel_alumno_view, name='mi_proyecto'),

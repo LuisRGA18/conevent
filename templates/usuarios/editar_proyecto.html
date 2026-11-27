@@ -40,14 +40,12 @@
           </div>
           <div class="col-12">
             <label class="form-label text-white">Logotipo del Proyecto</label>
-            {% if proyecto.logo %}
-              <div class="mb-2">
-                <img src="{{ proyecto.logo.url }}" 
-                     alt="Logo {{ proyecto.titulo }}"
-                     style="height:48px; border-radius:6px; object-fit:contain;"
-                     onerror="this.style.display='none'">
-              </div>
-            {% endif %}
+            <div id="logo-preview-container" class="mb-2" style="{% if not proyecto.logo %}display:none;{% endif %}">
+              <img id="logo-preview" 
+                   src="{% if proyecto.logo %}{{ proyecto.logo.url }}{% endif %}" 
+                   alt="Vista previa del logo"
+                   style="height:64px; max-width:180px; border-radius:6px; object-fit:contain; border:1px solid #3d4351; padding:2px; background:#111;">
+            </div>
             <div class="input-group">
               <span class="input-group-text bg-secondary text-white border-secondary"><i class="bi bi-image"></i></span>
               {{ form.logo }}
@@ -108,4 +106,22 @@
   </form>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const logoInput = document.querySelector('input[type="file"][name="logo"], #id_logo');
+  const previewContainer = document.getElementById("logo-preview-container");
+  const previewImg = document.getElementById("logo-preview");
+
+  if (logoInput && previewImg) {
+    logoInput.addEventListener("change", function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (file && file.type.startsWith("image/")) {
+        previewImg.src = URL.createObjectURL(file);
+        if (previewContainer) previewContainer.style.display = "block";
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

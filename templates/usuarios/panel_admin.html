@@ -96,12 +96,24 @@
   <!-- Rúbrica de Evaluación del Evento Activo -->
   <div class="card bg-dark border-secondary mb-4 shadow-sm">
     <div class="card-header bg-black bg-opacity-25 border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
         <i class="fas fa-clipboard-check text-warning fs-5"></i>
         <h6 class="mb-0 text-white fw-bold">Rúbrica de Evaluación — {{ evento_activo.nombre }}</h6>
         <span class="badge {% if porcentaje_rubrica == 100 %}bg-success{% else %}bg-warning text-dark{% endif %}">
           Ponderación activa: {{ porcentaje_rubrica|default:100 }}%
         </span>
+        {% if evento_activo.estatus == 'borrador' or evento_activo.estatus == 'BORRADOR' %}
+          <span class="badge bg-secondary"><i class="fas fa-file-alt me-1"></i>Borrador</span>
+          <form method="post" action="{% url 'publicar_evento' evento_activo.pk %}" class="d-inline ms-2" onsubmit="return confirm('¿Deseas publicar este evento ahora? Pasará a estar visible para alumnos y evaluadores.');">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'panel_admin' %}">
+            <button type="submit" class="btn btn-sm btn-success py-0 px-2 fw-semibold">
+              <i class="fas fa-rocket me-1"></i> Publicar Evento
+            </button>
+          </form>
+        {% else %}
+          <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Publicado</span>
+        {% endif %}
       </div>
       <a href="{% url 'gestionar_criterios' %}" class="btn btn-warning btn-sm fw-semibold">
         <i class="fas fa-sliders-h me-1"></i> Configurar Rúbrica (Máx. 10 Criterios)

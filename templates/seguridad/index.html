@@ -168,7 +168,7 @@
             {% endif %}
 
             <li><a href="{% url 'espacios:mapa_auditorio' %}" class="nav-link-custom">
-                <i class="fas fa-map-marked-alt me-2"></i> Mapa del Auditorio
+                <i class="fas fa-map-marked-alt me-2"></i> {{ nombre_mapa_sidebar|default:"Mapa del Lugar" }}
             </a></li>
 
             <li class="mt-4">
