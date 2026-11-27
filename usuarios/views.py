@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Avg, Count
 from django.db import transaction
 from decimal import Decimal
+import re
 import unicodedata
 import random
 from django.core.mail import send_mail
