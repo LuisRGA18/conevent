@@ -8,7 +8,7 @@ def contexto_global_conevent(request):
     contexto = {
         'evento_activo_global': None,
         'recinto_activo_nombre': None,
-        'nombre_mapa_sidebar': 'Mapa del Lugar'
+        'nombre_mapa_sidebar': 'Mapa del Recinto'
     }
 
     if not request.user.is_authenticated:
@@ -23,17 +23,22 @@ def contexto_global_conevent(request):
             evento = None
 
     if not evento:
-        evento = Evento.objects.filter(estatus__in=['activo', 'PUBLICADO']).select_related('recinto').first()
+        evento = Evento.objects.filter(estatus__in=['PUBLICADO', 'activo']).select_related('recinto').first()
 
     if evento and evento.recinto:
         contexto['evento_activo_global'] = evento
-        rec_nombre = evento.recinto.nombre
+        recinto = evento.recinto
+        rec_nombre = recinto.nombre
         contexto['recinto_activo_nombre'] = rec_nombre
-        if 'auditorio' in rec_nombre.lower():
+
+        # Regla de dinamismo por ID / nombre de recinto:
+        if recinto.id == 1 or 'auditorio' in rec_nombre.lower():
             contexto['nombre_mapa_sidebar'] = 'Mapa del Auditorio'
-        elif 'k' in rec_nombre.lower() or 'dtai' in rec_nombre.lower():
+        elif recinto.id == 2 or 'k' in rec_nombre.lower() or 'dtai' in rec_nombre.lower():
             contexto['nombre_mapa_sidebar'] = 'Mapa del Edificio K'
         else:
             contexto['nombre_mapa_sidebar'] = f'Mapa de {rec_nombre}'
+    else:
+        contexto['nombre_mapa_sidebar'] = 'Mapa del Recinto'
 
     return contexto

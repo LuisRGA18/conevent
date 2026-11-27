@@ -35,23 +35,23 @@ class StandViewSet(viewsets.ModelViewSet):
         from django.shortcuts import get_object_or_404
         import datetime
 
-        evento_id = request.GET.get('evento') or request.session.get('evento_activo_id')
+        evento_id = request.session.get('evento_activo_id') or request.GET.get('evento')
         recinto_id = request.GET.get('recinto')
 
         recinto = None
         evento = None
 
-        if recinto_id:
-            try:
-                recinto = Recinto.objects.get(pk=recinto_id)
-            except (Recinto.DoesNotExist, ValueError):
-                pass
-
-        if not recinto and evento_id:
+        if evento_id:
             try:
                 evento = Evento.objects.select_related('recinto').get(pk=evento_id)
                 recinto = evento.recinto
             except (Evento.DoesNotExist, ValueError):
+                pass
+
+        if not recinto and recinto_id:
+            try:
+                recinto = Recinto.objects.get(pk=recinto_id)
+            except (Recinto.DoesNotExist, ValueError):
                 pass
 
         if not recinto:
@@ -73,6 +73,8 @@ class StandViewSet(viewsets.ModelViewSet):
                     }
                 )
 
+        evento_filtro_id = evento.id if evento else (evento_id if evento_id else None)
+
         plantas = recinto.plantas.prefetch_related(
             'stands__asignacionstand_set__proyecto__carrera',
             'stands__asignacionstand_set__proyecto__creado_por',
@@ -83,7 +85,14 @@ class StandViewSet(viewsets.ModelViewSet):
         for planta in plantas:
             stands_data = []
             for stand in planta.stands.filter(esta_activo=True).order_by('pos_fila', 'pos_col', 'numero'):
-                asignacion = stand.asignacionstand_set.filter(activa=True).first()
+                # Aislamiento estricto de asignaciones por evento activo
+                if evento_filtro_id:
+                    asignacion = stand.asignacionstand_set.filter(
+                        activa=True,
+                        proyecto__evento_id=evento_filtro_id
+                    ).first()
+                else:
+                    asignacion = stand.asignacionstand_set.filter(activa=True).first()
                 proy_data = None
                 if asignacion and asignacion.proyecto:
                     proy = asignacion.proyecto

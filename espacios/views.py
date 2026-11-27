@@ -8,9 +8,25 @@ from .models import Stand
 @login_required(login_url='/auth/login/')
 def mapa_auditorio_view(request):
     """
-    Vista que renderiza el mapa interactivo del auditorio.
+    Vista que renderiza el mapa interactivo del recinto asociado al evento activo.
     """
-    return render(request, 'espacios/mapa_auditorio.html')
+    from usuarios.models import Evento
+    evento_id = request.session.get('evento_activo_id')
+    evento = None
+    if evento_id:
+        try:
+            evento = Evento.objects.select_related('recinto').get(pk=evento_id)
+        except Evento.DoesNotExist:
+            evento = None
+
+    if not evento:
+        evento = Evento.objects.filter(estatus__in=['PUBLICADO', 'activo']).select_related('recinto').first()
+
+    recinto = evento.recinto if evento else None
+    return render(request, 'espacios/mapa_auditorio.html', {
+        'evento_activo': evento,
+        'recinto_activo': recinto,
+    })
 
 @login_required(login_url='/auth/login/')
 def gestionar_stands_view(request):
