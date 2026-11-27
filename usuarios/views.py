@@ -677,7 +677,7 @@ def registrar_proyecto_view(request):
                 carrera_obj = Carrera.objects.get(id=carrera_id)
 
                 with transaction.atomic():
-                    # 1. Creamos el proyecto limpio asociado al evento
+                    # 1. Creamos el proyecto limpio asociado al evento con estatus Aprobado por defecto
                     nuevo_proyecto = Proyecto.objects.create(
                         evento=evento,
                         titulo=titulo,
@@ -687,7 +687,8 @@ def registrar_proyecto_view(request):
                         categoria=categoria,
                         logo=logo,
                         creado_por=request.user,
-                        mesas_requeridas=mesas
+                        mesas_requeridas=mesas,
+                        estatus='aprobado'
                     )
 
                     # 2. AUTOMÁTICO: Insertamos al creador logueado como Integrante Líder
@@ -1226,8 +1227,8 @@ def editar_proyecto_view(request, pk):
             messages.error(request, "Solo los alumnos o administradores pueden acceder a esta sección.")
             return redirect('index')
         proyecto = get_object_or_404(Proyecto, pk=pk, creado_por=request.user)
-        if proyecto.estatus != 'revision':
-            messages.error(request, 'No puedes editar este proyecto en su estado actual.')
+        if proyecto.estatus == 'rechazado':
+            messages.error(request, 'No puedes editar un proyecto que ha sido rechazado.')
             return redirect('mi_proyecto')
 
     if request.method == 'POST':

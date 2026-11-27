@@ -76,7 +76,7 @@
                 <a href="{% url 'ver_calificacion' %}" class="btn btn-sm btn-outline-info" title="Ver detalle de evaluación">
                   <i class="bi bi-eye"></i> Detalle
                 </a>
-                {% if p.estatus == 'revision' %}
+                {% if p.estatus != 'rechazado' %}
                 <a href="{% url 'editar_proyecto' p.pk %}" class="btn btn-sm btn-outline-warning" title="Editar datos del proyecto">
                   <i class="bi bi-pencil"></i> Editar
                 </a>

@@ -75,6 +75,7 @@
                             <th>Carrera</th>
                             <th class="text-center">Grupo</th>
                             <th class="text-center">Categoría</th>
+                            <th class="text-center">Estatus</th>
                             <th class="text-center">Calificación</th>
                             <th class="text-center pe-3">Acciones</th>
                         </tr>
@@ -86,6 +87,15 @@
                             <td><span class="text-white-50 small">{{ proyecto_registrado.carrera.nombre }}</span></td>
                             <td class="text-center"><span class="badge bg-dark border border-secondary text-info">{{ proyecto_registrado.grupo }}</span></td>
                             <td class="text-center"><span class="badge bg-outline-light text-capitalize">{{ proyecto_registrado.categoria }}</span></td>
+                            <td class="text-center">
+                                {% if proyecto_registrado.estatus == 'aprobado' %}
+                                    <span class="badge bg-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>Aprobado</span>
+                                {% elif proyecto_registrado.estatus == 'revision' %}
+                                    <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-clock me-1"></i>En Revisión</span>
+                                {% else %}
+                                    <span class="badge bg-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>Rechazado</span>
+                                {% endif %}
+                            </td>
                             <td class="text-center fw-bold text-warning">{{ proyecto_registrado.calificacion|default:"—" }}</td>
                             <td class="text-center pe-3">
                                 <button type="button" class="btn btn-sm btn-outline-warning me-1 px-3 py-1" onclick="document.getElementById('seccion-editar').scrollIntoView({behavior: 'smooth'});">

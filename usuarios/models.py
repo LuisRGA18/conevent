@@ -124,8 +124,8 @@ class Proyecto(models.Model):
         super().__init__(*args, **kwargs)
 
     ESTATUS_CHOICES = [
-        ('revision',  'En Revisión'),
         ('aprobado',  'Aprobado'),
+        ('revision',  'En Revisión'),
         ('rechazado', 'Rechazado'),
     ]
     CATEGORIA_CHOICES = [
@@ -164,7 +164,7 @@ class Proyecto(models.Model):
         verbose_name='Evaluadores asignados'
     )
 
-    estatus     = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='revision')
+    estatus     = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='aprobado')
     # Calificación final (resumen rápido; el detalle está en Evaluacion)
     calificacion_final = models.DecimalField(
         max_digits=4, decimal_places=2, null=True, blank=True,
