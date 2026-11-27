@@ -783,12 +783,12 @@ def ver_calificacion_view(request):
         if integrante:
             proyecto = integrante.proyecto
 
-    evaluaciones = proyecto.evaluaciones.all() if proyecto else []
+    evaluaciones = list(proyecto.evaluaciones.all()) if proyecto else []
 
     context = {
         'proyecto': proyecto,
         'evaluaciones': evaluaciones,
-        'evaluacion': evaluaciones.first() if evaluaciones.exists() else None,
+        'evaluacion': evaluaciones[0] if evaluaciones else None,
         'evento_activo': evento,
     }
     return render(request, 'seguridad/mis_calificaciones.html', context)
