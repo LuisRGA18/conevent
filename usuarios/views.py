@@ -537,21 +537,7 @@ def index_view(request):
         }
 
     elif rol == 'ALUMNO':
-        proyecto = Proyecto.objects.filter(
-            creado_por=request.user,
-            evento=evento
-        ).select_related('carrera').prefetch_related(
-            'miembros', 'evaluadores', 'evaluaciones'
-        ).first()
-
-        if not proyecto:
-            integrante = Integrante.objects.filter(
-                matricula=request.user.username,
-                proyecto__evento=evento
-            ).select_related('proyecto').first()
-
-            if integrante:
-                proyecto = integrante.proyecto
+        proyecto = get_proyecto_alumno(request.user, evento)
 
         context['proyecto'] = proyecto
         context['tiene_proyecto'] = proyecto is not None
@@ -595,6 +581,76 @@ def generar_qr_externo_proyecto(proyecto, base_url):
     proyecto.qr_evaluacion_externa.save(filename, ContentFile(buffer.getvalue()), save=True)
 
 
+def get_proyecto_alumno(user, evento):
+    """
+    Obtiene el proyecto correspondiente a un alumno en el evento activo:
+    1. Si es el creador del proyecto.
+    2. Si su matrícula o correo institucional está registrado en los integrantes del proyecto.
+    3. Si su username coincide con la matrícula de un integrante.
+    """
+    if not user or not evento:
+        return None
+
+    # 1. Búsqueda directa por creador
+    proy = Proyecto.objects.filter(creado_por=user, evento=evento).prefetch_related('miembros').first()
+    if proy:
+        return proy
+
+    # 2. Criterios de coincidencia por usuario
+    identificadores = set()
+    if getattr(user, 'username', None):
+        identificadores.add(user.username.strip().lower())
+    if getattr(user, 'matricula_empleado', None):
+        identificadores.add(user.matricula_empleado.strip().lower())
+    if getattr(user, 'email', None):
+        user_email = user.email.strip().lower()
+        identificadores.add(user_email)
+        # Extraer números antes del @ si representa matrícula
+        match_digits = re.search(r'\d+', user_email.split('@')[0])
+        if match_digits:
+            identificadores.add(match_digits.group(0))
+
+    filtro_q = Q(proyecto__evento=evento)
+    sub_q = Q()
+    if getattr(user, 'email', None):
+        sub_q |= Q(correo__iexact=user.email.strip())
+
+    for ident in identificadores:
+        sub_q |= Q(matricula__iexact=ident)
+
+    integrante = Integrante.objects.filter(filtro_q & sub_q).select_related('proyecto').first()
+    if integrante and integrante.proyecto:
+        return integrante.proyecto
+
+    return None
+
+
+def vincular_datos_usuario_integrante(matricula_o_correo):
+    """
+    Busca si existe un Usuario en el sistema coincidiendo por matrícula o correo.
+    Retorna un diccionario con datos actualizados si se encuentra.
+    """
+    if not matricula_o_correo:
+        return None
+    val = str(matricula_o_correo).strip().lower()
+    user = Usuario.objects.filter(
+        Q(email__iexact=val) |
+        Q(username__iexact=val) |
+        Q(matricula_empleado__iexact=val)
+    ).first()
+    if not user:
+        # Intentar extraer dígitos si es correo institucional
+        match_digits = re.search(r'\d+', val.split('@')[0])
+        if match_digits:
+            mat = match_digits.group(0)
+            user = Usuario.objects.filter(
+                Q(username__iexact=mat) |
+                Q(matricula_empleado__iexact=mat)
+            ).first()
+
+    return user
+
+
 @login_required(login_url='login')
 def panel_alumno_view(request):
     """🟢 Home/Dashboard del Alumno: Resuelve el bug del POST y envía variables exactas."""
@@ -609,7 +665,7 @@ def panel_alumno_view(request):
         # Procesamos la creación/edición del proyecto delegando a la vista unificada
         return registrar_proyecto_view(request)
 
-    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).prefetch_related('miembros').first()
+    proyecto = get_proyecto_alumno(request.user, evento)
     carreras = Carrera.objects.all()
 
     form = ProyectoForm(instance=proyecto) if proyecto else None
@@ -641,7 +697,7 @@ def registrar_proyecto_view(request):
     if not Carrera.objects.exists():
         messages.error(request, "No hay carreras registradas. Contacta al administrador del evento.")
 
-    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).first()
+    proyecto = get_proyecto_alumno(request.user, evento)
 
     if request.method == 'POST':
         # Caso A: El proyecto ya existe y se está editando
@@ -657,7 +713,21 @@ def registrar_proyecto_view(request):
 
                 with transaction.atomic():
                     form.save()
-                    formset.save()
+                    instancias = formset.save(commit=False)
+                    for obj in formset.deleted_objects:
+                        obj.delete()
+                    for integrante in instancias:
+                        # Auto-vinculación si el usuario ya existe en ConEvent
+                        usuario_encontrado = vincular_datos_usuario_integrante(integrante.correo or integrante.matricula)
+                        if usuario_encontrado:
+                            if usuario_encontrado.email and not integrante.correo:
+                                integrante.correo = usuario_encontrado.email
+                            if usuario_encontrado.get_full_name() and not integrante.nombre_completo:
+                                integrante.nombre_completo = usuario_encontrado.get_full_name()
+                            if usuario_encontrado.matricula_empleado and not integrante.matricula:
+                                integrante.matricula = usuario_encontrado.matricula_empleado
+                        integrante.save()
+                    formset.save_m2m()
                 messages.success(request, "¡Los datos de tu proyecto se actualizaron con éxito!")
                 return redirect('mi_proyecto')
             else:
@@ -721,11 +791,23 @@ def registrar_proyecto_view(request):
                         
                         if mat and nom:
                             nombre_completo = f"{nom} {ape}".strip()
+                            correo_integrante = f"{mat}@alumnos.uteq.edu.mx"
+
+                            # Auto-vinculación si el usuario ya existe en ConEvent
+                            usuario_encontrado = vincular_datos_usuario_integrante(mat)
+                            if usuario_encontrado:
+                                if usuario_encontrado.email:
+                                    correo_integrante = usuario_encontrado.email
+                                if usuario_encontrado.get_full_name():
+                                    nombre_completo = usuario_encontrado.get_full_name()
+                                if usuario_encontrado.matricula_empleado:
+                                    mat = usuario_encontrado.matricula_empleado
+
                             Integrante.objects.create(
                                 proyecto=nuevo_proyecto,
                                 nombre_completo=nombre_completo,
                                 matricula=mat,
-                                correo=f"{mat}@alumnos.uteq.edu.mx",
+                                correo=correo_integrante,
                                 es_lider=False
                             )
 
@@ -778,11 +860,7 @@ def ver_calificacion_view(request):
     if not evento:
         return redirect('eventos_portal')
 
-    proyecto = Proyecto.objects.filter(creado_por=request.user, evento=evento).first()
-    if not proyecto:
-        integrante = Integrante.objects.filter(matricula=request.user.username, proyecto__evento=evento).select_related('proyecto').first()
-        if integrante:
-            proyecto = integrante.proyecto
+    proyecto = get_proyecto_alumno(request.user, evento)
 
     evaluaciones = list(proyecto.evaluaciones.all()) if proyecto else []
 
@@ -1240,8 +1318,23 @@ def editar_proyecto_view(request, pk):
                 if f.instance.pk and f.instance.es_lider:
                     f.cleaned_data['DELETE'] = False
                     f.cleaned_data['es_lider'] = True
-            form.save()
-            formset.save()
+            with transaction.atomic():
+                form.save()
+                instancias = formset.save(commit=False)
+                for obj in formset.deleted_objects:
+                    obj.delete()
+                for integrante in instancias:
+                    # Auto-vinculación si el usuario ya existe en ConEvent
+                    usuario_encontrado = vincular_datos_usuario_integrante(integrante.correo or integrante.matricula)
+                    if usuario_encontrado:
+                        if usuario_encontrado.email and not integrante.correo:
+                            integrante.correo = usuario_encontrado.email
+                        if usuario_encontrado.get_full_name() and not integrante.nombre_completo:
+                            integrante.nombre_completo = usuario_encontrado.get_full_name()
+                        if usuario_encontrado.matricula_empleado and not integrante.matricula:
+                            integrante.matricula = usuario_encontrado.matricula_empleado
+                    integrante.save()
+                formset.save_m2m()
             messages.success(request, "¡Los datos del proyecto se actualizaron con éxito!")
             if request.user.rol == 'ADMIN':
                 return redirect('panel_admin')
